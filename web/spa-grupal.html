@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spa Grupal — Estancia Cuatro Estaciones</title>
+<script src="./support.js"></script>
+<script src="./crm-precios.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet data-dc-atomics="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&amp;family=Dancing+Script:wght@500;600;700&amp;family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&amp;family=Playfair+Display:ital@1&amp;display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#fdf5ed;font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#eb5f11;text-decoration:none}
+    a:hover{color:#ef8627}
+    html{scroll-behavior:smooth}
+    ::selection{background:#eb5f11;color:#fdf5ed}
+
+    .nav-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:16px clamp(18px,2.4vw,34px);flex:1 1 auto}
+    .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:10px;margin-left:auto}
+    .nav-toggle span{display:block;width:24px;height:2px;background:#fdf5ed;border-radius:2px;transition:transform .3s ease,opacity .3s ease}
+    .nav-toggle span+span{margin-top:6px}
+    .nav-toggle.mobile-open span:nth-child(1){transform:translateY(8px) rotate(45deg)}
+    .nav-toggle.mobile-open span:nth-child(2){opacity:0}
+    .nav-toggle.mobile-open span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+    .nav-drop{position:relative;display:flex;align-items:center}
+    .nav-drop-trigger{display:inline-flex;align-items:center;background:none;border:none;padding:0;margin:0;font-family:'Montserrat',sans-serif;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap;transition:color .2s ease}
+    .nav-drop-trigger:hover{color:#ef8627}
+    .nav-drop-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(8px);min-width:236px;background:#434230;border:1px solid rgba(253,245,237,.14);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:2px;opacity:0;visibility:hidden;transition:opacity .2s ease,transform .2s ease,visibility .2s ease;box-shadow:0 20px 44px rgba(0,0,0,.5);z-index:300}
+    .nav-drop.open .nav-drop-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+    .nav-drop-menu a{padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap;transition:background .2s ease,color .2s ease}
+    .nav-drop-menu a:hover{background:rgba(253,245,237,.08);color:#ef8627}
+    .nav-drop-caret{display:inline-block;margin-left:5px;font-size:9px;transition:transform .25s ease}
+    .nav-drop.open .nav-drop-caret{transform:rotate(180deg)}
+    @media (max-width:900px){
+      .nav-toggle{display:block}
+      .nav-wrap{display:none;flex-basis:100%;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:8px 0 4px}
+      .nav-wrap.mobile-open{display:flex}
+      .nav-wrap nav{flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;gap:0}
+      .nav-wrap nav>a{padding:14px 2px;border-bottom:1px solid rgba(253,245,237,.1)}
+      .nav-drop{flex-direction:column;align-items:stretch;width:100%;border-bottom:1px solid rgba(253,245,237,.1)}
+      .nav-drop-trigger{width:100%;justify-content:space-between;padding:14px 2px}
+      .nav-drop-menu{position:static;transform:none;opacity:1;visibility:visible;display:none;box-shadow:none;border:none;background:transparent;min-width:0;padding:0 0 6px 14px}
+      .nav-drop.open .nav-drop-menu{display:flex;transform:none}
+      .nav-drop-menu a{padding:11px 8px}
+      .reservar-btn{align-self:flex-start;margin-top:12px}
+    }
+  </style>
+</helmet>
+
+<div style="width:100%;overflow-x:hidden">
+
+<!-- HEADER -->
+<header style="position:sticky;top:0;z-index:100;background:#434230;box-shadow:0 8px 24px rgba(0,0,0,.28)">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:9px clamp(20px,4vw,56px);border-bottom:1px solid rgba(253,245,237,.08)">
+    <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
+      <svg width="11" height="14" viewBox="0 0 24 32" fill="none"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="#8d9f97"></path><circle cx="12" cy="12" r="5" fill="#252c1a"></circle></svg>
+      Virrey del Pino, La Matanza, Buenos Aires
+    </span>
+    <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
+      <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 0a16 16 0 00-13.86 24L0 32l8.2-2.15A16 16 0 1016 0z" fill="#8d9f97"></path></svg>
+      +54 11 5156 7091
+    </span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(20px,4vw,56px)">
+    <a href="index.html" style="display:flex;align-items:center;gap:16px">
+      <img src="logo.png" alt="Estancia Cuatro Estaciones" style="height:60px;width:auto;display:block;flex:none">
+      <span style="width:1px;height:34px;background:rgba(253,245,237,.25)"></span>
+      <span style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-family:'Bodoni Moda',serif;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
+        <span style="font-size:9.5px;letter-spacing:.32em;color:#ae8d71;white-space:nowrap">Spa de Campo</span>
+      </span>
+    </a>
+    <button type="button" class="nav-toggle {{ mobileClass }}" onClick="{{ toggleMobile }}" aria-label="Menú"><span></span><span></span><span></span></button>
+    <div class="nav-wrap {{ mobileClass }}">
+      <nav style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:14px clamp(14px,2vw,28px)">
+        <a href="index.html#inicio" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Inicio</a>
+        <a href="index.html#nosotros" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Nosotros</a>
+        <div class="nav-drop {{ navClass }}">
+        <button type="button" class="nav-drop-trigger" onClick="{{ toggleNav }}" style=" color:#ef8627;">Circuitos<span class="nav-drop-caret">▾</span></button>
+        <div class="nav-drop-menu">
+          <a href="spa-de-parejas.html" style-hover="color:#ef8627" style="padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap">Spa de Parejas</a>
+          <a href="spa-grupal.html" style="padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#ef8627;white-space:nowrap">Spa Grupal</a>
+          <a href="despedida-de-soltera.html" style-hover="color:#ef8627" style="padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap">Despedida de Soltera</a>
+        </div>
+      </div>
+        <a href="index.html#galeria" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Galería</a>
+        <a href="index.html#contacto" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Contacto</a>
+      </nav>
+      <a href="{{ waLinkGeneral }}" target="_blank" class="reservar-btn" style="display:inline-flex;align-items:center;justify-content:center;padding:11px 34px;border-radius:26px;background:#eb5f11;color:#fdf5ed;font-family:'Dancing Script',cursive;font-weight:600;font-size:24px;line-height:1;transition:background .3s ease;white-space:nowrap;flex:none" style-hover="background:#ef8627">Reservar</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="inicio" style="position:relative;height:clamp(360px,52vw,620px);display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden">
+  <img src="fotos/banner-5-amigas-batas.jpg" alt="Spa Grupal — Estancia Cuatro Estaciones" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(60,38,14,.5), rgba(37,44,26,.68))"></div>
+  <div style="position:relative;z-index:2;padding:0 24px">
+    <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#ef8627;margin-bottom:18px">Spa de Campo · Virrey del Pino</div>
+    <h1 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(40px,9vw,88px);letter-spacing:.01em;color:#fdf5ed;margin:0 0 22px;text-transform:uppercase">SPA <span style="color:#fdf5ed">GRUPAL</span></h1>
+    <p style="font-size:13.5px;line-height:1.7;color:#f4efed;opacity:.9;margin:0 auto;max-width:560px">Un día de spa privado para tu grupo de amigas: masajes, jacuzzi, sauna, brunch de campo y brindis, sin compartir el lugar con nadie.</p>
+  </div>
+</section>
+
+<!-- COMO ES EL CIRCUITO + GALERIA -->
+<section style="background:#fdf5ed;padding:clamp(56px,8vw,96px) clamp(20px,6vw,80px)">
+  <div style="max-width:820px;margin:0 auto 48px;text-align:center">
+    <h2 style="font-family:'Bodoni Moda',serif;font-weight:600;font-size:clamp(22px,3vw,28px);color:#252c1a;margin:0 0 22px">¿Cómo es el Circuito Grupal?</h2>
+    <p style="font-size:14px;line-height:1.9;color:#434330;margin:0">Nuestro circuito grupal está diseñado para que tu grupo viva una experiencia de desconexión absoluta.<br>El Spa se reserva de forma estrictamente <strong>PRIVADA</strong> para <strong>3 a 8 personas</strong>.<br>Durante las 5 horas de estadía, el lugar es exclusivamente para ustedes.<br><strong>No compartirán las instalaciones con desconocidos</strong>; nosotros, los dueños, nos encargamos<br>de atenderlos personalmente para cuidar cada detalle de su privacidad y confort.</p>
+  </div>
+
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+    <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="6">
+      <div style="position:relative;aspect-ratio:1/1;border-radius:4px;overflow:hidden">
+        <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<!-- CIRCUITOS -->
+<section id="circuitos" style="background:#434230;padding:clamp(48px,7vw,80px) clamp(20px,6vw,80px)">
+  <div style="max-width:1240px;margin:0 auto">
+    <div style="text-align:center;max-width:640px;margin:0 auto 48px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px">
+        <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
+        <span style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#ef8627">Experiencias</span>
+        <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
+      </div>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(30px,4.5vw,48px);color:#fdf5ed;line-height:1.1;margin:0">Premium <span style="font-family:'Playfair Display',serif;font-style:italic;color:#ef8627">&amp;</span> Clásica</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:26px;max-width:760px;margin:0 auto">
+      <sc-for list="{{ circuitos }}" as="c" hint-placeholder-count="2">
+        <div style="background:{{ c.flyer.bg }};color:{{ c.flyer.text }};border:1px solid {{ c.flyer.accent }};border-radius:16px;padding:32px 26px 26px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+          <svg width="30" height="34" viewBox="0 0 46 52"><circle cx="23" cy="14" r="13" fill="{{ c.flyer.accent }}"></circle><rect x="20" y="26" width="6" height="22" fill="{{ c.flyer.accent }}" opacity="0.55"></rect></svg>
+          <div>
+            <div style="font-family:'Bodoni Moda',serif;font-weight:700;font-size:25px;line-height:1;color:{{ c.flyer.text }}">{{ c.flyer.headline }}</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;margin-top:4px;color:{{ c.flyer.accent }}">{{ c.flyer.tierNombre }}</div>
+          </div>
+          <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:{{ c.flyer.text }};opacity:.75">La experiencia tiene una duración de {{ c.duracion }}</div>
+          <p style="font-size:11.5px;line-height:1.6;margin:0;max-width:260px;opacity:.9">{{ c.flyer.intro }}</p>
+          <div style="display:flex;align-items:center;gap:10px;width:100%;margin:2px 0">
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+            <span style="font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:{{ c.flyer.accent }};white-space:nowrap">{{ c.personas }}</span>
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <span style="font-family:'Bodoni Moda',serif;font-size:13px;color:{{ c.flyer.accent }};white-space:nowrap">¿Qué incluye?</span>
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+          </div>
+          <div style="width:100%;box-sizing:border-box">
+            <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.85;text-align:left">
+              <sc-for list="{{ c.bullets }}" as="b" hint-placeholder-count="5">
+                <li>— {{ b }}</li>
+              </sc-for>
+            </ul>
+          </div>
+
+          <sc-if value="{{ c.flyer.isTiered }}" hint-placeholder-val="{{ true }}">
+            <div style="width:100%;font-size:11px">
+              <div style="letter-spacing:.15em;text-transform:uppercase;font-size:9.5px;color:{{ c.flyer.accent2 }};margin-bottom:8px">Valor x persona</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 8px;font-size:11px;align-items:center">
+                <span></span><span style="font-weight:600">Lun-Jue</span><span style="font-weight:600">Vie/Sáb/Dom</span>
+                <sc-for list="{{ c.flyer.tiers }}" as="tier" hint-placeholder-count="3">
+                  <span style="opacity:.85">{{ tier.rango }}</span>
+                  <span style="font-weight:600">{{ tier.lunJue }}</span>
+                  <span style="font-weight:600">{{ tier.vieSabDom }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.flyer.isFlat }}" hint-placeholder-val="{{ false }}">
+            <div style="width:100%;font-size:11px">
+              <div style="letter-spacing:.15em;text-transform:uppercase;font-size:9.5px;color:{{ c.flyer.accent2 }};margin-bottom:8px">Valor por persona</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;font-size:12px;font-weight:600">
+                <span>Lun a Jue</span><span>{{ c.flyer.flatLunJue }} c/u</span>
+                <span>Vie, Sáb y Dom</span><span>{{ c.flyer.flatVieSabDom }} c/u</span>
+              </div>
+              <sc-if value="{{ c.flyer.opcionales }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:left;margin-top:14px">
+                  <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ c.flyer.accent2 }};margin-bottom:6px">Pueden adicionar</div>
+                  <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.8">
+                    <sc-for list="{{ c.flyer.opcionales }}" as="op" hint-placeholder-count="3">
+                      <li>— {{ op }}</li>
+                    </sc-for>
+                  </ul>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <div style="font-size:10px;opacity:.75;line-height:1.5">{{ c.flyer.extra }}</div>
+
+          <div style="display:flex;align-items:center;gap:10px;width:100%;margin-top:4px">
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+            <span style="font-family:'Playfair Display',serif;font-style:italic;font-size:11.5px;color:{{ c.flyer.accent }};white-space:nowrap">Exp. {{ c.flyer.tierNombre }}</span>
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+          </div>
+
+          <a href="{{ c.waLink }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:{{ c.flyer.accent }};color:#fdf5ed;margin-top:6px">Consultar</a>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="text-align:center;margin-top:40px">
+      <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:14px 56px;border-radius:999px;background:#ef8627;color:#252c1a;font-family:'Dancing Script',cursive;font-weight:700;font-size:30px;line-height:1;transition:background .3s ease" style-hover="background:#eb5f11">Reservar</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="contacto" style="background:#252c1a;padding:clamp(56px,8vw,88px) clamp(20px,6vw,80px) 32px">
+  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:44px;padding-bottom:44px;border-bottom:1px solid rgba(253,245,237,.1)">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <svg width="26" height="30" viewBox="0 0 46 52" style="flex:none"><circle cx="23" cy="14" r="13" fill="#eb5f11"></circle><circle cx="14" cy="20" r="9" fill="#617245"></circle><circle cx="32" cy="20" r="9" fill="#8d9f97"></circle><rect x="20" y="26" width="6" height="22" fill="#bd8e62"></rect></svg>
+        <span style="font-family:'Bodoni Moda',serif;font-size:16px;color:#fdf5ed">Estancia Cuatro Estaciones</span>
+      </div>
+      <p style="font-size:12.5px;line-height:1.8;color:#dcdcdc;margin:0;max-width:280px">Spa de campo familiar en el corazón de Virrey del Pino, Zona Oeste — naturaleza, relajación y gastronomía en un mismo lugar.</p>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Visitanos</div>
+      <div style="font-size:13px;line-height:1.9;color:#fdf5ed">Virrey del Pino, La Matanza<br>Buenos Aires, Argentina</div>
+      <div style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#8d9f97;margin-top:10px">MAPA — próximamente</div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Reservas</div>
+      <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:13px 22px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:#eb5f11;color:#fdf5ed;margin-bottom:14px" style-hover="background:#ef8627">Escribinos por WhatsApp</a>
+      <div style="font-size:12.5px;color:#dcdcdc">Consultá días y horarios disponibles</div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Seguinos</div>
+      <a href="https://www.instagram.com/_.spacuatroestaciones._/" target="_blank" style="font-size:13px;color:#fdf5ed" style-hover="color:#ef8627">@_.spacuatroestaciones._</a>
+    </div>
+  </div>
+  <div style="max-width:1240px;margin:0 auto;padding-top:24px;font-size:11px;color:#8d9f97;text-align:center">© {{ anio }} Estancia Cuatro Estaciones — Spa de Campo</div>
+</footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  waLink(text) {
+    return 'https://wa.me/5491100000000?text=' + encodeURIComponent(text);
+  }
+
+  state = { navOpen: false, mobileOpen: false, precios: null };
+  toggleNav = () => this.setState((s) => ({ navOpen: !s.navOpen }));
+  closeNav = () => this.setState({ navOpen: false });
+  toggleMobile = () => this.setState((s) => ({ mobileOpen: !s.mobileOpen }));
+
+  componentDidMount() {
+    this._onDocClick = (e) => {
+      const t = e.target;
+      if (!(t.closest && t.closest('.nav-drop')) && this.state.navOpen) this.closeNav();
+      if (t.closest && t.closest('.nav-wrap a')) this.setState({ mobileOpen: false, navOpen: false });
+    };
+    document.addEventListener('click', this._onDocClick);
+
+    var self = this;
+    window.CRM.fetchPrecios(function (p) { self.setState({ precios: p }); });
+  }
+  componentWillUnmount() {
+    if (this._onDocClick) document.removeEventListener('click', this._onDocClick);
+  }
+
+  renderVals() {
+    const anio = new Date().getFullYear();
+    const navClass = this.state.navOpen ? 'open' : '';
+    const mobileClass = this.state.mobileOpen ? 'mobile-open' : '';
+    const galeria = [
+      { foto: 'circuito-grupal-clasico.jpg', caption: 'Grupo de amigas, living exterior' },
+      { foto: 'circuito-grupal-premium.jpg', caption: 'Brunch premium al atardecer' },
+      { foto: 'banner-5-amigas-batas.jpg', caption: 'Amigas con batas' },
+      { foto: 'galeria-04.jpg', caption: 'Grupo de amigas, atardecer' },
+      { foto: 'galeria-05.jpg', caption: 'Living exterior' },
+      { foto: 'galeria-11.jpg', caption: 'Brindis final' },
+    ];
+
+    const circuitos = [
+      {
+        personas: '3 a 8 personas', duracion: '5 hs',
+        bullets: ['Merienda cl\u00e1sica dulce y salada', 'Masaje relajante 25\'', 'Ozonoterapia 25\'', 'Jacuzzi con hidromasaje 40\'', 'Infusiones libres todo el d\u00eda'],
+        waLink: this.waLink('Hola! Quiero consultar por el Circuito Grupal Cl\u00e1sico'),
+        flyer: {
+          bg: '#fdf5ed', text: '#252c1a', accent: '#ef8627', accent2: '#265a58',
+          headline: 'Spa Grupal', tierNombre: 'Cl\u00e1sico',
+          intro: 'El circuito no se comparte con nadie y se vive en privado.',
+          isTiered: true, isFlat: false,
+          tiers: [
+            { rango: '3p - 4p', lunJue: '$130.000', vieSabDom: '$150.000' },
+            { rango: '5p - 6p', lunJue: '$125.000', vieSabDom: '$140.000' },
+            { rango: '7p - 8p', lunJue: '$118.000', vieSabDom: '$130.000' },
+          ],
+          extra: 'Pasados los 8 personas se cobra $15.000 extra x persona.',
+        },
+      },
+      {
+        personas: '3 a 8 personas', duracion: '5 hs',
+        bullets: ['Brunch premium + picada de campo', 'Masaje descontracturante 35\'', 'Sauna individual + tina finlandesa', 'Mascarillas faciales', 'Trago por persona + brindis con champagne'],
+        waLink: this.waLink('Hola! Quiero consultar por el Circuito Grupal Premium'),
+        flyer: {
+          bg: '#252c1a', text: '#fdf5ed', accent: '#eb5f11', accent2: '#844713',
+          headline: 'Spa Grupal', tierNombre: 'Premium',
+          intro: 'Circuito exclusivo y en privado \u2014 no se comparte con otros grupos.',
+          isTiered: true, isFlat: false,
+          tiers: [
+            { rango: '3p - 4p', lunJue: '$155.000', vieSabDom: '$175.000' },
+            { rango: '5p - 6p', lunJue: '$140.000', vieSabDom: '$160.000' },
+            { rango: '7p - 8p', lunJue: '$135.000', vieSabDom: '$145.000' },
+          ],
+          extra: 'Pasados los 8 personas se cobra $20.000 extra x persona.',
+        },
+      },
+    ];
+
+    return {
+      anio, navClass, toggleNav: this.toggleNav, mobileClass, toggleMobile: this.toggleMobile,
+      waLinkGeneral: this.waLink('Hola! Quiero consultar por el Spa Grupal'),
+      galeria,
+      circuitos: window.CRM.aplicar(circuitos, this.state.precios),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

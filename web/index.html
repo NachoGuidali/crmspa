@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script src="./crm-precios.js"></script>
 </head>
 <body>
 <x-dc>
@@ -11,7 +12,7 @@
 <helmet data-dc-atomics="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&amp;family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&amp;family=Playfair+Display:ital@1&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&amp;family=Dancing+Script:wght@500;600;700&amp;family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&amp;family=Playfair+Display:ital@1&amp;display=swap" rel="stylesheet">
   <style>
     body{margin:0;background:#fdf5ed;font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased}
     a{color:#eb5f11;text-decoration:none}
@@ -21,13 +22,50 @@
     @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
     html{scroll-behavior:smooth}
     ::selection{background:#eb5f11;color:#fdf5ed}
+    .nav-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:16px clamp(18px,2.4vw,34px);flex:1 1 auto}
+    .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:10px;margin-left:auto}
+    .nav-toggle span{display:block;width:24px;height:2px;background:#fdf5ed;border-radius:2px;transition:transform .3s ease,opacity .3s ease}
+    .nav-toggle span+span{margin-top:6px}
+    .nav-toggle.mobile-open span:nth-child(1){transform:translateY(8px) rotate(45deg)}
+    .nav-toggle.mobile-open span:nth-child(2){opacity:0}
+    .nav-toggle.mobile-open span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+    .nav-drop{position:relative;display:flex;align-items:center}
+    .nav-drop-trigger{display:inline-flex;align-items:center;background:none;border:none;padding:0;margin:0;font-family:'Montserrat',sans-serif;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap;transition:color .2s ease}
+    .nav-drop-trigger:hover{color:#ef8627}
+    .nav-drop-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(8px);min-width:236px;background:#434230;border:1px solid rgba(253,245,237,.14);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:2px;opacity:0;visibility:hidden;transition:opacity .2s ease,transform .2s ease,visibility .2s ease;box-shadow:0 20px 44px rgba(0,0,0,.5);z-index:300}
+    .nav-drop.open .nav-drop-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+    .nav-drop-menu a{padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap;transition:background .2s ease,color .2s ease}
+    .nav-drop-menu a:hover{background:rgba(253,245,237,.08);color:#ef8627}
+    .nav-drop-caret{display:inline-block;margin-left:5px;font-size:9px;transition:transform .25s ease}
+    .nav-drop.open .nav-drop-caret{transform:rotate(180deg)}
+    @media (max-width:900px){
+      .nav-toggle{display:block}
+      .nav-wrap{display:none;flex-basis:100%;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:8px 0 4px}
+      .nav-wrap.mobile-open{display:flex}
+      .nav-wrap nav{flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;gap:0}
+      .nav-wrap nav>a{padding:14px 2px;border-bottom:1px solid rgba(253,245,237,.1)}
+      .nav-drop{flex-direction:column;align-items:stretch;width:100%;border-bottom:1px solid rgba(253,245,237,.1)}
+      .nav-drop-trigger{width:100%;justify-content:space-between;padding:14px 2px}
+      .nav-drop-menu{position:static;transform:none;opacity:1;visibility:visible;display:none;box-shadow:none;border:none;background:transparent;min-width:0;padding:0 0 6px 14px}
+      .nav-drop.open .nav-drop-menu{display:flex;transform:none}
+      .nav-drop-menu a{padding:11px 8px}
+      .reservar-btn{align-self:flex-start;margin-top:12px}
+    }
+    /* Mobile: evitar que grids de 2 columnas desborden */
+    @media (max-width:760px){
+      .about-grid{grid-template-columns:1fr!important}
+      .detalles-grid{grid-template-columns:1fr!important}
+      .cita-inner{width:auto!important;height:auto!important}
+      .cita-inner h2{width:auto!important;height:auto!important}
+      .faq-kicker{white-space:normal!important}
+    }
   </style>
 </helmet>
 
 <div ref="{{ setRootRef }}" style="width:100%;overflow-x:hidden">
 
 <!-- HEADER -->
-<header ref="{{ setHeaderRef }}" style="position:sticky;top:0;z-index:100;background:#252c1a;transition:box-shadow .35s ease">
+<header ref="{{ setHeaderRef }}" style="position:sticky;top:0;z-index:100;background:#434230;transition:box-shadow .35s ease">
   <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:9px clamp(20px,4vw,56px);border-bottom:1px solid rgba(253,245,237,.08)">
     <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
       <svg width="11" height="14" viewBox="0 0 24 32" fill="none"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="#8d9f97"></path><circle cx="12" cy="12" r="5" fill="#252c1a"></circle></svg>
@@ -40,31 +78,30 @@
   </div>
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(20px,4vw,56px)">
     <a href="#inicio" style="display:flex;align-items:center;gap:16px">
-      <a href="#inicio" style="display:flex;align-items:center;gap:16px">
-  <img
-    src="logo.png"
-    alt="Estancia Cuatro Estaciones"
-    style="height:60px;width:auto;display:block;flex:none"
-  >
-
-  
-
-  
+      <img src="logo.png" alt="Estancia Cuatro Estaciones" style="height:60px;width:auto;display:block;flex:none">
       <span style="width:1px;height:34px;background:rgba(253,245,237,.25)"></span>
       <span style="display:flex;flex-direction:column;gap:3px">
         <span style="font-family:'Bodoni Moda',serif;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
         <span style="font-size:9.5px;letter-spacing:.32em;color:#ae8d71;white-space:nowrap">Spa de Campo</span>
       </span>
     </a>
-    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:16px clamp(18px,2.4vw,34px);flex:1 1 auto">
+    <button type="button" class="nav-toggle {{ mobileClass }}" onClick="{{ toggleMobile }}" aria-label="Menú"><span></span><span></span><span></span></button>
+    <div class="nav-wrap {{ mobileClass }}">
       <nav style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:14px clamp(14px,2vw,28px)">
         <a href="#inicio" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#ef8627;padding-bottom:4px;border-bottom:1px solid #ef8627;white-space:nowrap">Inicio</a>
         <a href="#nosotros" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Nosotros</a>
-        <a href="#circuitos" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Circuitos</a>
+        <div class="nav-drop {{ navClass }}">
+          <button type="button" class="nav-drop-trigger" onClick="{{ toggleNav }}">Circuitos<span class="nav-drop-caret">▾</span></button>
+          <div class="nav-drop-menu">
+            <a href="spa-de-parejas.html" style-hover="color:#ef8627" style="padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap">Spa de Parejas</a>
+            <a href="spa-grupal.html" style-hover="color:#ef8627" style="padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap">Spa Grupal</a>
+            <a href="despedida-de-soltera.html" style-hover="color:#ef8627" style="padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap">Despedida de Soltera</a>
+          </div>
+        </div>
         <a href="#galeria" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Galería</a>
         <a href="#contacto" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Contacto</a>
       </nav>
-      <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:13px 34px;border-radius:26px;background:#eb5f11;color:#fdf5ed;font-family:'Playfair Display',serif;font-style:italic;font-size:18px;transition:background .3s ease;white-space:nowrap;flex:none" style-hover="background:#ef8627">Reservar</a>
+      <a href="{{ waLinkGeneral }}" target="_blank" class="reservar-btn" style="display:inline-flex;align-items:center;justify-content:center;padding:11px 34px;border-radius:26px;background:#eb5f11;color:#fdf5ed;font-family:'Dancing Script',cursive;font-weight:600;font-size:24px;line-height:1;transition:background .3s ease;white-space:nowrap;flex:none" style-hover="background:#ef8627">Reservar</a>
     </div>
   </div>
 </header>
@@ -74,7 +111,7 @@
 
 <!-- NOSOTROS -->
 <section id="nosotros" data-screen-label="Nosotros" style="background:#fdf5ed;padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px)">
-  <div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(280px,1.3fr);gap:clamp(32px,6vw,72px);max-width:1240px;margin:0 auto;align-items:start">
+  <div class="about-grid" style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(280px,1.3fr);gap:clamp(32px,6vw,72px);max-width:1240px;margin:0 auto;align-items:start">
     <div data-reveal="true" style="opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
       <div style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#844713;margin-bottom:14px">¿Quiénes somos?</div>
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(28px,4vw,44px);color:#252c1a;line-height:1.12;margin:0 0 22px">Bienvenidos al Spa de Campo Cuatro Estaciones.</h2>
@@ -118,7 +155,7 @@
 <section data-screen-label="Cita" style="position:relative;height:clamp(260px,32vw,400px);display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden">
   <img src="fotos/banner-cita-jacuzzi-madera.jpg" alt="Jacuzzi de madera al atardecer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
   <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(60,38,14,.62), rgba(37,44,26,.7)); left: 0px; top: -19px"></div>
-  <div style="position: relative; z-index: 2; padding: 0 24px; max-width: 760px; width: 779px; height: 297px">
+  <div class="cita-inner" style="position: relative; z-index: 2; padding: 0 24px; max-width: 760px; width: 779px; height: 297px">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">
       <span style="flex:1;height:1px;background:rgba(253,245,237,.3)"></span>
       <span style="font-size:10.5px;letter-spacing:.25em;text-transform:uppercase;color:#fee8ca;white-space:nowrap">Spa de Campo · Virrey del Pino</span>
@@ -130,7 +167,7 @@
 </section>
 
 <!-- CIRCUITOS -->
-<section id="circuitos" data-screen-label="Circuitos" style="background:#252c1a;padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px)">
+<section id="circuitos" data-screen-label="Circuitos" style="background:#434230;padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px)">
   <div style="max-width:1240px;margin:0 auto">
     <div data-reveal="true" style="text-align:center;max-width:640px;margin:0 auto 56px;opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
       <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px">
@@ -139,45 +176,10 @@
         <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
       </div>
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(30px,4.5vw,48px);color:#fdf5ed;line-height:1.1;margin:0 0 16px">Experiencias</h2>
-      <p style="font-size:13.5px;line-height:1.7;color:#dcdcdc;margin:0 0 22px">Viví una experiencia de bienestar en el campo junto con tu pareja o tu grupo de amigas — estas son nuestras propuestas exclusivas.</p>
-      <div style="display:inline-flex;gap:6px;background:rgba(253,245,237,.1);padding:6px;border-radius:22px">
-        <button onClick="{{ showCards }}" style="{{ cardsBtnStyle }}">Tarjetas</button>
-        <button onClick="{{ showFlyer }}" style="{{ flyerBtnStyle }}">Estilo flyer</button>
-      </div>
+      <p style="font-size:13.5px;line-height:1.7;color:#dcdcdc;margin:0">Viví una experiencia de bienestar en el campo junto con tu pareja o tu grupo de amigas — estas son nuestras propuestas exclusivas.</p>
     </div>
 
-    <sc-if value="{{ isCard }}" hint-placeholder-val="{{ true }}">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px">
-      <sc-for list="{{ circuitos }}" as="c" hint-placeholder-count="4">
-        <div data-reveal="true" style="background:#fdf5ed;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 24px 48px rgba(0,0,0,.4);translate:0 -8px">
-          <div style="position:relative;height:170px;overflow:hidden">
-            <img src="fotos/{{ c.fotoArchivo }}" alt="{{ c.titulo }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-            <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.45) 100%)"></div>
-            <span style="position:absolute;bottom:14px;left:16px;font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#fee8ed">{{ c.estacion }}</span>
-          </div>
-          <div style="padding:26px 24px 28px;display:flex;flex-direction:column;flex:1">
-            <div style="font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:#844713;margin-bottom:8px">{{ c.categoria }}</div>
-            <div style="font-family:'Bodoni Moda',serif;font-size:24px;color:#252c1a;margin-bottom:10px">{{ c.titulo }}</div>
-            <div style="display:flex;gap:12px;font-size:11.5px;color:#617245;margin-bottom:16px">
-              <span>{{ c.personas }}</span><span>·</span><span>{{ c.duracion }}</span>
-            </div>
-            <ul style="margin:0 0 20px;padding:0;list-style:none;font-size:12.5px;line-height:2;color:#434330;flex:1">
-              <sc-for list="{{ c.bullets }}" as="b" hint-placeholder-count="5">
-                <li style="display:flex;gap:8px"><span style="color:#eb5f11">—</span>{{ b }}</li>
-              </sc-for>
-            </ul>
-            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #dcdcdc;padding-top:16px;margin-top:auto">
-              <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8d9f97">{{ c.precioDesde }}</span>
-              <a href="{{ c.waLink }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:#252c1a;color:#fdf5ed" style-hover="background:#617245">Consultar</a>
-            </div>
-          </div>
-        </div>
-      </sc-for>
-    </div>
-    </sc-if>
-
-    <sc-if value="{{ isFlyer }}" hint-placeholder-val="{{ false }}">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:26px;max-width:820px;margin:0 auto">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:22px;max-width:1240px;margin:0 auto">
       <sc-for list="{{ circuitos }}" as="c" hint-placeholder-count="4">
         <div style="background:{{ c.flyer.bg }};color:{{ c.flyer.text }};border:1px solid {{ c.flyer.accent }};border-radius:16px;padding:32px 26px 26px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
           <svg width="30" height="34" viewBox="0 0 46 52"><circle cx="23" cy="14" r="13" fill="{{ c.flyer.accent }}"></circle><rect x="20" y="26" width="6" height="22" fill="{{ c.flyer.accent }}" opacity="0.55"></rect></svg>
@@ -246,14 +248,16 @@
             <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
           </div>
 
-          <a href="{{ c.waLink }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:{{ c.flyer.accent }};color:#fdf5ed;margin-top:6px">Consultar</a>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:6px;width:100%">
+            <a href="{{ c.pagina }}" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;border:1px solid {{ c.flyer.accent }};color:{{ c.flyer.accent }};background:transparent">Ver más info</a>
+            <a href="{{ c.waLink }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:{{ c.flyer.accent }};color:#fdf5ed">Consultar</a>
+          </div>
         </div>
       </sc-for>
     </div>
-    <div style="text-align:center;margin-top:40px">
-      <a href="{{ waLinkGeneral }}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; padding: 18px 56px; border-radius: 999px; background: #ef8627; color: #252c1a; font-family: 'Playfair Display',serif; font-style: italic; font-size: 35px; transition: background .3s ease; line-height: 1.7; font-weight: 400; width: 151px; height: 32px" style-hover="background:#eb5f11">Reservar</a>
+    <div style="text-align:center;margin-top:44px">
+      <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:14px 56px;border-radius:999px;background:#ef8627;color:#252c1a;font-family:'Dancing Script',cursive;font-weight:700;font-size:32px;line-height:1;transition:background .3s ease" style-hover="background:#eb5f11">Reservar</a>
     </div>
-    </sc-if>
   </div>
 </section>
 
@@ -305,7 +309,7 @@
 
 <!-- DETALLES / PACKAGING -->
 <section data-screen-label="Detalles" style="background:#f4efed;padding:clamp(56px,9vw,100px) clamp(20px,6vw,80px)">
-  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(300px,1.4fr);gap:clamp(32px,6vw,64px);align-items:center">
+  <div class="detalles-grid" style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(300px,1.4fr);gap:clamp(32px,6vw,64px);align-items:center">
     <div data-reveal="true" style="opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
       <div style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#265a58;margin-bottom:14px">Pasión por los detalles</div>
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(24px,3.5vw,36px);color:#252c1a;line-height:1.2;margin:0 0 16px">Spa Cuatro Estaciones en tu casa.</h2>
@@ -333,7 +337,7 @@
     <div data-reveal="true" style="text-align:center;margin:0 auto 48px;opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
         <span style="flex:1;height:1px;background:#dcdcdc"></span>
-        <span style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#844713;white-space:nowrap">Preguntas frecuentes · Información práctica</span>
+        <span class="faq-kicker" style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#844713;white-space:nowrap">Preguntas frecuentes · Información práctica</span>
         <span style="flex:1;height:1px;background:#dcdcdc"></span>
       </div>
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(26px,4vw,38px);color:#252c1a;margin:0">Todo lo que necesitás <span style="font-family:'Playfair Display',serif;font-style:italic;color:#ef8627">saber</span></h2>
@@ -441,59 +445,10 @@ class Component extends DCLogic {
     return 'https://wa.me/5491100000000?text=' + encodeURIComponent(text);
   }
 
-  // URL del CRM que sirve los precios en vivo. Cambiando un precio en el CRM, la web lo toma.
-  preciosApi = 'https://crm.spacuatroestaciones.com/api/v1/publico/circuitos/';
-
-  fmtMoney(n) {
-    if (n === null || n === undefined || isNaN(n)) return '';
-    return '$' + Math.round(n).toLocaleString('es-AR');
-  }
-
-  // Sobreescribe los precios escritos con los que devuelve el CRM (si respondió).
-  aplicarPreciosVivos(circuitos) {
-    var precios = this.state.precios;
-    if (!precios) return circuitos;
-    var self = this;
-    var porNombre = {};
-    precios.forEach(function (p) { porNombre[p.nombre] = p; });
-
-    return circuitos.map(function (c) {
-      var api = porNombre[c.apiNombre];
-      if (!api) return c;
-      var flyer = Object.assign({}, c.flyer);
-      var nuevo = Object.assign({}, c);
-
-      if (api.por_persona && api.tramos && api.tramos.length) {
-        flyer.tiers = api.tramos.map(function (t) {
-          return {
-            rango: t.desde + 'p - ' + t.hasta + 'p',
-            lunJue: self.fmtMoney(t.precio_persona_semana),
-            vieSabDom: self.fmtMoney(t.precio_persona_finde),
-          };
-        });
-        var top = api.tramos[api.tramos.length - 1];
-        if (api.precio_persona_adicional_semana) {
-          flyer.extra = 'Pasados los ' + top.hasta + ' personas se cobra ' +
-            self.fmtMoney(api.precio_persona_adicional_semana) + ' extra x persona.';
-        }
-        var desde = Math.min.apply(null, api.tramos.map(function (t) { return t.precio_persona_semana; }));
-        nuevo.precioDesde = 'Desde ' + self.fmtMoney(desde) + ' x persona';
-      } else if (!api.por_persona) {
-        var cap = api.capacidad_maxima || 2;
-        flyer.flatLunJue = self.fmtMoney(api.precio_total_semana / cap);
-        flyer.flatVieSabDom = self.fmtMoney(api.precio_total_finde / cap);
-        flyer.flatLunJue2p = self.fmtMoney(api.precio_total_semana);
-        flyer.flatVieSabDom2p = self.fmtMoney(api.precio_total_finde);
-        nuevo.precioDesde = 'Desde ' + self.fmtMoney(api.precio_total_semana / cap) + ' c/u';
-      }
-      nuevo.flyer = flyer;
-      return nuevo;
-    });
-  }
-
-  state = { cardStyle: 'flyer', openFaq: 0, precios: null };
-  showCards = () => this.setState({ cardStyle: 'card' });
-  showFlyer = () => this.setState({ cardStyle: 'flyer' });
+  state = { openFaq: 0, navOpen: false, mobileOpen: false, precios: null };
+  toggleNav = () => this.setState((s) => ({ navOpen: !s.navOpen }));
+  closeNav = () => this.setState({ navOpen: false });
+  toggleMobile = () => this.setState((s) => ({ mobileOpen: !s.mobileOpen }));
   toggleFaq(i) {
     this.setState((s) => ({ openFaq: s.openFaq === i ? null : i }));
   }
@@ -543,18 +498,21 @@ class Component extends DCLogic {
     };
     window.addEventListener('scroll', this._onScroll, { passive: true });
 
-    // Trae los precios en vivo del CRM. Si responde, re-renderiza con esos valores;
-    // si falla (offline, CRM caído), quedan los precios escritos como fallback.
+    this._onDocClick = (e) => {
+      const t = e.target;
+      if (!(t.closest && t.closest('.nav-drop')) && this.state.navOpen) this.closeNav();
+      if (t.closest && t.closest('.nav-wrap a')) this.setState({ mobileOpen: false, navOpen: false });
+    };
+    document.addEventListener('click', this._onDocClick);
+
     var self = this;
-    fetch(this.preciosApi)
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) { if (data && data.circuitos) self.setState({ precios: data.circuitos }); })
-      .catch(function () {});
+    window.CRM.fetchPrecios(function (p) { self.setState({ precios: p }); });
   }
 
   componentWillUnmount() {
     if (this._io) this._io.disconnect();
     if (this._onScroll) window.removeEventListener('scroll', this._onScroll);
+    if (this._onDocClick) document.removeEventListener('click', this._onDocClick);
   }
 
   renderVals() {
@@ -571,9 +529,9 @@ class Component extends DCLogic {
 
     const circuitos = [
       {
-        estacion: 'Primavera', categoria: 'Spa Grupal · Clásico', titulo: 'Circuito Grupal Clásico', apiNombre: 'Spa Grupal Clásico',
+        estacion: 'Primavera', categoria: 'Spa Grupal · Clásico', titulo: 'Circuito Grupal Clásico',
         personas: '3 a 8 personas', duracion: '5 hs',
-        gradient: 'linear-gradient(160deg,#617245,#3c3e22)', fotoArchivo: 'circuito-grupal-clasico.jpg',
+        gradient: 'linear-gradient(160deg,#617245,#3c3e22)', fotoArchivo: 'circuito-grupal-clasico.jpg', pagina: 'spa-grupal.html',
         bullets: ['Merienda clásica dulce y salada', 'Masaje relajante 25\'', 'Ozonoterapia 25\'', 'Jacuzzi con hidromasaje 40\'', 'Infusiones libres todo el día'],
         precioDesde: 'Desde $118.000 x persona', waLink: this.waLink('Hola! Quiero consultar por el Circuito Grupal Clásico'),
         flyer: {
@@ -589,9 +547,9 @@ class Component extends DCLogic {
         },
       },
       {
-        estacion: 'Verano', categoria: 'Spa Grupal · Premium', titulo: 'Circuito Grupal Premium', apiNombre: 'Spa Grupal Premium',
+        estacion: 'Verano', categoria: 'Spa Grupal · Premium', titulo: 'Circuito Grupal Premium',
         personas: '3 a 8 personas', duracion: '5 hs',
-        gradient: 'linear-gradient(160deg,#ef8627,#844713)', fotoArchivo: 'circuito-grupal-premium.jpg',
+        gradient: 'linear-gradient(160deg,#ef8627,#844713)', fotoArchivo: 'circuito-grupal-premium.jpg', pagina: 'spa-grupal.html',
         bullets: ['Brunch premium + picada de campo', 'Masaje descontracturante 35\'', 'Sauna individual + tina finlandesa', 'Mascarillas faciales', 'Trago por persona + brindis con champagne'],
         precioDesde: 'Desde $135.000 x persona', waLink: this.waLink('Hola! Quiero consultar por el Circuito Grupal Premium'),
         flyer: {
@@ -607,9 +565,9 @@ class Component extends DCLogic {
         },
       },
       {
-        estacion: 'Otoño', categoria: 'Spa de Parejas · Clásico', titulo: 'Circuito de Parejas Clásico', apiNombre: 'Spa de Parejas Clásico',
+        estacion: 'Otoño', categoria: 'Spa de Parejas · Clásico', titulo: 'Circuito de Parejas Clásico',
         personas: '2 personas', duracion: '4 hs',
-        gradient: 'linear-gradient(160deg,#ae8d71,#434330)', fotoArchivo: 'circuito-parejas-clasico.jpg',
+        gradient: 'linear-gradient(160deg,#ae8d71,#434330)', fotoArchivo: 'circuito-parejas-clasico.jpg', pagina: 'spa-de-parejas.html',
         bullets: ['Merienda completa dulce y salada', 'Masaje relajante 35\'', 'Sauna individual 25\'', 'Jacuzzi para dos', 'Ambientación con luces y velas'],
         precioDesde: 'Desde $148.000 c/u', waLink: this.waLink('Hola! Quiero consultar por el Circuito de Parejas Clásico'),
         flyer: {
@@ -622,9 +580,9 @@ class Component extends DCLogic {
         },
       },
       {
-        estacion: 'Invierno', categoria: 'Spa de Parejas · Premium', titulo: 'Circuito de Parejas Premium', apiNombre: 'Spa de Parejas Premium',
+        estacion: 'Invierno', categoria: 'Spa de Parejas · Premium', titulo: 'Circuito de Parejas Premium',
         personas: '2 personas', duracion: '5 hs',
-        gradient: 'linear-gradient(160deg,#265a58,#252c1a)', fotoArchivo: 'circuito-parejas-premium.jpg',
+        gradient: 'linear-gradient(160deg,#265a58,#252c1a)', fotoArchivo: 'circuito-parejas-premium.jpg', pagina: 'spa-de-parejas.html',
         bullets: ['Brunch premium completo', 'Masaje descontracturante 55-60\'', 'Sauna seco + individual', 'Tina finlandesa + mascarilla hidratante', '2 tragos + ambientación con velas'],
         precioDesde: 'Desde $160.000 c/u', waLink: this.waLink('Hola! Quiero consultar por el Circuito de Parejas Premium'),
         flyer: {
@@ -689,23 +647,18 @@ class Component extends DCLogic {
       { quote: 'Reseña próximamente — espacio reservado para comentarios reales de Clientes.', autor: 'Nombre Apellido' },
     ];
 
-    const isFlyer = this.state.cardStyle === 'flyer';
-    const btnBase = 'padding:10px 22px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;border:none;cursor:pointer;transition:background .3s ease,color .3s ease;font-family:Montserrat,sans-serif;';
-
     return {
       anio,
+      navClass: this.state.navOpen ? 'open' : '',
+      toggleNav: this.toggleNav,
+      mobileClass: this.state.mobileOpen ? 'mobile-open' : '',
+      toggleMobile: this.toggleMobile,
       waLinkGeneral: this.waLink('Hola! Quiero consultar por una experiencia en Cuatro Estaciones'),
       valores, galeria, brunchGaleria, productos, testimonios, faqsLeft, faqsRight,
-      circuitos: this.aplicarPreciosVivos(circuitos),
+      circuitos: window.CRM.aplicar(circuitos, this.state.precios),
       setRootRef: this.setRootRef,
       setHeaderRef: this.setHeaderRef,
       setHeroBgRef: this.setHeroBgRef,
-      isCard: !isFlyer,
-      isFlyer,
-      showCards: this.showCards,
-      showFlyer: this.showFlyer,
-      cardsBtnStyle: btnBase + (isFlyer ? 'background:transparent;color:#dcdcdc' : 'background:#eb5f11;color:#fdf5ed'),
-      flyerBtnStyle: btnBase + (isFlyer ? 'background:#eb5f11;color:#fdf5ed' : 'background:transparent;color:#dcdcdc'),
     };
   }
 }
