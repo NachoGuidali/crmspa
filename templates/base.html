@@ -33,7 +33,7 @@
       <div class="user-box">
         {% if request.user.is_authenticated %}
           {{ request.user.get_full_name|default:request.user.username }}
-          · <a href="{% url 'usuarios:logout' %}" style="color:inherit;text-decoration:underline;">Salir</a>
+          · <form action="{% url 'usuarios:logout' %}" method="post" style="display:inline;">{% csrf_token %}<button type="submit" style="background:none;border:none;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;">Salir</button></form>
         {% endif %}
       </div>
     </aside>
