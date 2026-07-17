@@ -507,12 +507,30 @@ class Component extends DCLogic {
 
     var self = this;
     window.CRM.fetchPrecios(function (p) { self.setState({ precios: p }); });
+
+    // Hero siempre entero: que ocupe exactamente el alto visible menos el header,
+    // en cualquier dispositivo (usa innerHeight real, así descuenta las barras del navegador).
+    var hero = document.getElementById('inicio');
+    this._ajustarHero = function () {
+      if (hero && self.headerEl) {
+        // Alto mínimo = pantalla visible menos el header → entra justo en una pantalla.
+        // Si el contenido fuera más alto (teléfono muy chico), el hero crece y no recorta nada.
+        hero.style.minHeight = (window.innerHeight - self.headerEl.offsetHeight) + 'px';
+      }
+    };
+    this._ajustarHero();
+    window.addEventListener('resize', this._ajustarHero);
+    window.addEventListener('orientationchange', this._ajustarHero);
   }
 
   componentWillUnmount() {
     if (this._io) this._io.disconnect();
     if (this._onScroll) window.removeEventListener('scroll', this._onScroll);
     if (this._onDocClick) document.removeEventListener('click', this._onDocClick);
+    if (this._ajustarHero) {
+      window.removeEventListener('resize', this._ajustarHero);
+      window.removeEventListener('orientationchange', this._ajustarHero);
+    }
   }
 
   renderVals() {
