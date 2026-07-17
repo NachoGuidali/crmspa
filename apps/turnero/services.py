@@ -22,9 +22,13 @@ def dia_habilitado(fecha):
 
 
 def es_dia_tarifa_finde(fecha):
-    """True si a esa fecha le corresponde la tarifa de fin de semana: sábado/domingo, o un
-    feriado marcado como "abre con tarifa de fin de semana"."""
-    if fecha.weekday() >= 5:  # sábado=5, domingo=6
+    """True si a esa fecha le corresponde la tarifa de fin de semana: los días configurados
+    como 'tarifa finde' (por defecto sáb/dom; en este spa vie-sáb-dom), o un feriado marcado
+    como "abre con tarifa de fin de semana"."""
+    from apps.configuracion.models import ConfiguracionNegocio
+
+    dias = ConfiguracionNegocio.get_solo().dias_tarifa_finde or [5, 6]
+    if fecha.weekday() in dias:
         return True
     finde = Feriado.objects.filter(modo=Feriado.Modo.PRECIO_FINDE)
     if finde.filter(recurrente_anual=False, fecha=fecha).exists():

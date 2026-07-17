@@ -136,11 +136,13 @@ class RespuestaRapidaForm(forms.ModelForm):
 
 class ConfiguracionNegocioForm(forms.ModelForm):
     dias_laborables = DiasSemanaField(label='Días laborables')
+    dias_tarifa_finde = DiasSemanaField(label='Días con tarifa de fin de semana', required=False)
 
     class Meta:
         model = ConfiguracionNegocio
         fields = [
-            'nombre_negocio', 'dias_laborables', 'horario_atencion_desde', 'horario_atencion_hasta',
+            'nombre_negocio', 'dias_laborables', 'dias_tarifa_finde',
+            'horario_atencion_desde', 'horario_atencion_hasta',
             'reserva_exclusiva_por_turno',
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_cancelacion_con_reembolso',
         ]

@@ -3,15 +3,18 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: crmspa
-      POSTGRES_USER: crmspa
-      POSTGRES_PASSWORD: crmspa
+      POSTGRES_DB: ${DB_NAME:-crmspa}
+      POSTGRES_USER: ${DB_USER:-crmspa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Definí DB_PASSWORD en el .env}
+    # Puerto publicado SOLO para desarrollo local (conectarse desde el host).
+    # En el VPS conviene comentarlo: los contenedores se hablan por la red interna
+    # y así la base no queda expuesta a internet.
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crmspa"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-crmspa}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,8 +23,9 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    # Igual que la base: solo accesible desde el propio servidor.
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
     volumes:
       - redis_data:/data
 
@@ -42,7 +46,9 @@ services:
       - media_data:/app/media
       - static_data:/app/staticfiles
     ports:
-      - "8003:8000"
+      # Solo accesible desde el propio servidor: nginx (en el host) proxya crm.spacuatroestaciones.com
+      # a este puerto. Nunca exponer gunicorn directo a internet.
+      - "127.0.0.1:8003:8000"
     depends_on:
       db:
         condition: service_healthy

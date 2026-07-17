@@ -1,0 +1,37 @@
+# Entornos virtuales locales (no deben entrar a la imagen)
+venv/
+.venv/
+env/
+
+# Secretos: la config se inyecta con env_file / variables de entorno, NUNCA horneada en la imagen
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Git y editores
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Datos locales / artefactos
+db.sqlite3
+media/
+staticfiles/
+logs/
+*.log
+
+# Docs y notas (no hacen falta en runtime)
+*.md
+!README.md
+docs/
+
+# La web publica la sirve nginx (host), no el contenedor Django
+web/

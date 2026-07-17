@@ -82,8 +82,56 @@ cp .env.example .env        # completar con valores reales de producción
 docker compose up -d --build
 ```
 
-El contenedor `web` corre `migrate` + `collectstatic` + gunicorn automáticamente. Poné un
-**nginx** adelante para terminar TLS (el `SECURE_PROXY_SSL_HEADER` ya está configurado).
+El contenedor `web` corre `migrate` + `collectstatic` + gunicorn automáticamente, escuchando
+solo en `127.0.0.1:8003`. El nginx del host (paso 4) le pone TLS adelante.
+
+---
+
+## 3b. Dos dominios: web pública + CRM
+
+La arquitectura es **una sola base de datos**, dos caras:
+
+| Dominio | Qué sirve | Cómo |
+|---|---|---|
+| **spacuatroestaciones.com** | Web pública (marketing) | Sitio **estático** (`web/`) servido por nginx. Las reservas van por WhatsApp. |
+| **crm.spacuatroestaciones.com** | CRM | Django/gunicorn dockerizado (127.0.0.1:8003), proxeado por nginx. |
+
+Los **precios que muestra la web salen del CRM**: la web puede leerlos del endpoint público
+`GET /api/v1/publico/circuitos/` (ver más abajo). Cambiás un precio en el CRM → la web lo toma.
+
+### Pasos en el VPS
+
+```bash
+# 1. DNS: dos registros A a la IP del VPS
+#    spacuatroestaciones.com        → IP
+#    www.spacuatroestaciones.com    → IP
+#    crm.spacuatroestaciones.com    → IP
+
+# 2. Subir el proyecto y la carpeta web/ al servidor, y levantar el CRM
+docker compose up -d --build
+
+# 3. nginx del host + certbot (SSL)
+sudo apt install -y nginx certbot python3-certbot-nginx
+sudo cp deploy/nginx-spacuatroestaciones.conf /etc/nginx/sites-available/spacuatroestaciones
+sudo ln -s /etc/nginx/sites-available/spacuatroestaciones /etc/nginx/sites-enabled/
+#    (ajustar en el archivo la ruta 'root' a donde dejaste la carpeta web/)
+sudo nginx -t && sudo systemctl reload nginx
+
+# 4. Certificados SSL (certbot edita el nginx solo y agrega los bloques 443 + redirección)
+sudo certbot --nginx -d spacuatroestaciones.com -d www.spacuatroestaciones.com -d crm.spacuatroestaciones.com
+```
+
+En el `.env` de producción:
+```
+ALLOWED_HOSTS=crm.spacuatroestaciones.com
+CSRF_TRUSTED_ORIGINS=https://crm.spacuatroestaciones.com
+CORS_ALLOWED_ORIGINS=https://spacuatroestaciones.com,https://www.spacuatroestaciones.com
+```
+
+> **Conectar la web a los precios del CRM (paso final, cuando la web esté terminada):** hoy
+> `web/index.html` tiene los precios escritos en el JS. Para que se actualicen solos desde el
+> CRM, hacé que esa sección lea de `https://crm.spacuatroestaciones.com/api/v1/publico/circuitos/`
+> (devuelve los tramos y precios en JSON). El endpoint ya está listo y con CORS habilitado.
 
 ---
 
@@ -117,10 +165,15 @@ El contenedor `web` corre `migrate` + `collectstatic` + gunicorn automáticament
 
 - [ ] `SECRET_KEY` random y secreto (no `django-insecure`).
 - [ ] `DEBUG=False`.
-- [ ] `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` con el dominio real.
-- [ ] TLS (nginx) delante del contenedor web.
+- [ ] `DB_PASSWORD` fuerte en el `.env` (ya no es el default `crmspa`).
+- [ ] `ALLOWED_HOSTS=crm.spacuatroestaciones.com` y `CSRF_TRUSTED_ORIGINS` con https.
+- [ ] `CORS_ALLOWED_ORIGINS` con el dominio de la web pública.
+- [ ] DNS: los 3 registros A apuntando al VPS.
+- [ ] nginx del host + certbot (SSL en los dos dominios).
+- [ ] Carpeta `web/` en el servidor y `root` de nginx apuntando a ella.
 - [ ] `celery` y `celery-beat` corriendo (verificar en `/salud/`).
 - [ ] Webhook token de Evolution configurado.
 - [ ] API Key creada para n8n.
 - [ ] Usuario dueño creado; recepcionistas con `rol=recepcion`.
+- [ ] Backups del volumen `postgres_data`.
 - [ ] Backups del volumen `postgres_data`.

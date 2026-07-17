@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet data-dc-atomics="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&amp;family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&amp;family=Playfair+Display:ital@1&amp;display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#fdf5ed;font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:#eb5f11;text-decoration:none}
+    a:hover{color:#ef8627}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes kenburns{from{transform:scale(1.06) translateY(0)}to{transform:scale(1.16) translateY(-2%)}}
+    @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+    html{scroll-behavior:smooth}
+    ::selection{background:#eb5f11;color:#fdf5ed}
+  </style>
+</helmet>
+
+<div ref="{{ setRootRef }}" style="width:100%;overflow-x:hidden">
+
+<!-- HEADER -->
+<header ref="{{ setHeaderRef }}" style="position:sticky;top:0;z-index:100;background:#252c1a;transition:box-shadow .35s ease">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:9px clamp(20px,4vw,56px);border-bottom:1px solid rgba(253,245,237,.08)">
+    <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
+      <svg width="11" height="14" viewBox="0 0 24 32" fill="none"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="#8d9f97"></path><circle cx="12" cy="12" r="5" fill="#252c1a"></circle></svg>
+      Virrey del Pino, La Matanza, Buenos Aires
+    </span>
+    <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
+      <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 0a16 16 0 00-13.86 24L0 32l8.2-2.15A16 16 0 1016 0z" fill="#8d9f97"></path></svg>
+      +54 11 5156 7091
+    </span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(20px,4vw,56px)">
+    <a href="#inicio" style="display:flex;align-items:center;gap:16px">
+      <a href="#inicio" style="display:flex;align-items:center;gap:16px">
+  <img
+    src="logo.png"
+    alt="Estancia Cuatro Estaciones"
+    style="height:60px;width:auto;display:block;flex:none"
+  >
+
+  
+
+  
+      <span style="width:1px;height:34px;background:rgba(253,245,237,.25)"></span>
+      <span style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-family:'Bodoni Moda',serif;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
+        <span style="font-size:9.5px;letter-spacing:.32em;color:#ae8d71;white-space:nowrap">Spa de Campo</span>
+      </span>
+    </a>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:16px clamp(18px,2.4vw,34px);flex:1 1 auto">
+      <nav style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:14px clamp(14px,2vw,28px)">
+        <a href="#inicio" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#ef8627;padding-bottom:4px;border-bottom:1px solid #ef8627;white-space:nowrap">Inicio</a>
+        <a href="#nosotros" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Nosotros</a>
+        <a href="#circuitos" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Circuitos</a>
+        <a href="#galeria" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Galería</a>
+        <a href="#contacto" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap" style-hover="color:#ef8627">Contacto</a>
+      </nav>
+      <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:13px 34px;border-radius:26px;background:#eb5f11;color:#fdf5ed;font-family:'Playfair Display',serif;font-style:italic;font-size:18px;transition:background .3s ease;white-space:nowrap;flex:none" style-hover="background:#ef8627">Reservar</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="inicio" data-screen-label="Hero" style="position:relative;min-height:94vh;display:flex;align-items:flex-end"> <div style="position: absolute; inset: 0; overflow: hidden"> <div ref="{{ setHeroBgRef }}" style="position:absolute;inset:-6% -6% 0 -6%;will-change:transform"> <img src="fotos/hero-jacuzzi-noche.png" alt="Jacuzzi al aire libre de noche" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"> <div style="position:absolute;inset:0;background:linear-gradient(200deg, rgba(132,71,19,.35) 0%, rgba(60,62,34,.4) 55%, rgba(37,44,26,.55) 100%)"></div> </div> </div> <div style="position:relative;z-index:2;padding:56px clamp(20px,4vw,56px) clamp(56px,8vw,96px);max-width:760px"> <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#ef8627;margin-bottom:18px">Spa de Campo · Virrey del Pino, La Matanza</div> <h1 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(38px,7vw,72px);line-height:1.04;color:#fdf5ed;margin:0 0 20px">Un refugio para desconectar del mundo<br>y reconectar con vos.</h1> <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(15px,2vw,19px);color:#fee8ca;max-width:520px;line-height:1.6;margin:0 0 32px">Naturaleza, gastronomía y bienestar en un rincón de campo pensado para compartir en familia, en pareja o entre amigas.</p> <div style="display:flex;flex-wrap:wrap;gap:14px"> <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:16px 30px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:#eb5f11;color:#fdf5ed;transition:transform .3s ease,background .3s ease" style-hover="background:#ef8627;transform:translateY(-3px)">Reservá por WhatsApp</a> <a href="#circuitos" style="display:inline-flex;align-items:center;justify-content:center;padding:16px 30px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;border:1px solid rgba(253,245,237,.5);color:#fdf5ed;transition:transform .3s ease,background .3s ease,border-color .3s ease" style-hover="border-color:#fdf5ed;background:rgba(253,245,237,.08);transform:translateY(-3px)">Ver circuitos</a> </div> </div> </section>
+
+<!-- NOSOTROS -->
+<section id="nosotros" data-screen-label="Nosotros" style="background:#fdf5ed;padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px)">
+  <div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(280px,1.3fr);gap:clamp(32px,6vw,72px);max-width:1240px;margin:0 auto;align-items:start">
+    <div data-reveal="true" style="opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
+      <div style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#844713;margin-bottom:14px">¿Quiénes somos?</div>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(28px,4vw,44px);color:#252c1a;line-height:1.12;margin:0 0 22px">Bienvenidos al Spa de Campo Cuatro Estaciones.</h2>
+      <p style="font-size:14.5px;line-height:1.8;color:#434330;margin:0 0 16px">Somos un Spa boutique ubicado en el campo, un ambiente rústico, natural y único, rodeado de tranquilidad y naturaleza.</p>
+      <p style="font-size:14.5px;line-height:1.8;color:#434330;margin:0">Nuestra atención es 100% privada y personalizada, en donde todas nuestras experiencias son exclusivas y el espacio queda cerrado únicamente para vos y tu pareja o tu grupo de amigas, sin compartir instalaciones con otros visitantes. Por este motivo los cupos son limitados y las reservas se realizan con anticipación.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px">
+      <sc-for list="{{ valores }}" as="v" hint-placeholder-count="6">
+        <div data-reveal="true" style="background:#f4efed;padding:26px 20px;border-radius:2px;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
+          <div style="width:34px;height:34px;border-radius:50%;background:#265a58;color:#fdf5ed;display:flex;align-items:center;justify-content:center;font-family:'Bodoni Moda',serif;font-size:15px;margin-bottom:14px">{{ v.inicial }}</div>
+          <div style="font-size:13px;font-weight:600;letter-spacing:.03em;color:#252c1a;margin-bottom:8px">{{ v.nombre }}</div>
+          <div style="font-size:12.5px;line-height:1.6;color:#617245">{{ v.desc }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- BANNER INTERMEDIO -->
+<section data-screen-label="Banner" style="background:#3c3e22;padding:clamp(28px,4vw,44px) clamp(20px,6vw,80px)">
+  <div style="display:flex;gap:14px;height:clamp(180px,22vw,300px);max-width:1440px;margin:0 auto">
+    <div style="flex:1;height:100%;min-width:0">
+      <img src="fotos/banner-1-jacuzzi-interior.png" alt="Jacuzzi interior" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:2px">
+    </div>
+    <div style="flex:1;height:100%;min-width:0">
+      <img src="fotos/banner-2-sendero-arbolado.jpg" alt="Sendero arbolado" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:2px">
+    </div>
+    <div style="flex:1;height:100%;min-width:0">
+      <img src="fotos/banner-3-sauna-adentro.jpg" alt="Sauna, adentro" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:2px">
+    </div>
+    <div style="flex:1;height:100%;min-width:0">
+      <img src="fotos/banner-4-pareja-tina-exterior.jpg" alt="Pareja en tina exterior" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:2px">
+    </div>
+    <div style="flex:1;height:100%;min-width:0">
+      <img src="fotos/banner-5-amigas-batas.jpg" alt="Grupo de amigas con batas" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:2px">
+    </div>
+  </div>
+</section>
+
+<!-- BANNER CITA -->
+<section data-screen-label="Cita" style="position:relative;height:clamp(260px,32vw,400px);display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden">
+  <img src="fotos/banner-cita-jacuzzi-madera.jpg" alt="Jacuzzi de madera al atardecer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(60,38,14,.62), rgba(37,44,26,.7)); left: 0px; top: -19px"></div>
+  <div style="position: relative; z-index: 2; padding: 0 24px; max-width: 760px; width: 779px; height: 297px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">
+      <span style="flex:1;height:1px;background:rgba(253,245,237,.3)"></span>
+      <span style="font-size:10.5px;letter-spacing:.25em;text-transform:uppercase;color:#fee8ca;white-space:nowrap">Spa de Campo · Virrey del Pino</span>
+      <span style="flex:1;height:1px;background:rgba(253,245,237,.3)"></span>
+    </div>
+    <h2 style="font-family: 'Bodoni Moda',serif; font-weight: 400; font-size: clamp(28px,4.5vw,46px); line-height: 1.2; color: #fdf5ed; margin: 0 0 18px; width: 763px; height: 119px">Tu próxima experiencia<br>de bienestar comienza <span style="color:#ef8627">acá.</span></h2>
+    <p style="font-size:13.5px;line-height:1.7;color:#f4efed;opacity:.85;margin:0">Masajes, jacuzzi, sauna, brunch de campo y privacidad, todo en una experiencia creada para disfrutar sin apuros.</p>
+  </div>
+</section>
+
+<!-- CIRCUITOS -->
+<section id="circuitos" data-screen-label="Circuitos" style="background:#252c1a;padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px)">
+  <div style="max-width:1240px;margin:0 auto">
+    <div data-reveal="true" style="text-align:center;max-width:640px;margin:0 auto 56px;opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px">
+        <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
+        <span style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#ef8627">Spa de Parejas · Spa Grupales</span>
+        <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
+      </div>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(30px,4.5vw,48px);color:#fdf5ed;line-height:1.1;margin:0 0 16px">Experiencias</h2>
+      <p style="font-size:13.5px;line-height:1.7;color:#dcdcdc;margin:0 0 22px">Viví una experiencia de bienestar en el campo junto con tu pareja o tu grupo de amigas — estas son nuestras propuestas exclusivas.</p>
+      <div style="display:inline-flex;gap:6px;background:rgba(253,245,237,.1);padding:6px;border-radius:22px">
+        <button onClick="{{ showCards }}" style="{{ cardsBtnStyle }}">Tarjetas</button>
+        <button onClick="{{ showFlyer }}" style="{{ flyerBtnStyle }}">Estilo flyer</button>
+      </div>
+    </div>
+
+    <sc-if value="{{ isCard }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px">
+      <sc-for list="{{ circuitos }}" as="c" hint-placeholder-count="4">
+        <div data-reveal="true" style="background:#fdf5ed;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 24px 48px rgba(0,0,0,.4);translate:0 -8px">
+          <div style="position:relative;height:170px;overflow:hidden">
+            <img src="fotos/{{ c.fotoArchivo }}" alt="{{ c.titulo }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.45) 100%)"></div>
+            <span style="position:absolute;bottom:14px;left:16px;font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#fee8ed">{{ c.estacion }}</span>
+          </div>
+          <div style="padding:26px 24px 28px;display:flex;flex-direction:column;flex:1">
+            <div style="font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:#844713;margin-bottom:8px">{{ c.categoria }}</div>
+            <div style="font-family:'Bodoni Moda',serif;font-size:24px;color:#252c1a;margin-bottom:10px">{{ c.titulo }}</div>
+            <div style="display:flex;gap:12px;font-size:11.5px;color:#617245;margin-bottom:16px">
+              <span>{{ c.personas }}</span><span>·</span><span>{{ c.duracion }}</span>
+            </div>
+            <ul style="margin:0 0 20px;padding:0;list-style:none;font-size:12.5px;line-height:2;color:#434330;flex:1">
+              <sc-for list="{{ c.bullets }}" as="b" hint-placeholder-count="5">
+                <li style="display:flex;gap:8px"><span style="color:#eb5f11">—</span>{{ b }}</li>
+              </sc-for>
+            </ul>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #dcdcdc;padding-top:16px;margin-top:auto">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8d9f97">{{ c.precioDesde }}</span>
+              <a href="{{ c.waLink }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:#252c1a;color:#fdf5ed" style-hover="background:#617245">Consultar</a>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isFlyer }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:26px;max-width:820px;margin:0 auto">
+      <sc-for list="{{ circuitos }}" as="c" hint-placeholder-count="4">
+        <div style="background:{{ c.flyer.bg }};color:{{ c.flyer.text }};border:1px solid {{ c.flyer.accent }};border-radius:16px;padding:32px 26px 26px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+          <svg width="30" height="34" viewBox="0 0 46 52"><circle cx="23" cy="14" r="13" fill="{{ c.flyer.accent }}"></circle><rect x="20" y="26" width="6" height="22" fill="{{ c.flyer.accent }}" opacity="0.55"></rect></svg>
+          <div>
+            <div style="font-family:'Bodoni Moda',serif;font-weight:700;font-size:25px;line-height:1;color:{{ c.flyer.text }}">{{ c.flyer.headline }}</div>
+            <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;margin-top:4px;color:{{ c.flyer.accent }}">{{ c.flyer.tierNombre }}</div>
+          </div>
+          <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:{{ c.flyer.text }};opacity:.75">La experiencia tiene una duración de {{ c.duracion }}</div>
+          <p style="font-size:11.5px;line-height:1.6;margin:0;max-width:260px;opacity:.9">{{ c.flyer.intro }}</p>
+          <div style="display:flex;align-items:center;gap:10px;width:100%;margin:2px 0">
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+            <span style="font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:{{ c.flyer.accent }};white-space:nowrap">{{ c.personas }}</span>
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <span style="font-family:'Bodoni Moda',serif;font-size:13px;color:{{ c.flyer.accent }};white-space:nowrap">¿Qué incluye?</span>
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+          </div>
+          <div style="width:100%;box-sizing:border-box">
+            <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.85;text-align:left">
+              <sc-for list="{{ c.bullets }}" as="b" hint-placeholder-count="5">
+                <li>— {{ b }}</li>
+              </sc-for>
+            </ul>
+          </div>
+
+          <sc-if value="{{ c.flyer.isTiered }}" hint-placeholder-val="{{ true }}">
+            <div style="width:100%;font-size:11px">
+              <div style="letter-spacing:.15em;text-transform:uppercase;font-size:9.5px;color:{{ c.flyer.accent2 }};margin-bottom:8px">Valor x persona</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 8px;font-size:11px;align-items:center">
+                <span></span><span style="font-weight:600">Lun-Jue</span><span style="font-weight:600">Vie/Sáb/Dom</span>
+                <sc-for list="{{ c.flyer.tiers }}" as="tier" hint-placeholder-count="3">
+                  <span style="opacity:.85">{{ tier.rango }}</span>
+                  <span style="font-weight:600">{{ tier.lunJue }}</span>
+                  <span style="font-weight:600">{{ tier.vieSabDom }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.flyer.isFlat }}" hint-placeholder-val="{{ false }}">
+            <div style="width:100%;font-size:11px">
+              <div style="letter-spacing:.15em;text-transform:uppercase;font-size:9.5px;color:{{ c.flyer.accent2 }};margin-bottom:8px">Valor por persona</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;font-size:12px;font-weight:600">
+                <span>Lun a Jue</span><span>{{ c.flyer.flatLunJue }} c/u</span>
+                <span>Vie, Sáb y Dom</span><span>{{ c.flyer.flatVieSabDom }} c/u</span>
+              </div>
+              <sc-if value="{{ c.flyer.opcionales }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:left;margin-top:14px">
+                  <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ c.flyer.accent2 }};margin-bottom:6px">Pueden adicionar</div>
+                  <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.8">
+                    <sc-for list="{{ c.flyer.opcionales }}" as="op" hint-placeholder-count="3">
+                      <li>— {{ op }}</li>
+                    </sc-for>
+                  </ul>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <div style="font-size:10px;opacity:.75;line-height:1.5">{{ c.flyer.extra }}</div>
+
+          <div style="display:flex;align-items:center;gap:10px;width:100%;margin-top:4px">
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+            <span style="font-family:'Playfair Display',serif;font-style:italic;font-size:11.5px;color:{{ c.flyer.accent }};white-space:nowrap">Exp. {{ c.flyer.tierNombre }}</span>
+            <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
+          </div>
+
+          <a href="{{ c.waLink }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:{{ c.flyer.accent }};color:#fdf5ed;margin-top:6px">Consultar</a>
+        </div>
+      </sc-for>
+    </div>
+    <div style="text-align:center;margin-top:40px">
+      <a href="{{ waLinkGeneral }}" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; padding: 18px 56px; border-radius: 999px; background: #ef8627; color: #252c1a; font-family: 'Playfair Display',serif; font-style: italic; font-size: 35px; transition: background .3s ease; line-height: 1.7; font-weight: 400; width: 151px; height: 32px" style-hover="background:#eb5f11">Reservar</a>
+    </div>
+    </sc-if>
+  </div>
+</section>
+
+<!-- GALERIA -->
+<section id="galeria" data-screen-label="Galería" style="background:#fdf5ed;padding:clamp(64px,10vw,120px) clamp(20px,6vw,80px)">
+  <div style="max-width:1240px;margin:0 auto">
+    <div data-reveal="true" style="text-align:center;max-width:600px;margin:0 auto 44px;opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
+      <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#844713;margin-bottom:14px">Galería</div>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(26px,4vw,40px);color:#252c1a;margin:0">Momentos entre el campo y el agua caliente.</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;grid-auto-flow:dense;gap:14px">
+      <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="12">
+        <div data-reveal="true" style="grid-column:span {{ g.colSpan }};grid-row:span {{ g.rowSpan }};position:relative;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
+          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        </div>
+      </sc-for>
+    </div>
+    
+  </div>
+</section>
+
+<!-- BANNER BRUNCH -->
+<section data-screen-label="Banner Brunch" style="position:relative;height:clamp(300px,36vw,440px);display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden">
+  <img src="fotos/banner-brunch.png" alt="Mesa de brunch de campo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(37,44,26,.6), rgba(60,38,14,.72))"></div>
+  <div style="position:relative;z-index:2;padding:0 24px;max-width:760px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">
+      <span style="flex:1;height:1px;background:rgba(253,245,237,.3)"></span>
+      <span style="font-size:10.5px;letter-spacing:.25em;text-transform:uppercase;color:#fee8ca;white-space:nowrap">Gastronomia · Infusiones Libres</span>
+      <span style="flex:1;height:1px;background:rgba(253,245,237,.3)"></span>
+    </div>
+    <h2 style="font-family:'Playfair Display',serif;font-style:italic;font-weight:400;font-size:clamp(46px,8vw,86px);line-height:1;color:#fdf5ed;margin:0 0 18px">Brunch de Campo</h2>
+    <p style="font-size:13.5px;line-height:1.7;color:#f4efed;opacity:.85;margin:0">Brunch de campo con opciones dulces y saladas e infusiones libres durante toda la estadía. Tenemos opciones vegetarianas y brunch sin TACC.</p>
+  </div>
+</section>
+
+<!-- GALERIA BRUNCH -->
+<section data-screen-label="Galería Brunch" style="background:#fdf5ed;padding:clamp(40px,6vw,72px) clamp(20px,6vw,80px)">
+  <div style="max-width:1240px;margin:0 auto">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;grid-auto-flow:dense;gap:14px">
+      <sc-for list="{{ brunchGaleria }}" as="g" hint-placeholder-count="6">
+        <div data-reveal="true" style="grid-column:span {{ g.colSpan }};grid-row:span {{ g.rowSpan }};position:relative;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
+          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- DETALLES / PACKAGING -->
+<section data-screen-label="Detalles" style="background:#f4efed;padding:clamp(56px,9vw,100px) clamp(20px,6vw,80px)">
+  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(300px,1.4fr);gap:clamp(32px,6vw,64px);align-items:center">
+    <div data-reveal="true" style="opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
+      <div style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#265a58;margin-bottom:14px">Pasión por los detalles</div>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(24px,3.5vw,36px);color:#252c1a;line-height:1.2;margin:0 0 16px">Spa Cuatro Estaciones en tu casa.</h2>
+      <p style="font-size:14px;line-height:1.75;color:#434330;margin:0">Piezas elaboradas especialmente por nosotros: bálsamos y jabones artesanales pensados para prolongar la experiencia.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px">
+      <sc-for list="{{ productos }}" as="p" hint-placeholder-count="2">
+        <div data-reveal="true" style="background:#fdf5ed;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
+          <div style="height:180px;position:relative;overflow:hidden">
+            <img src="fotos/{{ p.fotoArchivo }}" alt="{{ p.nombre }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+          </div>
+          <div style="padding:20px 20px 24px">
+            <div style="font-family:'Bodoni Moda',serif;font-size:18px;color:#252c1a;margin-bottom:6px">{{ p.nombre }}</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#617245">{{ p.desc }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- PREGUNTAS FRECUENTES -->
+<section data-screen-label="Preguntas Frecuentes" style="background:#fdf5ed;padding:clamp(56px,9vw,100px) clamp(20px,6vw,80px)">
+  <div style="max-width:900px;margin:0 auto">
+    <div data-reveal="true" style="text-align:center;margin:0 auto 48px;opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <span style="flex:1;height:1px;background:#dcdcdc"></span>
+        <span style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#844713;white-space:nowrap">Preguntas frecuentes · Información práctica</span>
+        <span style="flex:1;height:1px;background:#dcdcdc"></span>
+      </div>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(26px,4vw,38px);color:#252c1a;margin:0">Todo lo que necesitás <span style="font-family:'Playfair Display',serif;font-style:italic;color:#ef8627">saber</span></h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 48px">
+      <div>
+        <sc-for list="{{ faqsLeft }}" as="f" hint-placeholder-count="3">
+          <div data-reveal="true" style="border-bottom:1px solid #dcdcdc;opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease">
+            <button onClick="{{ f.toggle }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:Montserrat,sans-serif">
+              <span style="font-size:13.5px;color:#252c1a">{{ f.pregunta }}</span>
+              <span style="flex:none;font-size:15px;color:#ef8627;line-height:1">{{ f.simbolo }}</span>
+            </button>
+            <div style="display:grid;grid-template-rows:{{ f.rows }};transition:grid-template-rows .35s ease">
+              <div style="overflow:hidden;min-height:0">
+                <p style="margin:0;padding:0 0 18px;font-size:12.5px;line-height:1.7;color:#617245">{{ f.respuesta }}</p>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div>
+        <sc-for list="{{ faqsRight }}" as="f" hint-placeholder-count="2">
+          <div data-reveal="true" style="border-bottom:1px solid #dcdcdc;opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease">
+            <button onClick="{{ f.toggle }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:Montserrat,sans-serif">
+              <span style="font-size:13.5px;color:#252c1a">{{ f.pregunta }}</span>
+              <span style="flex:none;font-size:15px;color:#ef8627;line-height:1">{{ f.simbolo }}</span>
+            </button>
+            <div style="display:grid;grid-template-rows:{{ f.rows }};transition:grid-template-rows .35s ease">
+              <div style="overflow:hidden;min-height:0">
+                <p style="margin:0;padding:0 0 18px;font-size:12.5px;line-height:1.7;color:#617245">{{ f.respuesta }}</p>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div data-reveal="true" style="border-bottom:1px solid #dcdcdc;opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease">
+          <a href="{{ waLinkGeneral }}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0">
+            <span style="font-size:13.5px;color:#252c1a">¿Tenés otra consulta?</span>
+            <span style="flex:none;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#ef8627;white-space:nowrap">Escribinos →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:14px;margin-top:12px">
+      <span style="flex:1;height:1px;background:#dcdcdc"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:#ef8627"></span>
+      <span style="flex:1;height:1px;background:#dcdcdc"></span>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIOS -->
+<section data-screen-label="Testimonios" style="background:#3c3e22;padding:clamp(56px,9vw,100px) clamp(20px,6vw,80px)">
+  <div style="max-width:1100px;margin:0 auto;text-align:center">
+    <div data-reveal="true" style="opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease;font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#ef8627;margin-bottom:14px">Lo que dicen nuestros Clientes</div>
+    <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(26px,4vw,38px);color:#fdf5ed;margin:0 0 44px">Experiencias reales, próximamente aquí.</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;text-align:left">
+      <sc-for list="{{ testimonios }}" as="t" hint-placeholder-count="3">
+        <div data-reveal="true" style="background:rgba(253,245,237,.06);border:1px solid rgba(253,245,237,.12);border-radius:2px;padding:28px 24px;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
+          <div style="color:#ef8627;font-size:13px;letter-spacing:.2em;margin-bottom:14px">★★★★★</div>
+          <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:14.5px;line-height:1.7;color:#fee8ca;margin:0 0 18px">{{ t.quote }}</p>
+          <div style="font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#8d9f97">{{ t.autor }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER / CONTACTO -->
+<footer id="contacto" data-screen-label="Contacto" style="background:#252c1a;padding:clamp(56px,8vw,88px) clamp(20px,6vw,80px) 32px">
+  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:44px;padding-bottom:44px;border-bottom:1px solid rgba(253,245,237,.1)">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <svg width="26" height="30" viewBox="0 0 46 52" style="flex:none"><circle cx="23" cy="14" r="13" fill="#eb5f11"></circle><circle cx="14" cy="20" r="9" fill="#617245"></circle><circle cx="32" cy="20" r="9" fill="#8d9f97"></circle><rect x="20" y="26" width="6" height="22" fill="#bd8e62"></rect></svg>
+        <span style="font-family:'Bodoni Moda',serif;font-size:16px;color:#fdf5ed">Estancia Cuatro Estaciones</span>
+      </div>
+      <p style="font-size:12.5px;line-height:1.8;color:#dcdcdc;margin:0;max-width:280px">Spa de campo familiar en el corazón de Virrey del Pino, Zona Oeste — naturaleza, relajación y gastronomía en un mismo lugar.</p>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Visitanos</div>
+      <div style="font-size:13px;line-height:1.9;color:#fdf5ed">Virrey del Pino, La Matanza<br>Buenos Aires, Argentina</div>
+      <div style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#8d9f97;margin-top:10px">MAPA — próximamente</div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Reservas</div>
+      <a href="{{ waLinkGeneral }}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:13px 22px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:#eb5f11;color:#fdf5ed;margin-bottom:14px" style-hover="background:#ef8627">Escribinos por WhatsApp</a>
+      <div style="font-size:12.5px;color:#dcdcdc">Consultá días y horarios disponibles</div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Seguinos</div>
+      <a href="https://www.instagram.com/_.spacuatroestaciones._/" target="_blank" style="font-size:13px;color:#fdf5ed" style-hover="color:#ef8627">@_.spacuatroestaciones._</a>
+    </div>
+  </div>
+  <div style="max-width:1240px;margin:0 auto;padding-top:24px;font-size:11px;color:#8d9f97;text-align:center">© {{ anio }} Estancia Cuatro Estaciones — Spa de Campo</div>
+</footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  waLink(text) {
+    return 'https://wa.me/5491100000000?text=' + encodeURIComponent(text);
+  }
+
+  // URL del CRM que sirve los precios en vivo. Cambiando un precio en el CRM, la web lo toma.
+  preciosApi = 'https://crm.spacuatroestaciones.com/api/v1/publico/circuitos/';
+
+  fmtMoney(n) {
+    if (n === null || n === undefined || isNaN(n)) return '';
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  }
+
+  // Sobreescribe los precios escritos con los que devuelve el CRM (si respondió).
+  aplicarPreciosVivos(circuitos) {
+    var precios = this.state.precios;
+    if (!precios) return circuitos;
+    var self = this;
+    var porNombre = {};
+    precios.forEach(function (p) { porNombre[p.nombre] = p; });
+
+    return circuitos.map(function (c) {
+      var api = porNombre[c.apiNombre];
+      if (!api) return c;
+      var flyer = Object.assign({}, c.flyer);
+      var nuevo = Object.assign({}, c);
+
+      if (api.por_persona && api.tramos && api.tramos.length) {
+        flyer.tiers = api.tramos.map(function (t) {
+          return {
+            rango: t.desde + 'p - ' + t.hasta + 'p',
+            lunJue: self.fmtMoney(t.precio_persona_semana),
+            vieSabDom: self.fmtMoney(t.precio_persona_finde),
+          };
+        });
+        var top = api.tramos[api.tramos.length - 1];
+        if (api.precio_persona_adicional_semana) {
+          flyer.extra = 'Pasados los ' + top.hasta + ' personas se cobra ' +
+            self.fmtMoney(api.precio_persona_adicional_semana) + ' extra x persona.';
+        }
+        var desde = Math.min.apply(null, api.tramos.map(function (t) { return t.precio_persona_semana; }));
+        nuevo.precioDesde = 'Desde ' + self.fmtMoney(desde) + ' x persona';
+      } else if (!api.por_persona) {
+        var cap = api.capacidad_maxima || 2;
+        flyer.flatLunJue = self.fmtMoney(api.precio_total_semana / cap);
+        flyer.flatVieSabDom = self.fmtMoney(api.precio_total_finde / cap);
+        flyer.flatLunJue2p = self.fmtMoney(api.precio_total_semana);
+        flyer.flatVieSabDom2p = self.fmtMoney(api.precio_total_finde);
+        nuevo.precioDesde = 'Desde ' + self.fmtMoney(api.precio_total_semana / cap) + ' c/u';
+      }
+      nuevo.flyer = flyer;
+      return nuevo;
+    });
+  }
+
+  state = { cardStyle: 'flyer', openFaq: 0, precios: null };
+  showCards = () => this.setState({ cardStyle: 'card' });
+  showFlyer = () => this.setState({ cardStyle: 'flyer' });
+  toggleFaq(i) {
+    this.setState((s) => ({ openFaq: s.openFaq === i ? null : i }));
+  }
+
+  setRootRef = (el) => { this.rootEl = el; };
+  setHeaderRef = (el) => { this.headerEl = el; };
+  setHeroBgRef = (el) => { this.heroBgEl = el; };
+
+  componentDidMount() {
+    const root = this.rootEl;
+    if (!root) return;
+
+    const revealEls = root.querySelectorAll('[data-reveal]');
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const delay = Number(el.dataset.revealDelay || 0);
+        setTimeout(() => {
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }, delay);
+        this._io.unobserve(el);
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+
+    let groupStart = 0;
+    let lastTop = null;
+    revealEls.forEach((el) => {
+      const top = el.getBoundingClientRect().top;
+      if (lastTop !== null && Math.abs(top - lastTop) > 40) groupStart = 0;
+      el.dataset.revealDelay = String(Math.min(groupStart, 5) * 90);
+      groupStart += 1;
+      lastTop = top;
+      this._io.observe(el);
+    });
+
+    this._onScroll = () => {
+      const y = window.scrollY;
+      if (this.headerEl) {
+        this.headerEl.style.boxShadow = y > 40 ? '0 8px 24px rgba(0,0,0,.28)' : 'none';
+        this.headerEl.style.padding = y > 40 ? '10px clamp(20px,4vw,56px)' : '16px clamp(20px,4vw,56px)';
+      }
+      if (this.heroBgEl) {
+        this.heroBgEl.style.transform = `translateY(${Math.min(y * 0.22, 100)}px)`;
+      }
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true });
+
+    // Trae los precios en vivo del CRM. Si responde, re-renderiza con esos valores;
+    // si falla (offline, CRM caído), quedan los precios escritos como fallback.
+    var self = this;
+    fetch(this.preciosApi)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { if (data && data.circuitos) self.setState({ precios: data.circuitos }); })
+      .catch(function () {});
+  }
+
+  componentWillUnmount() {
+    if (this._io) this._io.disconnect();
+    if (this._onScroll) window.removeEventListener('scroll', this._onScroll);
+  }
+
+  renderVals() {
+    const anio = new Date().getFullYear();
+
+    const valores = [
+      { inicial: 'E', nombre: 'Exclusividad', desc: 'Cada experiencia se prepara especialmente para vos, con privacidad y atención personalizada.' },
+      { inicial: 'I', nombre: 'Innovación', desc: 'Reinventamos constantemente la forma de vivir el bienestar.' },
+      { inicial: 'C', nombre: 'Cercanía', desc: 'Construimos relaciones genuinas, con una atención cálida y humana.' },
+      { inicial: 'X', nombre: 'Excelencia', desc: 'La calidad está en cada detalle, del servicio a la ambientación.' },
+      { inicial: 'N', nombre: 'Naturaleza', desc: 'El entorno rural es parte fundamental de la desconexión.' },
+      { inicial: 'D', nombre: 'Pasión por los detalles', desc: 'Los pequeños gestos son los que generan las grandes experiencias.' },
+    ];
+
+    const circuitos = [
+      {
+        estacion: 'Primavera', categoria: 'Spa Grupal · Clásico', titulo: 'Circuito Grupal Clásico', apiNombre: 'Spa Grupal Clásico',
+        personas: '3 a 8 personas', duracion: '5 hs',
+        gradient: 'linear-gradient(160deg,#617245,#3c3e22)', fotoArchivo: 'circuito-grupal-clasico.jpg',
+        bullets: ['Merienda clásica dulce y salada', 'Masaje relajante 25\'', 'Ozonoterapia 25\'', 'Jacuzzi con hidromasaje 40\'', 'Infusiones libres todo el día'],
+        precioDesde: 'Desde $118.000 x persona', waLink: this.waLink('Hola! Quiero consultar por el Circuito Grupal Clásico'),
+        flyer: {
+          bg: '#fdf5ed', text: '#252c1a', accent: '#ef8627', accent2: '#265a58',
+          headline: 'Spa Grupal', tierNombre: 'Clásico', intro: 'El circuito no se comparte con nadie y se vive en privado.',
+          isTiered: true, isFlat: false,
+          tiers: [
+            { rango: '3p - 4p', lunJue: '$130.000', vieSabDom: '$150.000' },
+            { rango: '5p - 6p', lunJue: '$125.000', vieSabDom: '$140.000' },
+            { rango: '7p - 8p', lunJue: '$118.000', vieSabDom: '$130.000' },
+          ],
+          extra: 'Pasados los 8 personas se cobra $15.000 extra x persona.',
+        },
+      },
+      {
+        estacion: 'Verano', categoria: 'Spa Grupal · Premium', titulo: 'Circuito Grupal Premium', apiNombre: 'Spa Grupal Premium',
+        personas: '3 a 8 personas', duracion: '5 hs',
+        gradient: 'linear-gradient(160deg,#ef8627,#844713)', fotoArchivo: 'circuito-grupal-premium.jpg',
+        bullets: ['Brunch premium + picada de campo', 'Masaje descontracturante 35\'', 'Sauna individual + tina finlandesa', 'Mascarillas faciales', 'Trago por persona + brindis con champagne'],
+        precioDesde: 'Desde $135.000 x persona', waLink: this.waLink('Hola! Quiero consultar por el Circuito Grupal Premium'),
+        flyer: {
+          bg: '#252c1a', text: '#fdf5ed', accent: '#eb5f11', accent2: '#844713',
+          headline: 'Spa Grupal', tierNombre: 'Premium', intro: 'Circuito exclusivo y en privado — no se comparte con otros grupos.',
+          isTiered: true, isFlat: false,
+          tiers: [
+            { rango: '3p - 4p', lunJue: '$155.000', vieSabDom: '$175.000' },
+            { rango: '5p - 6p', lunJue: '$140.000', vieSabDom: '$160.000' },
+            { rango: '7p - 8p', lunJue: '$135.000', vieSabDom: '$145.000' },
+          ],
+          extra: 'Pasados los 8 personas se cobra $20.000 extra x persona.',
+        },
+      },
+      {
+        estacion: 'Otoño', categoria: 'Spa de Parejas · Clásico', titulo: 'Circuito de Parejas Clásico', apiNombre: 'Spa de Parejas Clásico',
+        personas: '2 personas', duracion: '4 hs',
+        gradient: 'linear-gradient(160deg,#ae8d71,#434330)', fotoArchivo: 'circuito-parejas-clasico.jpg',
+        bullets: ['Merienda completa dulce y salada', 'Masaje relajante 35\'', 'Sauna individual 25\'', 'Jacuzzi para dos', 'Ambientación con luces y velas'],
+        precioDesde: 'Desde $148.000 c/u', waLink: this.waLink('Hola! Quiero consultar por el Circuito de Parejas Clásico'),
+        flyer: {
+          bg: '#f4efed', text: '#252c1a', accent: '#617245', accent2: '#eb5f11',
+          headline: 'Spa de Parejas', tierNombre: 'Clásico', intro: 'Circuito exclusivo para 2 personas, pensado para su bienestar.',
+          isTiered: false, isFlat: true,
+          flatLunJue: '$148.000', flatVieSabDom: '$158.000', flatLunJue2p: '$296.000', flatVieSabDom2p: '$316.000',
+          opcionales: ['Tabla de picada de campo (panes y tostadas)', 'Tina finlandesa', '+25 min de masaje'],
+          extra: 'Feriados 10% de recargo.',
+        },
+      },
+      {
+        estacion: 'Invierno', categoria: 'Spa de Parejas · Premium', titulo: 'Circuito de Parejas Premium', apiNombre: 'Spa de Parejas Premium',
+        personas: '2 personas', duracion: '5 hs',
+        gradient: 'linear-gradient(160deg,#265a58,#252c1a)', fotoArchivo: 'circuito-parejas-premium.jpg',
+        bullets: ['Brunch premium completo', 'Masaje descontracturante 55-60\'', 'Sauna seco + individual', 'Tina finlandesa + mascarilla hidratante', '2 tragos + ambientación con velas'],
+        precioDesde: 'Desde $160.000 c/u', waLink: this.waLink('Hola! Quiero consultar por el Circuito de Parejas Premium'),
+        flyer: {
+          bg: '#252c1a', text: '#fdf5ed', accent: '#eb5f11', accent2: '#8d9f97',
+          headline: 'Spa de Parejas', tierNombre: 'Premium', intro: 'Circuito exclusivo y en privado, pensado para su bienestar.',
+          isTiered: false, isFlat: true,
+          flatLunJue: '$160.000', flatVieSabDom: '$175.000', flatLunJue2p: null, flatVieSabDom2p: null,
+          opcionales: [],
+          extra: 'Feriados 10% de recargo.',
+        },
+      },
+    ];
+
+    const galeria = [
+      { colSpan: 2, rowSpan: 2, caption: 'foto — jacuzzi exterior, noche, luces cálidas' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — sauna individual' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — brunch / picada de campo' },
+      { colSpan: 1, rowSpan: 2, caption: 'foto — grupo de amigas, atardecer' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — living exterior' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — pareja, quincho climatizado' },
+      { colSpan: 2, rowSpan: 1, caption: 'foto — entorno rural, campo al atardecer' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — jacuzzi para dos' },
+      { colSpan: 1, rowSpan: 2, caption: 'foto — detalles, velas y ambientación' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — pileta' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — brindis final' },
+      { colSpan: 2, rowSpan: 1, caption: 'foto — sendero y atardecer en el campo' },
+    ].map((g, i) => ({ ...g, id: 'galeria-' + i, foto: 'galeria-' + String(i + 1).padStart(2, '0') + '.jpg' }));
+
+    const brunchGaleria = [
+      { colSpan: 1, rowSpan: 2, caption: 'foto — living con brunch servido' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — picada de campo, tabla artesanal' },
+      { colSpan: 2, rowSpan: 2, caption: 'foto — mesa dulce y salada, empanadas y tartas' },
+      { colSpan: 1, rowSpan: 2, caption: 'foto — detalle, tabla de quesos y fiambres' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — mesa dulce, tortas individuales' },
+      { colSpan: 1, rowSpan: 1, caption: 'foto — brunch, vista general' },
+    ].map((g, i) => ({ ...g, id: 'brunch-' + i, foto: 'brunch-' + String(i + 1).padStart(2, '0') + '.jpg' }));
+
+    const productos = [
+      { nombre: 'Bálsamo corporal miel & jojoba', desc: 'Artesanal para hidratar la piel después del circuito de aguas.', fotoArchivo: 'producto-balsamo.jpg' },
+      { nombre: 'Jabón artesanal avena & miel', desc: 'Elaborado especialmente para Cuatro Estaciones.', fotoArchivo: 'producto-jabon.jpg' },
+    ];
+
+    const faqsData = [
+      { p: '¿Con cuánta anticipación tengo que reservar?', r: 'Recomendamos reservar con al menos 1 a 2 semanas de anticipación, ya que los cupos son limitados y cada circuito es privado y exclusivo para tu grupo.' },
+      { p: '¿Qué pasa si llueve?', r: 'El circuito de aguas y el quincho tienen sectores techados y climatizados frío/calor, así que la experiencia se disfruta igual. Ante lluvias fuertes, coordinamos por WhatsApp una posible reprogramación.' },
+      { p: '¿Puedo llevar niños?', r: 'Nuestros circuitos están pensados como una experiencia de relax exclusiva para adultos. Consultanos por WhatsApp si tu caso particular lo requiere.' },
+      { p: '¿Qué métodos de pago aceptan?', r: 'Aceptamos efectivo y transferencia bancaria. La reserva se confirma con una seña y el resto se abona el día de la experiencia.' },
+      { p: '¿Tienen opciones para alergias o intolerancias alimentarias?', r: 'Sí, contamos con opciones vegetarianas y sin TACC en nuestro brunch y picadas. Contanos tu caso al reservar para prepararlo especialmente.' },
+    ];
+    const faqsAll = faqsData.map((f, i) => ({
+      pregunta: f.p, respuesta: f.r,
+      rows: this.state.openFaq === i ? '1fr' : '0fr',
+      simbolo: this.state.openFaq === i ? '\u2212' : '+',
+      toggle: () => this.toggleFaq(i),
+    }));
+    const faqsLeft = faqsAll.slice(0, 3);
+    const faqsRight = faqsAll.slice(3, 5);
+
+    const testimonios = [
+      { quote: 'Reseña próximamente — espacio reservado para comentarios reales de Clientes.', autor: 'Nombre Apellido' },
+      { quote: 'Reseña próximamente — espacio reservado para comentarios reales de Clientes.', autor: 'Nombre Apellido' },
+      { quote: 'Reseña próximamente — espacio reservado para comentarios reales de Clientes.', autor: 'Nombre Apellido' },
+    ];
+
+    const isFlyer = this.state.cardStyle === 'flyer';
+    const btnBase = 'padding:10px 22px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;border:none;cursor:pointer;transition:background .3s ease,color .3s ease;font-family:Montserrat,sans-serif;';
+
+    return {
+      anio,
+      waLinkGeneral: this.waLink('Hola! Quiero consultar por una experiencia en Cuatro Estaciones'),
+      valores, galeria, brunchGaleria, productos, testimonios, faqsLeft, faqsRight,
+      circuitos: this.aplicarPreciosVivos(circuitos),
+      setRootRef: this.setRootRef,
+      setHeaderRef: this.setHeaderRef,
+      setHeroBgRef: this.setHeroBgRef,
+      isCard: !isFlyer,
+      isFlyer,
+      showCards: this.showCards,
+      showFlyer: this.showFlyer,
+      cardsBtnStyle: btnBase + (isFlyer ? 'background:transparent;color:#dcdcdc' : 'background:#eb5f11;color:#fdf5ed'),
+      flyerBtnStyle: btnBase + (isFlyer ? 'background:#eb5f11;color:#fdf5ed' : 'background:transparent;color:#dcdcdc'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

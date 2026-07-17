@@ -16,6 +16,12 @@ class ConfiguracionNegocio(models.Model):
     horario_atencion_desde = models.TimeField(null=True, blank=True)
     horario_atencion_hasta = models.TimeField(null=True, blank=True)
 
+    dias_tarifa_finde = models.JSONField(
+        default=list, blank=True,
+        help_text='Días de la semana que cobran tarifa de fin de semana (0=lunes … 6=domingo). '
+                  'Vacío = sábado y domingo. En este spa: viernes, sábado y domingo → [4, 5, 6].',
+    )
+
     reserva_exclusiva_por_turno = models.BooleanField(
         default=True,
         verbose_name='Reserva exclusiva por turno',

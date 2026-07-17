@@ -1,0 +1,38 @@
+CARPETA "fotos" — Estancia Cuatro Estaciones
+================================================
+
+Reemplazá cada uno de estos archivos por tu foto real, manteniendo el MISMO nombre
+(o cambiá el nombre y actualizá el "src" correspondiente en index.html).
+
+- hero-jacuzzi-noche.jpg  →  Jacuzzi al aire libre, de noche, luces cálidas colgantes (foto de fondo del Hero)
+- banner-1-jacuzzi-interior.jpg  →  Jacuzzi interior — banner de 5 fotos
+- banner-2-sendero-arbolado.jpg  →  Sendero arbolado — banner de 5 fotos
+- banner-3-sauna-adentro.jpg  →  Sauna, interior — banner de 5 fotos
+- banner-4-pareja-tina-exterior.jpg  →  Pareja en tina exterior — banner de 5 fotos
+- banner-5-amigas-batas.jpg  →  Grupo de amigas con batas — banner de 5 fotos
+- banner-cita-jacuzzi-madera.jpg  →  Jacuzzi de madera al atardecer — banner de cita "Tu próxima experiencia..."
+- circuito-grupal-clasico.jpg  →  Living exterior / grupo de amigas — tarjeta Circuito Grupal Clásico (vista Tarjetas)
+- circuito-grupal-premium.jpg  →  Brunch premium / pool al atardecer — tarjeta Circuito Grupal Premium (vista Tarjetas)
+- circuito-parejas-clasico.jpg  →  Jacuzzi para dos con velas — tarjeta Circuito de Parejas Clásico (vista Tarjetas)
+- circuito-parejas-premium.jpg  →  Sauna seco / tina finlandesa — tarjeta Circuito de Parejas Premium (vista Tarjetas)
+- galeria-01.jpg  →  Jacuzzi exterior, noche, luces cálidas (foto grande, 2x2)
+- galeria-02.jpg  →  Sauna individual
+- galeria-03.jpg  →  Brunch / picada de campo
+- galeria-04.jpg  →  Grupo de amigas, atardecer (foto vertical, 1x2)
+- galeria-05.jpg  →  Living exterior
+- galeria-06.jpg  →  Pareja, quincho climatizado
+- galeria-07.jpg  →  Entorno rural, campo al atardecer (foto ancha, 2x1)
+- galeria-08.jpg  →  Jacuzzi para dos
+- galeria-09.jpg  →  Detalles, velas y ambientación (foto vertical, 1x2)
+- galeria-10.jpg  →  Pileta
+- galeria-11.jpg  →  Brindis final
+- galeria-12.jpg  →  Sendero y atardecer en el campo (foto ancha, 2x1)
+- banner-brunch.jpg  →  Mesa de brunch de campo — banner "Brunch de Campo"
+- brunch-01.jpg  →  Living con brunch servido (foto vertical, 1x2)
+- brunch-02.jpg  →  Picada de campo, tabla artesanal
+- brunch-03.jpg  →  Mesa dulce y salada, empanadas y tartas (foto grande, 2x2)
+- brunch-04.jpg  →  Detalle, tabla de quesos y fiambres (foto vertical, 1x2)
+- brunch-05.jpg  →  Mesa dulce, tortas individuales
+- brunch-06.jpg  →  Brunch, vista general
+- producto-balsamo.jpg  →  Bálsamo corporal miel & jojoba (foto de producto)
+- producto-jabon.jpg  →  Jabón artesanal avena & miel (foto de producto)

@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.sitio_publico.api import CircuitosPublicosView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -25,6 +27,7 @@ urlpatterns = [
     path('api/v1/disponibilidad/', include(('apps.turnero.urls', 'turnero'), namespace='turnero_api')),
     path('api/v1/reservas/', include(('apps.reservas.urls', 'reservas'), namespace='reservas_api')),
     path('api/v1/vouchers/', include('apps.vouchers.urls_api')),
+    path('api/v1/publico/circuitos/', CircuitosPublicosView.as_view(), name='publico_circuitos'),
 
     path('whatsapp/', include(('apps.whatsapp.urls', 'whatsapp'), namespace='whatsapp_api')),
 
