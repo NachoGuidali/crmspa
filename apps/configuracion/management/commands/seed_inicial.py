@@ -99,27 +99,27 @@ class Command(BaseCommand):
         self.stdout.write('Turnos (mañana/tarde) ✓')
 
         # --- Circuitos + precios ---
-        for data in CIRCUITOS:
+        for raw in CIRCUITOS:
+            data = dict(raw)  # no mutar la constante
             tramos = data.pop('tramos', None)
             adicional = data.pop('adicional', None)
             precio_semana = data.pop('precio_semana', None)
             precio_finde = data.pop('precio_finde', None)
 
-            c, _ = Circuito.objects.get_or_create(nombre=data['nombre'], defaults=data)
-            for k, v in data.items():
-                setattr(c, k, v)
-            c.sena_tipo = 'porcentaje'
-            c.sena_valor = D(50)
-            c.activo = True
+            defaults = dict(data)
+            defaults['sena_tipo'] = 'porcentaje'
+            defaults['sena_valor'] = D(50)
+            defaults['activo'] = True
             if tramos:
-                c.precio_semana = None
-                c.precio_finde = None
-                c.precio_persona_adicional_semana = D(adicional)
-                c.precio_persona_adicional_finde = D(adicional)
+                defaults['precio_semana'] = None
+                defaults['precio_finde'] = None
+                defaults['precio_persona_adicional_semana'] = D(adicional)
+                defaults['precio_persona_adicional_finde'] = D(adicional)
             else:
-                c.precio_semana = D(precio_semana)
-                c.precio_finde = D(precio_finde)
-            c.save()
+                defaults['precio_semana'] = D(precio_semana)
+                defaults['precio_finde'] = D(precio_finde)
+
+            c, _ = Circuito.objects.update_or_create(nombre=data['nombre'], defaults=defaults)
 
             if tramos:
                 c.tarifas.all().delete()
