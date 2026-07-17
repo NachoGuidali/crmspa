@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Canjear {{ voucher.codigo }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'vouchers:detalle' voucher.pk %}" style="color:var(--text-muted); font-size:.8rem;">← Voucher</a></p>
+    <h1>Canjear {{ voucher.codigo }}</h1>
+    <p style="color:var(--text-muted); margin:0;">{{ voucher.circuito.nombre }} · ${{ voucher.monto|floatformat:0 }}</p>
+  </div>
+</div>
+
+{% if messages %}{% for m in messages %}<div class="card" style="border-color:#a33; margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
+<div class="card" style="max-width:520px;">
+  <p style="color:var(--text-muted); font-size:.84rem;">Al canjear se crea una reserva ya confirmada (el circuito está pago con el voucher).</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row"><label>Nombre de quien usa el voucher</label><input type="text" name="nombre_contacto" required></div>
+    <div class="form-row"><label>Teléfono</label><input type="text" name="telefono" required></div>
+    <div class="form-row"><label>Fecha</label><input type="date" name="fecha" required></div>
+    <div class="form-row">
+      <label>Turno</label>
+      <select name="turno_id" required>
+        {% for t in turnos %}<option value="{{ t.id }}">{{ t.nombre }} ({{ t.hora_inicio|time:"H:i" }}-{{ t.hora_fin|time:"H:i" }})</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row"><label>Cantidad de personas</label><input type="number" name="cantidad_personas" value="1" min="1" required></div>
+    <button type="submit" class="btn">Confirmar canje y crear reserva</button>
+  </form>
+</div>
+{% endblock %}

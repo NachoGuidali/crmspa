@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Gift Vouchers{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Gift Vouchers</h1>
+  <a href="{% url 'vouchers:crear' %}" class="btn">+ Vender voucher</a>
+</div>
+<div class="card">
+  <table class="simple">
+    <thead><tr><th>Código</th><th>Circuito</th><th>Monto</th><th>Comprador</th><th>Para</th><th>Estado</th><th>Vence</th><th></th></tr></thead>
+    <tbody>
+      {% for v in vouchers %}
+      <tr>
+        <td style="font-family:monospace;">{{ v.codigo }}</td>
+        <td>{{ v.circuito.nombre }}</td>
+        <td>${{ v.monto|floatformat:0 }}</td>
+        <td>{{ v.comprador_nombre }}</td>
+        <td>{{ v.destinatario_nombre|default:"—" }}</td>
+        <td><span class="badge badge-{{ v.estado }}">{{ v.get_estado_display }}</span></td>
+        <td>{{ v.fecha_vencimiento|date:"d/m/Y" }}</td>
+        <td><a href="{% url 'vouchers:detalle' v.pk %}">Ver</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">No hay vouchers todavía.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

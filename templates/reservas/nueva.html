@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Nueva reserva{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Nueva reserva manual</h1>
+  <a href="{% url 'reservas:kanban' %}" class="btn btn-secondary">Volver</a>
+</div>
+
+<div class="card" style="max-width:520px;">
+  {% if error %}<p style="color:#a33;">{{ error }}</p>{% endif %}
+  {{ contactos|json_script:"contactos-data" }}
+  <form method="post" id="form-reserva">
+    {% csrf_token %}
+    <input type="hidden" name="contacto_id" id="contacto_id">
+
+    <div class="form-row">
+      <label>Cliente</label>
+      <input type="text" id="buscar-contacto" list="contactos-list" autocomplete="off"
+             placeholder="Buscá por nombre o teléfono…">
+      <datalist id="contactos-list">
+        {% for c in contactos %}<option value="{{ c.nombre }} · {{ c.telefono }}"></option>{% endfor %}
+      </datalist>
+      <small style="color:var(--text-muted);">Elegí un contacto existente, o dejalo vacío y cargá uno nuevo abajo.</small>
+    </div>
+
+    <div class="form-row">
+      <label>Teléfono del cliente</label>
+      <input type="text" name="telefono" id="telefono" required>
+    </div>
+    <div class="form-row">
+      <label>Nombre</label>
+      <input type="text" name="nombre_contacto" id="nombre_contacto">
+    </div>
+    <div class="form-row">
+      <label>Circuito</label>
+      <select name="circuito_id" required>
+        {% for c in circuitos %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Turno</label>
+      <select name="turno_id" required>
+        {% for t in turnos %}<option value="{{ t.id }}">{{ t.nombre }} ({{ t.hora_inicio|time:"H:i" }}-{{ t.hora_fin|time:"H:i" }})</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Fecha</label>
+      <input type="date" name="fecha" required>
+    </div>
+    <div class="form-row">
+      <label>Cantidad de personas</label>
+      <input type="number" name="cantidad_personas" value="1" min="1" required>
+    </div>
+    <div class="form-row">
+      <label>Notas</label>
+      <textarea name="notas" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn">Crear reserva</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  const contactos = JSON.parse(document.getElementById('contactos-data').textContent);
+  const porEtiqueta = {};
+  contactos.forEach(c => { porEtiqueta[`${c.nombre} · ${c.telefono}`] = c; });
+
+  const buscar = document.getElementById('buscar-contacto');
+  const idField = document.getElementById('contacto_id');
+  const telField = document.getElementById('telefono');
+  const nomField = document.getElementById('nombre_contacto');
+
+  // Al elegir un contacto existente del listado: autocompletar y bloquear los campos.
+  buscar.addEventListener('input', function () {
+    const c = porEtiqueta[buscar.value];
+    if (c) {
+      idField.value = c.id;
+      telField.value = c.telefono;
+      nomField.value = c.nombre;
+      telField.readOnly = true;
+      nomField.readOnly = true;
+    } else {
+      // Texto libre → cliente nuevo: liberar los campos.
+      idField.value = '';
+      telField.readOnly = false;
+      nomField.readOnly = false;
+    }
+  });
+
+  // Si edita el teléfono a mano, ya no es el contacto elegido.
+  telField.addEventListener('input', function () {
+    if (!telField.readOnly) idField.value = '';
+  });
+})();
+</script>
+{% endblock %}

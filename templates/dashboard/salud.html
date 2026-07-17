@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Salud del sistema{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'dashboard:home' %}" style="color:var(--text-muted); font-size:.8rem;">← Dashboard</a></p>
+    <h1>Salud del sistema</h1>
+    <p style="color:var(--text-muted); margin:0;">Estado del bot, n8n, WhatsApp y pendientes operativos.</p>
+  </div>
+</div>
+
+<div class="grid grid-3" style="margin-bottom:24px;">
+  <div class="card metric-card">
+    <div class="value">
+      {% if salud.automations_ok %}<span style="color:#3c7a3c;">●</span>{% else %}<span style="color:#a33;">●</span>{% endif %}
+    </div>
+    <div class="label">Automatizaciones / Celery
+      {% if salud.ultima_automatizacion_hace_min is not None %}<br><small>última hace {{ salud.ultima_automatizacion_hace_min }} min</small>
+      {% else %}<br><small>sin ejecuciones registradas</small>{% endif %}
+    </div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">
+      {% if salud.ultimo_entrante_hace_min is not None %}{{ salud.ultimo_entrante_hace_min }}<small style="font-size:.5em;"> min</small>{% else %}—{% endif %}
+    </div>
+    <div class="label">Último mensaje entrante recibido</div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">{{ salud.conversaciones_humano }}</div>
+    <div class="label">Conversaciones esperando atención humana</div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Alertas operativas</h3>
+    <table class="simple">
+      <tr>
+        <td>Mensajes salientes fallidos (24h)</td>
+        <td>{% if salud.envios_fallidos_24h %}<span class="badge badge-cancelado">{{ salud.envios_fallidos_24h }}</span>{% else %}<span class="badge badge-reserva_confirmada">0</span>{% endif %}</td>
+      </tr>
+      <tr>
+        <td>Errores de Evolution API (24h)</td>
+        <td>{% if salud.evolution_errores_24h %}<span class="badge badge-cancelado">{{ salud.evolution_errores_24h }}</span>{% else %}<span class="badge badge-reserva_confirmada">0</span>{% endif %}</td>
+      </tr>
+      <tr>
+        <td>Reservas pasadas sin cerrar (marcar asistió/no-show)</td>
+        <td>{% if salud.reservas_sin_cerrar %}<span class="badge badge-pendiente_sena">{{ salud.reservas_sin_cerrar }}</span>{% else %}<span class="badge badge-reserva_confirmada">0</span>{% endif %}</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Integraciones</h3>
+    <table class="simple">
+      <tr><td>Última automatización</td><td>{{ salud.ultima_automatizacion_at|date:"d/m H:i"|default:"—" }}</td></tr>
+      <tr><td>Última llamada de n8n a la API</td><td>{{ salud.ultimo_webhook_n8n_at|date:"d/m H:i"|default:"—" }}</td></tr>
+      <tr><td>Último mensaje entrante</td><td>{{ salud.ultimo_entrante_at|date:"d/m H:i"|default:"—" }}</td></tr>
+    </table>
+    <p style="margin-top:12px; font-size:.8rem; color:var(--text-muted);">
+      Si "Automatizaciones / Celery" está en rojo, es probable que el worker de Celery o Redis estén caídos:
+      no se enviarán recordatorios ni el bot recibirá respuestas.
+    </p>
+  </div>
+</div>
+{% endblock %}

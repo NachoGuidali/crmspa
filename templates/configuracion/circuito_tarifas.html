@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Tramos de precio — {{ circuito.nombre }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'configuracion:circuitos' %}" style="color:var(--text-muted); font-size:.8rem;">← Circuitos</a></p>
+    <h1>Tramos de precio · {{ circuito.nombre }}</h1>
+    <p style="color:var(--text-muted); margin:0;">Precio <strong>por persona</strong> según el tamaño del grupo. Ej: 3–4 personas $N, 5–6 $E, 7–8 $M.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:760px;">
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div style="color:#a33; margin-bottom:12px;">{{ formset.non_form_errors }}</div>{% endif %}
+
+    <table class="simple">
+      <thead>
+        <tr><th>Desde (personas)</th><th>Hasta (personas)</th><th>$ x persona (semana)</th><th>$ x persona (finde)</th><th>Borrar</th></tr>
+      </thead>
+      <tbody>
+        {% for f in formset %}
+        <tr>
+          {{ f.id }}
+          <td>{{ f.min_personas }}</td>
+          <td>{{ f.max_personas }}</td>
+          <td>{{ f.precio_persona_semana }}</td>
+          <td>{{ f.precio_persona_finde }}</td>
+          <td style="text-align:center;">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+        </tr>
+        {% if f.errors %}<tr><td colspan="5" style="color:#a33; font-size:.78rem;">{{ f.errors }}</td></tr>{% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p style="font-size:.8rem; color:var(--text-muted); margin-top:10px;">
+      Para agregar más tramos, guardá y volvé a entrar (aparece una fila nueva vacía cada vez).
+      El precio por persona <strong>adicional</strong> pasando el último tramo se configura en
+      <a href="{% url 'configuracion:circuito_editar' circuito.pk %}">editar el circuito</a>.
+      El tope máximo de personas es la <strong>capacidad</strong> del circuito.
+    </p>
+
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="submit" class="btn">Guardar tramos</button>
+      <a href="{% url 'configuracion:circuitos' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

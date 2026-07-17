@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comprobante reserva #{{ reserva.id }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f3efe8; color: #252c1a; }
+    .hoja { max-width: 620px; margin: 24px auto; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+    .cab { background: #3c3e22; color: #fdf5ed; padding: 22px 28px; }
+    .cab h1 { margin: 0; font-size: 1.15rem; letter-spacing: .3px; }
+    .cab small { color: #ae8d71; }
+    .cuerpo { padding: 24px 28px; }
+    .fila { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #eee; font-size: .92rem; }
+    .fila strong { color: #617245; }
+    .tot { display: flex; justify-content: space-between; padding: 9px 0; font-size: 1rem; }
+    .tot.grande { font-size: 1.25rem; font-weight: 700; border-top: 2px solid #617245; margin-top: 8px; padding-top: 12px; }
+    .saldo { color: #eb5f11; }
+    .extras { margin: 14px 0; }
+    .extras div { display: flex; justify-content: space-between; font-size: .88rem; padding: 3px 0; color: #555; }
+    .pie { padding: 16px 28px 26px; color: #777; font-size: .78rem; text-align: center; }
+    .btns { max-width: 620px; margin: 0 auto 30px; text-align: center; }
+    button, a.btn { background: #617245; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: .9rem; cursor: pointer; text-decoration: none; display: inline-block; }
+    @media print { .btns { display: none; } body { background: #fff; } .hoja { box-shadow: none; margin: 0; } }
+  </style>
+</head>
+<body>
+  <div class="hoja">
+    <div class="cab">
+      <h1>{{ negocio.nombre_negocio|default:"Estancia Cuatro Estaciones" }}</h1>
+      <small>Comprobante de reserva · #{{ reserva.id }}</small>
+    </div>
+    <div class="cuerpo">
+      <div class="fila"><strong>Cliente</strong><span>{{ reserva.contacto.nombre }}</span></div>
+      <div class="fila"><strong>Teléfono</strong><span>{{ reserva.contacto.telefono }}</span></div>
+      <div class="fila"><strong>Circuito</strong><span>{{ reserva.circuito.nombre }}</span></div>
+      <div class="fila"><strong>Fecha</strong><span>{{ reserva.fecha|date:"l d/m/Y" }}</span></div>
+      <div class="fila"><strong>Turno</strong><span>{{ reserva.turno.nombre }} ({{ reserva.turno.hora_inicio|time:"H:i" }}–{{ reserva.turno.hora_fin|time:"H:i" }})</span></div>
+      <div class="fila"><strong>Personas</strong><span>{{ reserva.cantidad_personas }}</span></div>
+      <div class="fila"><strong>Estado</strong><span>{{ reserva.get_estado_display }}</span></div>
+
+      {% if reserva.extras.all %}
+      <div class="extras">
+        <div style="font-weight:600; color:#617245; border-bottom:1px solid #eee; padding-bottom:4px;">Extras</div>
+        {% for e in reserva.extras.all %}<div><span>{{ e.nombre }} × {{ e.cantidad }}</span><span>${{ e.subtotal|floatformat:0 }}</span></div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div style="margin-top:16px;">
+        <div class="tot"><span>Circuito</span><span>${{ reserva.precio_total|floatformat:0 }}</span></div>
+        {% if reserva.extras_total %}<div class="tot"><span>Extras</span><span>${{ reserva.extras_total|floatformat:0 }}</span></div>{% endif %}
+        <div class="tot grande"><span>Total</span><span>${{ reserva.total|floatformat:0 }}</span></div>
+        <div class="tot"><span>Seña / pagado</span><span>${{ reserva.monto_pagado|floatformat:0 }}</span></div>
+        <div class="tot saldo"><span>Saldo a pagar</span><span>${{ reserva.saldo|floatformat:0 }}</span></div>
+      </div>
+    </div>
+    <div class="pie">
+      ¡Te esperamos! Ante cualquier cambio, avisanos con anticipación.<br>
+      {{ negocio.politica_cancelacion }}
+    </div>
+  </div>
+  <div class="btns">
+    <button onclick="window.print()">Imprimir / Guardar PDF</button>
+  </div>
+</body>
+</html>

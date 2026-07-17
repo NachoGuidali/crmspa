@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Vender voucher{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'vouchers:lista' %}" style="color:var(--text-muted); font-size:.8rem;">← Vouchers</a></p>
+    <h1>Vender gift voucher</h1>
+  </div>
+</div>
+<div class="card" style="max-width:560px;">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div style="font-size:.74rem; color:var(--text-muted); margin-top:3px;">{{ field.help_text }}</div>{% endif %}
+      {% if field.errors %}<div style="color:#a33; font-size:.78rem;">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn">Generar voucher</button>
+  </form>
+</div>
+{% endblock %}

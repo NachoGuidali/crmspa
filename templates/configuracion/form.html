@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'configuracion:hub' %}" style="color:var(--text-muted); font-size:.8rem;">← Configuración</a></p>
+    <h1>{{ titulo }}</h1>
+  </div>
+</div>
+
+<div class="card" style="max-width:620px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div style="color:#a33; margin-bottom:12px;">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <div class="form-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div style="font-size:.74rem; color:var(--text-muted); margin-top:3px;">{{ field.help_text }}</div>{% endif %}
+      {% if field.errors %}<div style="color:#a33; font-size:.78rem; margin-top:3px;">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="submit" class="btn">Guardar</button>
+      <a href="javascript:history.back()" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

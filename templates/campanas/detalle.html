@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ campana.nombre }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'campanas:lista' %}" style="color:var(--text-muted); font-size:.8rem;">← Campañas</a></p>
+    <h1>{{ campana.nombre }}</h1>
+  </div>
+  {% if campana.estado == 'borrador' or campana.estado == 'programada' %}
+  <form method="post" action="{% url 'campanas:enviar' campana.pk %}">
+    {% csrf_token %}
+    <button class="btn" type="submit" onclick="return confirm('¿Enviar la campaña ahora a {{ total_actual }} contacto(s)?')">Enviar ahora</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
+<div class="grid grid-4" style="margin-bottom:20px;">
+  <div class="card metric-card"><div class="value">{{ total_actual }}</div><div class="label">Destinatarios (segmento actual)</div></div>
+  <div class="card metric-card"><div class="value">{{ campana.enviados }}</div><div class="label">Enviados</div></div>
+  <div class="card metric-card"><div class="value">{{ campana.errores }}</div><div class="label">Errores</div></div>
+  <div class="card metric-card"><div class="value" style="font-size:1.1rem;">{{ campana.get_estado_display }}</div><div class="label">Estado</div></div>
+</div>
+
+<div class="card">
+  <h3>Plantilla: {{ campana.plantilla.nombre }}</h3>
+  <div style="background:var(--color-crema-2); border-radius:8px; padding:14px; white-space:pre-wrap; font-size:.88rem;">{{ campana.plantilla.cuerpo }}</div>
+</div>
+
+{% if envios %}
+<div class="card" style="margin-top:18px;">
+  <h3>Envíos</h3>
+  <table class="simple">
+    <thead><tr><th>Contacto</th><th>Estado</th><th>Detalle</th><th>Enviado</th></tr></thead>
+    <tbody>
+      {% for e in envios %}
+      <tr>
+        <td>{{ e.contacto.nombre }}</td>
+        <td><span class="badge">{{ e.get_estado_display }}</span></td>
+        <td style="font-size:.78rem; color:var(--text-muted);">{{ e.detalle|truncatechars:60 }}</td>
+        <td>{{ e.enviado_at|date:"d/m H:i"|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

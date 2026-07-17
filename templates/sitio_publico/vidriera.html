@@ -1,0 +1,25 @@
+{% extends "sitio_publico/_public_base.html" %}
+{% block content %}
+<div class="publico-hero">
+  <h1>Circuitos de bienestar en pleno campo</h1>
+  <p>Naturaleza, relajación y gastronomía a minutos de la ciudad. Elegí tu circuito y reservá tu turno.</p>
+</div>
+
+<div class="circuitos-grid">
+  {% for c in circuitos %}
+  <div class="circuito-card">
+    <div class="img" style="{% if c.imagen %}background-image:url('{{ c.imagen.url }}');{% endif %}"></div>
+    <div class="body">
+      <span class="tipo">{{ c.get_tipo_display }}</span>
+      <h2>{{ c.nombre }}</h2>
+      <p class="desc">{{ c.descripcion|default:"" }}</p>
+      <div class="precio">${{ c.precio_hoy|floatformat:0 }}</div>
+      <div class="sena">Seña: ${{ c.sena_hoy|floatformat:0 }} · hasta {{ c.capacidad_maxima }} personas · {{ c.duracion_minutos }} min</div>
+      <a href="{% url 'sitio_publico:reservar' c.id %}" class="btn" style="text-align:center;">Reservar</a>
+    </div>
+  </div>
+  {% empty %}
+  <p>No hay circuitos disponibles por el momento.</p>
+  {% endfor %}
+</div>
+{% endblock %}

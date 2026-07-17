@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Contactos{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Contactos</h1>
+  <a href="{% url 'contactos:export_csv' %}" class="btn btn-secondary">Exportar CSV</a>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex; gap:8px; flex-wrap:wrap; align-items:end;">
+    <div class="form-row" style="margin:0;">
+      <label>Buscar</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Nombre, teléfono, email..." style="width:240px;">
+    </div>
+    {% if campos %}
+    <div class="form-row" style="margin:0;">
+      <label>Campo personalizado</label>
+      <select name="campo">
+        <option value="">—</option>
+        {% for c in campos %}<option value="{{ c.id }}" {% if campo_sel and campo_sel.id == c.id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Operador</label>
+      <select name="op">
+        <option value="eq" {% if op_sel == 'eq' %}selected{% endif %}>es igual a</option>
+        <option value="contiene" {% if op_sel == 'contiene' %}selected{% endif %}>contiene</option>
+        <option value="gte" {% if op_sel == 'gte' %}selected{% endif %}>mayor/desde</option>
+        <option value="lte" {% if op_sel == 'lte' %}selected{% endif %}>menor/hasta</option>
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Valor</label>
+      <input type="text" name="valor" value="{{ valor_sel }}" placeholder="valor..." style="width:160px;">
+    </div>
+    {% endif %}
+    <button class="btn" type="submit">Filtrar</button>
+    {% if q or campo_sel %}<a href="{% url 'contactos:lista' %}" class="btn btn-secondary">Limpiar</a>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <table class="simple">
+    <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Tags</th><th>Alta</th><th></th></tr></thead>
+    <tbody>
+      {% for c in contactos %}
+      <tr>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.telefono }}</td>
+        <td>{{ c.email|default:"—" }}</td>
+        <td>{% for e in c.etiquetas.all %}<span class="badge" style="background:{{ e.color }}; color:#fff;">{{ e.nombre }}</span> {% endfor %}</td>
+        <td>{{ c.fecha_alta|date:"d/m/Y" }}</td>
+        <td><a href="{% url 'contactos:detalle' c.pk %}">Ver ficha</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No hay contactos{% if q %} con esa búsqueda{% endif %}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

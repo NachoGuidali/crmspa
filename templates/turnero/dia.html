@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Turnero — {{ fecha|date:"d/m/Y" }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'turnero:calendario' %}?anio={{ fecha.year }}&mes={{ fecha.month }}" style="color:var(--text-muted); font-size:.8rem;">← Calendario</a></p>
+    <h1>{{ fecha|date:"l d/m/Y" }}</h1>
+    {% if not habilitado %}<p style="color:#a33; margin:0;">Día no habilitado (feriado o fuera de días laborables).</p>{% endif %}
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn btn-secondary" href="{% url 'turnero:dia' fecha_anterior|date:'Y-m-d' %}">&larr; Día anterior</a>
+    <a class="btn btn-secondary" href="{% url 'turnero:dia' fecha_siguiente|date:'Y-m-d' %}">Día siguiente &rarr;</a>
+    <a class="btn" href="{% url 'reservas:nueva' %}">+ Nueva reserva</a>
+  </div>
+</div>
+
+{% for fila in filas %}
+<div class="card" style="margin-bottom:16px;">
+  <h3>{{ fila.circuito.nombre }} <span style="color:var(--text-muted); font-weight:400; font-size:.8rem;">({{ fila.circuito.get_tipo_display }}, capacidad {{ fila.circuito.capacidad_maxima }})</span></h3>
+  {% for t in fila.turnos %}
+  <div style="border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>{{ t.turno_nombre }}</strong>
+        <span style="color:var(--text-muted); font-size:.82rem;">· {{ t.hora_inicio }}–{{ t.hora_fin }}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:.82rem;">Cupo {{ t.cupo_ocupado }}/{{ t.cupo_total }}</span>
+        {% if t.bloqueado %}<span class="badge badge-cancelado">bloqueado</span>
+        {% elif t.ocupado_por_otro_circuito %}<span class="badge badge-requiere_atencion_humana">reservado (otro circuito)</span>
+        {% elif t.cupo_disponible == 0 %}<span class="badge badge-requiere_atencion_humana">completo</span>
+        {% elif t.cupo_disponible == 1 %}<span class="badge badge-pendiente_sena">último lugar</span>
+        {% else %}<span class="badge badge-reserva_confirmada">{{ t.cupo_disponible }} disponibles</span>{% endif %}
+      </div>
+    </div>
+    {% if t.reservas %}
+    <table class="simple" style="margin-top:8px;">
+      {% for r in t.reservas %}
+      <tr>
+        <td><a href="{% url 'contactos:detalle' r.contacto_id %}">{{ r.contacto.nombre }}</a></td>
+        <td>{{ r.cantidad_personas }}p</td>
+        <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
+        <td>seña ${{ r.monto_sena|floatformat:0 }} / pagado ${{ r.monto_pagado|floatformat:0 }}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          {% if r.estado == 'confirmado' or r.estado == 'pendiente_sena' %}
+          <form method="post" action="{% url 'reservas:asistio' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:dia' fecha|date:'Y-m-d' %}"><button class="btn" style="padding:3px 9px; font-size:.78rem;">Asistió</button></form>
+          <form method="post" action="{% url 'reservas:no_show' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:dia' fecha|date:'Y-m-d' %}"><button class="btn btn-secondary" style="padding:3px 9px; font-size:.78rem;">No vino</button></form>
+          {% endif %}
+          <a href="{% url 'reservas:detalle' r.id %}" style="font-size:.78rem; color:var(--color-teal); margin-left:4px;">detalle</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:.85rem;">No hay turnos configurados para este día. <a href="{% url 'configuracion:turnos' %}">Gestionar turnos</a>.</p>
+  {% endfor %}
+</div>
+{% empty %}
+<div class="card">No hay circuitos activos. <a href="{% url 'configuracion:circuito_crear' %}">Crear circuito</a>.</div>
+{% endfor %}
+{% endblock %}

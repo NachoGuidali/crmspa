@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Caja {{ fecha|date:"d/m" }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'dashboard:home' %}" style="color:var(--text-muted); font-size:.8rem;">← Dashboard</a></p>
+    <h1>Caja del día · {{ fecha|date:"d/m/Y" }}</h1>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn btn-secondary" href="{% url 'dashboard:caja' %}?fecha={{ fecha_anterior|date:'Y-m-d' }}">←</a>
+    {% if not es_hoy %}<a class="btn btn-secondary" href="{% url 'dashboard:caja' %}">Hoy</a>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'dashboard:caja' %}?fecha={{ fecha_siguiente|date:'Y-m-d' }}">→</a>
+    <a class="btn btn-secondary" href="{% url 'dashboard:export_pagos' %}?fecha={{ fecha|date:'Y-m-d' }}">Exportar CSV</a>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+  <div class="card">
+    <h3>Ingresos del día</h3>
+    <div class="metric-card" style="margin:8px 0 16px;"><div class="value">${{ caja.total|floatformat:0 }}</div><div class="label">Total cobrado</div></div>
+    <table class="simple">
+      <thead><tr><th>Medio de pago</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for medio, monto in caja.por_medio.items %}
+        <tr><td>{{ medio }}</td><td>${{ monto|floatformat:0 }}</td></tr>
+        {% empty %}<tr><td colspan="2" style="color:var(--text-muted);">Sin cobros este día.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+
+    <h4 style="margin-top:16px;">Detalle de cobros</h4>
+    <table class="simple">
+      <thead><tr><th>Hora</th><th>Cliente</th><th>Tipo</th><th>Medio</th><th>Monto</th></tr></thead>
+      <tbody>
+        {% for p in caja.pagos %}
+        <tr>
+          <td>{{ p.fecha|time:"H:i" }}</td>
+          <td>{{ p.reserva.contacto.nombre }}</td>
+          <td>{{ p.get_tipo_display }}</td>
+          <td>{{ p.get_medio_pago_display }}</td>
+          <td>${{ p.monto|floatformat:0 }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="5" style="color:var(--text-muted);">—</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Saldos por cobrar</h3>
+    <p style="color:var(--text-muted); font-size:.82rem;">Reservas que ya pagaron seña y deben el resto.</p>
+    <div class="metric-card" style="margin:8px 0 16px;"><div class="value">${{ saldos.total|floatformat:0 }}</div><div class="label">Total por cobrar</div></div>
+    <table class="simple">
+      <thead><tr><th>Fecha</th><th>Cliente</th><th>Circuito</th><th>Saldo</th></tr></thead>
+      <tbody>
+        {% for r in saldos.reservas %}
+        <tr>
+          <td>{{ r.fecha|date:"d/m" }}</td>
+          <td><a href="{% url 'reservas:detalle' r.id %}">{{ r.contacto.nombre }}</a></td>
+          <td>{{ r.circuito.nombre }}</td>
+          <td style="color:#a33;">${{ r.saldo|floatformat:0 }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="4" style="color:var(--text-muted);">No hay saldos pendientes. 🎉</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

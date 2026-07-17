@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Reserva #{{ reserva.id }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'reservas:kanban' %}" style="color:var(--text-muted); font-size:.8rem;">← Reservas</a></p>
+    <h1>Reserva de {{ reserva.contacto.nombre }}</h1>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <a href="{% url 'reservas:comprobante' reserva.pk %}" target="_blank" class="btn btn-secondary">Comprobante</a>
+    <span class="badge badge-{{ reserva.estado }}">{{ reserva.get_estado_display }}</span>
+  </div>
+</div>
+
+{% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
+<div class="grid grid-3" style="align-items:start;">
+  <div class="card">
+    <h3>Detalle</h3>
+    <p style="font-size:.88rem;"><strong>Circuito:</strong> {{ reserva.circuito.nombre }}</p>
+    <p style="font-size:.88rem;"><strong>Fecha:</strong> {{ reserva.fecha|date:"d/m/Y" }} · {{ reserva.turno.nombre }}</p>
+    <p style="font-size:.88rem;"><strong>Personas:</strong> {{ reserva.cantidad_personas }}{% if reserva.acompanantes %} ({{ reserva.acompanantes|join:", " }}){% endif %}</p>
+    <p style="font-size:.88rem;"><strong>Contacto:</strong> <a href="{% url 'contactos:detalle' reserva.contacto_id %}">{{ reserva.contacto.telefono }}</a></p>
+    <p style="font-size:.88rem;"><strong>Circuito:</strong> ${{ reserva.precio_total|floatformat:0 }}{% if reserva.extras_total %} · <strong>Extras:</strong> ${{ reserva.extras_total|floatformat:0 }}{% endif %} · <strong>Total:</strong> ${{ reserva.total|floatformat:0 }}</p>
+    <p style="font-size:.88rem;"><strong>Seña:</strong> ${{ reserva.monto_sena|floatformat:0 }} · <strong>Pagado:</strong> ${{ reserva.monto_pagado|floatformat:0 }} · <strong>Saldo:</strong> ${{ reserva.saldo|floatformat:0 }}</p>
+    {% if reserva.notas %}<p style="font-size:.84rem; color:var(--text-muted);">{{ reserva.notas }}</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Reprogramar</h3>
+    <p style="font-size:.82rem; color:var(--text-muted);">Mover a otra fecha/turno. El cupo actual se libera solo.</p>
+    <form method="post" action="{% url 'reservas:reprogramar' reserva.pk %}">
+      {% csrf_token %}
+      <div class="form-row"><label>Nueva fecha</label><input type="date" name="fecha" required></div>
+      <div class="form-row"><label>Nuevo turno</label>
+        <select name="turno_id" required>
+          {% for t in turnos %}<option value="{{ t.id }}">{{ t.nombre }} ({{ t.hora_inicio|time:"H:i" }}-{{ t.hora_fin|time:"H:i" }})</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn">Reprogramar</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Cancelar</h3>
+    <p style="font-size:.82rem; color:var(--text-muted);">Cancela la reserva y libera el cupo.</p>
+    <form method="post" action="{% url 'reservas:cancelar' reserva.pk %}">
+      {% csrf_token %}
+      <div class="form-row"><label>Motivo (opcional)</label><input type="text" name="motivo"></div>
+      <button type="submit" class="btn" style="background:#a33;" onclick="return confirm('¿Cancelar esta reserva?')">Cancelar reserva</button>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h3 style="margin:0;">Extras / opcionales</h3>
+    <span style="color:var(--text-muted); font-size:.82rem;">Sumá adicionales con precio (tina finlandesa, picada, +masaje…)</span>
+  </div>
+
+  <table class="simple" style="margin-top:10px;">
+    <thead><tr><th>Extra</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr></thead>
+    <tbody>
+      {% for e in extras_reserva %}
+      <tr>
+        <td>{{ e.nombre }}</td>
+        <td>{{ e.cantidad }}</td>
+        <td>${{ e.precio_unitario|floatformat:0 }}</td>
+        <td>${{ e.subtotal|floatformat:0 }}</td>
+        <td style="text-align:right;">
+          <form method="post" action="{% url 'reservas:quitar_extra' reserva.pk e.pk %}" style="display:inline;">{% csrf_token %}<button class="btn btn-secondary" style="padding:3px 9px; font-size:.78rem;">Quitar</button></form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="color:var(--text-muted);">Sin extras cargados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if extras_disponibles %}
+  <form method="post" action="{% url 'reservas:agregar_extra' reserva.pk %}" style="display:flex; gap:8px; align-items:end; margin-top:12px; flex-wrap:wrap;">
+    {% csrf_token %}
+    <div class="form-row" style="margin:0;">
+      <label>Agregar extra</label>
+      <select name="extra_id" required>
+        {% for x in extras_disponibles %}<option value="{{ x.id }}">{{ x.nombre }} — ${{ x.precio|floatformat:0 }}{% if x.por_persona %}/persona{% endif %}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Cantidad</label>
+      <input type="number" name="cantidad" value="1" min="1" style="width:80px;">
+    </div>
+    <button type="submit" class="btn">Agregar</button>
+  </form>
+  {% else %}
+  <p style="color:var(--text-muted); font-size:.82rem; margin-top:10px;">No hay extras configurados. Cargalos en <a href="{% url 'configuracion:extras' %}">Configuración → Extras</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Confirmar borrado{% endblock %}
+{% block content %}
+<div class="topbar"><h1>Confirmar borrado</h1></div>
+<div class="card" style="max-width:480px;">
+  <p>¿Seguro que querés borrar <strong>{{ object }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <div style="display:flex; gap:10px;">
+      <button type="submit" class="btn" style="background:#a33;">Sí, borrar</button>
+      <a href="javascript:history.back()" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

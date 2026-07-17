@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Turnero{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/calendario.css' %}">{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <h1>Turnero — {{ mes_nombre }} {{ anio }}</h1>
+    <p style="color:var(--text-muted); margin:0;">Vista mensual · hacé clic en un día para ver los turnos.</p>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <a class="btn btn-secondary" href="?anio={{ mes_anterior.year }}&mes={{ mes_anterior.month }}">&larr;</a>
+    <a class="btn btn-secondary" href="{% url 'turnero:calendario' %}">Hoy</a>
+    <a class="btn btn-secondary" href="?anio={{ mes_siguiente.year }}&mes={{ mes_siguiente.month }}">&rarr;</a>
+    <a class="btn" href="{% url 'configuracion:turnos' %}">Gestionar turnos</a>
+  </div>
+</div>
+
+<div style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+  <span style="font-size:.78rem; color:var(--text-muted);">Turnos activos:</span>
+  {% for t in turnos %}
+  <span class="badge">{{ t.nombre }} {{ t.hora_inicio|time:"H:i" }}–{{ t.hora_fin|time:"H:i" }}</span>
+  {% empty %}
+  <span style="font-size:.8rem; color:#a33;">No hay turnos configurados. <a href="{% url 'configuracion:turno_crear' %}">Crear el primero</a>.</span>
+  {% endfor %}
+</div>
+
+<div class="cal-grid">
+  {% for dow in dias_semana %}<div class="cal-dow">{{ dow }}</div>{% endfor %}
+  {% for semana in semanas %}
+    {% for celda in semana %}
+    <a class="cal-cell {% if not celda.es_del_mes %}otro-mes{% endif %} {% if celda.es_hoy %}hoy{% endif %} {% if celda.es_feriado and not celda.feriado_abre %}feriado{% elif not celda.resumen.habilitado %}no-hab{% endif %}"
+       href="{% url 'turnero:dia' celda.fecha|date:'Y-m-d' %}">
+      <div class="cal-daynum"><span class="n">{{ celda.fecha.day }}</span></div>
+      {% if celda.es_feriado %}
+        <span class="cal-chip feriado">{% if celda.feriado_abre %}Feriado · finde{% else %}Feriado · cerrado{% endif %}</span>
+      {% endif %}
+      {% if celda.resumen.reservas and not celda.es_feriado %}
+        <span class="cal-chip ocup">{{ celda.resumen.reservas }} reserva{{ celda.resumen.reservas|pluralize }} · {{ celda.resumen.personas }}p</span>
+      {% endif %}
+      {% if celda.es_del_mes and celda.resumen.slots %}
+        <span class="cal-slotcount">{{ celda.resumen.slots }} turno{{ celda.resumen.slots|pluralize }}</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  {% endfor %}
+</div>
+{% endblock %}

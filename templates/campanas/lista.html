@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Campañas{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Campañas de WhatsApp</h1>
+  <a href="{% url 'campanas:crear' %}" class="btn">+ Nueva campaña</a>
+</div>
+<div class="card">
+  <table class="simple">
+    <thead><tr><th>Nombre</th><th>Plantilla</th><th>Modo</th><th>Estado</th><th>Enviados</th><th>Errores</th><th></th></tr></thead>
+    <tbody>
+      {% for c in campanas %}
+      <tr>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.plantilla.nombre }}</td>
+        <td>{{ c.get_modo_seleccion_display }}</td>
+        <td><span class="badge">{{ c.get_estado_display }}</span></td>
+        <td>{{ c.enviados }}/{{ c.total_destinatarios }}</td>
+        <td>{{ c.errores }}</td>
+        <td><a href="{% url 'campanas:detalle' c.pk %}">Ver</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No hay campañas todavía.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

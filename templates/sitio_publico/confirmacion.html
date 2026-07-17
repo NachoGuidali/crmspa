@@ -1,0 +1,11 @@
+{% extends "sitio_publico/_public_base.html" %}
+{% block content %}
+<div class="confirmacion-card">
+  <h1 style="font-size:1.4rem;">¡Reserva recibida!</h1>
+  <p>Tu turno para <strong>{{ reserva.circuito.nombre }}</strong> el {{ reserva.fecha|date:"d/m/Y" }} ({{ reserva.turno.nombre }}) quedó
+    en estado <strong>pendiente de seña</strong>.</p>
+  <p>Seña a pagar: <strong>${{ reserva.monto_sena|floatformat:0 }}</strong></p>
+  <p style="color:var(--text-muted); font-size:.85rem;">Te vamos a escribir por WhatsApp con los datos para pagar la seña y confirmar tu turno.</p>
+  <a href="{% url 'sitio_publico:vidriera' %}" class="btn btn-secondary" style="margin-top:14px; display:inline-block;">Volver a circuitos</a>
+</div>
+{% endblock %}

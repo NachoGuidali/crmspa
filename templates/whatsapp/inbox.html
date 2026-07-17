@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Inbox WhatsApp{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/inbox.css' %}">{% endblock %}
+{% block content %}
+{% if messages %}
+<div style="margin-bottom:10px;">
+  {% for m in messages %}<div class="card" style="border-color:#a33; padding:10px 14px;">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="wa-wrap {% if selected %}has-selected{% endif %}">
+  <!-- Left: conversation list -->
+  <aside class="wa-sidebar">
+    <div class="wa-sidebar-header">
+      <span class="titulo">Conversaciones</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        {% if unread_total %}<span class="wa-unread">{{ unread_total }}</span>{% endif %}
+        <a href="{% url 'whatsapp:kanban' %}" class="wa-btn-sm" title="Ver como kanban">Kanban</a>
+      </div>
+    </div>
+    <form method="get" class="wa-filters">
+      <input type="text" name="q" value="{{ q }}" placeholder="Buscar nombre o teléfono...">
+      <div style="display:flex; gap:8px;">
+        <select name="estado" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          {% for value, label in estados %}
+          <option value="{{ value }}" {% if estado_filtro == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label style="display:flex; align-items:center; gap:4px; font-size:.76rem; white-space:nowrap;">
+          <input type="checkbox" name="no_leidos" value="1" style="width:auto;" {% if no_leidos %}checked{% endif %} onchange="this.form.submit()"> Sin leer
+        </label>
+      </div>
+    </form>
+    <div class="wa-conv-list">
+      {% for c in conversaciones %}
+      <a href="?conv={{ c.pk }}" class="wa-conv-item {% if selected and selected.pk == c.pk %}active{% endif %}">
+        <div class="wa-avatar">{{ c.get_display_name|first|upper }}</div>
+        <div class="wa-conv-info">
+          <div class="wa-conv-name">{{ c.get_display_name }}</div>
+          <div class="wa-conv-sub">
+            <span class="badge badge-{{ c.estado }}" style="font-size:.64rem;">{{ c.get_estado_display }}</span>
+            {% if not c.bot_activo %}· bot off{% endif %}
+          </div>
+        </div>
+        <div class="wa-conv-meta">
+          <span class="wa-conv-time">{{ c.ultimo_mensaje_at|date:"d/m H:i" }}</span>
+          {% if c.mensajes_no_leidos %}<span class="wa-unread">{{ c.mensajes_no_leidos }}</span>{% endif %}
+        </div>
+      </a>
+      {% empty %}
+      <p style="padding:24px; text-align:center; color:var(--text-muted); font-size:.85rem;">Sin conversaciones.</p>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <!-- Right: chat -->
+  <section class="wa-main">
+    {% if not selected %}
+    <div class="wa-main-empty">
+      <div style="font-family:var(--font-display); font-size:1.4rem; margin-bottom:6px;">Estancia Cuatro Estaciones</div>
+      <p>Elegí una conversación de la izquierda para verla acá.</p>
+    </div>
+    {% else %}
+    <div class="wa-main-header">
+      <div class="wa-avatar">{{ selected.get_display_name|first|upper }}</div>
+      <div class="who">
+        <div class="n">{{ selected.get_display_name }}</div>
+        <div class="s">{{ selected.telefono }}
+          {% if selected.contacto %}· <a href="{% url 'contactos:detalle' selected.contacto.pk %}">ver ficha</a>{% endif %}
+        </div>
+      </div>
+      <div class="wa-header-actions">
+        <span class="badge badge-{{ selected.estado }}">{{ selected.get_estado_display }}</span>
+        <form method="post" action="{% url 'whatsapp:accion' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+          <input type="hidden" name="accion" value="toggle_bot">
+          <button class="wa-btn-sm" type="submit">{% if selected.bot_activo %}Apagar bot{% else %}Prender bot{% endif %}</button>
+        </form>
+        <form method="post" action="{% url 'whatsapp:accion' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+          <input type="hidden" name="accion" value="handoff">
+          <button class="wa-btn-sm" type="submit" title="Derivar a un humano">Atender yo</button>
+        </form>
+        <form method="post" action="{% url 'whatsapp:accion' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+          <input type="hidden" name="accion" value="cambiar_estado">
+          <select name="estado" class="wa-btn-sm" onchange="this.form.submit()">
+            {% for value, label in estados %}
+            <option value="{{ value }}" {% if selected.estado == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <form method="post" action="{% url 'whatsapp:accion' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+          <input type="hidden" name="accion" value="archivar">
+          <button class="wa-btn-sm" type="submit">Archivar</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="wa-chat" id="waChat" data-conv="{{ selected.pk }}" data-last="{{ last_msg_id }}">
+      {% for m in mensajes %}
+      <div class="wa-bubble {{ m.direccion }}">{{ m.contenido }}<div class="ts">{{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}</div></div>
+      {% empty %}
+      <p style="color:var(--text-muted); text-align:center;">Sin mensajes todavía.</p>
+      {% endfor %}
+    </div>
+
+    <div class="wa-composer">
+      {% if respuestas %}
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        {% for r in respuestas %}
+        <button type="button" class="wa-btn-sm" onclick="rellenarMensaje(this.dataset.texto)" data-texto="{{ r.texto|escapejs }}">/{{ r.atajo }}</button>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <form method="post" action="{% url 'whatsapp:accion' %}" class="wa-composer-row">
+        {% csrf_token %}
+        <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+        <input type="hidden" name="accion" value="enviar_texto">
+        <input type="text" name="mensaje" id="waMensajeInput" placeholder="Escribí un mensaje..." autocomplete="off" required>
+        <button type="submit" class="btn">Enviar</button>
+      </form>
+      {% if plantillas %}
+      <form method="post" action="{% url 'whatsapp:accion' %}" class="wa-composer-row">
+        {% csrf_token %}
+        <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+        <input type="hidden" name="accion" value="enviar_plantilla">
+        <select name="plantilla_id">
+          {% for p in plantillas %}<option value="{{ p.pk }}">{{ p.nombre }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary">Enviar plantilla</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+{% if selected %}
+<script>
+function rellenarMensaje(texto) {
+  const input = document.getElementById('waMensajeInput');
+  if (input) { input.value = texto; input.focus(); }
+}
+(function () {
+  const chat = document.getElementById('waChat');
+  if (!chat) return;
+  chat.scrollTop = chat.scrollHeight;
+  const convId = chat.dataset.conv;
+  let lastId = parseInt(chat.dataset.last || '0', 10);
+
+  setInterval(function () {
+    fetch(`/inbox/${convId}/mensajes/?after=${lastId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        data.mensajes.forEach((m) => {
+          const div = document.createElement('div');
+          div.className = 'wa-bubble ' + m.direccion;
+          div.innerHTML = m.contenido.replace(/</g, '&lt;') +
+            '<div class="ts">' + m.timestamp + ' · ' + m.status + '</div>';
+          chat.appendChild(div);
+          lastId = Math.max(lastId, m.id);
+        });
+        if (data.mensajes.length) chat.scrollTop = chat.scrollHeight;
+      })
+      .catch(() => {});
+  }, 6000);
+})();
+</script>
+{% endif %}
+{% endblock %}

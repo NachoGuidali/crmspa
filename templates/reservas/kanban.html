@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Reservas{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Reservas</h1>
+  <div style="display:flex; gap:8px;">
+    <a href="{% url 'reservas:lista_espera' %}" class="btn btn-secondary">Lista de espera</a>
+    <a href="{% url 'reservas:nueva' %}" class="btn">+ Nueva reserva</a>
+  </div>
+</div>
+<p style="color:var(--text-muted); margin-top:-14px; margin-bottom:16px; font-size:.82rem;">Arrastrá una tarjeta para cambiar el estado, o hacé clic para ver el detalle (reprogramar/cancelar).</p>
+
+<div class="kanban" style="grid-template-columns: repeat(5, 1fr);">
+  {% for col in columnas %}
+  <div class="kanban-col" data-estado="{{ col.estado }}">
+    <h3>{{ col.label }} ({{ col.reservas|length }})</h3>
+    <div class="kanban-cards">
+      {% for r in col.reservas %}
+      <div class="kanban-card" draggable="true" data-id="{{ r.id }}">
+        <div class="titulo">{{ r.contacto.nombre }}</div>
+        <div class="meta">{{ r.circuito.nombre }}</div>
+        <div class="meta">{{ r.fecha|date:"d/m" }} · {{ r.turno.nombre }} · {{ r.cantidad_personas }}p</div>
+        <div class="meta">Seña ${{ r.monto_sena|floatformat:0 }} / pagado ${{ r.monto_pagado|floatformat:0 }}</div>
+        <a href="{% url 'reservas:detalle' r.id %}" class="meta" style="color:var(--color-teal);">Ver detalle →</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script src="{% static 'js/kanban.js' %}"></script>
+<script>initKanban('{% url "reservas:mover" 0 %}'.replace('0', '__ID__'));</script>
+{% endblock %}

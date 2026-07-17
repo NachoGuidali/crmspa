@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Lista de espera{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Lista de espera</h1>
+  <a href="{% url 'reservas:kanban' %}" class="btn btn-secondary">← Reservas</a>
+</div>
+
+<div class="card" style="margin-bottom:18px;">
+  <h3>Anotar en lista de espera</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid grid-3">
+      <div class="form-row"><label>Nombre</label><input type="text" name="nombre"></div>
+      <div class="form-row"><label>Teléfono</label><input type="text" name="telefono" required></div>
+      <div class="form-row"><label>Circuito</label>
+        <select name="circuito_id" required>{% for c in circuitos %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-row"><label>Fecha deseada</label><input type="date" name="fecha_deseada" required></div>
+      <div class="form-row"><label>Turno (opcional)</label>
+        <select name="turno_id"><option value="">Cualquiera</option>{% for t in turnos %}<option value="{{ t.id }}">{{ t.nombre }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <button type="submit" class="btn">Agregar a la espera</button>
+  </form>
+</div>
+
+<div class="card">
+  <table class="simple">
+    <thead><tr><th>Contacto</th><th>Circuito</th><th>Fecha deseada</th><th>Turno</th><th>Avisado</th><th></th></tr></thead>
+    <tbody>
+      {% for e in esperas %}
+      <tr>
+        <td>{{ e.contacto.nombre }} · {{ e.contacto.telefono }}</td>
+        <td>{{ e.circuito.nombre }}</td>
+        <td>{{ e.fecha_deseada|date:"d/m/Y" }}</td>
+        <td>{{ e.turno.nombre|default:"Cualquiera" }}</td>
+        <td>{% if e.notificado %}<span class="badge badge-completada">avisado</span>{% else %}<span class="badge badge-pendiente">esperando</span>{% endif %}</td>
+        <td><form method="post" action="{% url 'reservas:quitar_espera' e.pk %}" style="display:inline;">{% csrf_token %}<button class="btn btn-secondary" style="padding:4px 10px;">Quitar</button></form></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No hay nadie en lista de espera.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

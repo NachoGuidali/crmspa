@@ -1,0 +1,33 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es-ar">
+<head>
+  <meta charset="utf-8">
+  <title>Ingresar · Cuatro Estaciones CRM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+</head>
+<body>
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="brand-serif">Estancia Cuatro Estaciones</div>
+      <p style="color:var(--text-muted); margin-top:-6px; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase;">Spa de Campo · CRM</p>
+      <form method="post" style="margin-top:24px; text-align:left;">
+        {% csrf_token %}
+        {% if form.errors %}
+          <p style="color:#a33; font-size:.82rem;">Usuario o contraseña incorrectos.</p>
+        {% endif %}
+        <div class="form-row">
+          <label for="id_username">Usuario</label>
+          <input type="text" name="username" id="id_username" autofocus required>
+        </div>
+        <div class="form-row">
+          <label for="id_password">Contraseña</label>
+          <input type="password" name="password" id="id_password" required>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn" style="width:100%;">Ingresar</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

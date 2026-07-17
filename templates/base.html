@@ -1,0 +1,45 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es-ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CRM{% endblock %} · Cuatro Estaciones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">Estancia Cuatro<br>Estaciones<small>Spa de Campo · CRM</small></div>
+      <nav>
+        <a href="{% url 'turnero:hoy' %}" class="{% if request.resolver_match.url_name == 'hoy' %}active{% endif %}">Hoy</a>
+        {% if request.user.es_dueno %}
+        <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}">Dashboard</a>
+        {% endif %}
+        <a href="{% url 'whatsapp:inbox' %}" class="{% if request.resolver_match.namespace == 'whatsapp' %}active{% endif %}">Inbox WhatsApp</a>
+        <a href="{% url 'turnero:calendario' %}" class="{% if request.resolver_match.namespace == 'turnero' %}active{% endif %}">Turnero</a>
+        <a href="{% url 'reservas:kanban' %}" class="{% if request.resolver_match.namespace == 'reservas' %}active{% endif %}">Reservas</a>
+        <a href="{% url 'contactos:lista' %}" class="{% if request.resolver_match.namespace == 'contactos' %}active{% endif %}">Contactos</a>
+        <a href="{% url 'tareas:lista' %}" class="{% if request.resolver_match.namespace == 'tareas' %}active{% endif %}">Tareas</a>
+        <a href="{% url 'campanas:lista' %}" class="{% if request.resolver_match.namespace == 'campanas' %}active{% endif %}">Campañas</a>
+        <a href="{% url 'vouchers:lista' %}" class="{% if request.resolver_match.namespace == 'vouchers' %}active{% endif %}">Vouchers</a>
+        {% if request.user.is_superuser or request.user.rol == 'dueno' %}
+        <a href="{% url 'configuracion:hub' %}" class="{% if request.resolver_match.namespace == 'configuracion' %}active{% endif %}">Configuración</a>
+        <a href="/admin/">Admin Django</a>
+        {% endif %}
+      </nav>
+      <div class="user-box">
+        {% if request.user.is_authenticated %}
+          {{ request.user.get_full_name|default:request.user.username }}
+          · <a href="{% url 'usuarios:logout' %}" style="color:inherit;text-decoration:underline;">Salir</a>
+        {% endif %}
+      </div>
+    </aside>
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

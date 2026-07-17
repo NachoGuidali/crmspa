@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Agenda {{ fecha|date:"d/m" }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <h1>{% if es_hoy %}Hoy{% else %}Agenda{% endif %} · {{ fecha|date:"l d/m/Y" }}</h1>
+    {% if not habilitado %}<p style="color:#a33; margin:0;">Día no habilitado (feriado o fuera de días laborables).</p>{% endif %}
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn btn-secondary" href="{% url 'turnero:hoy' %}?fecha={{ fecha_anterior|date:'Y-m-d' }}">← Día anterior</a>
+    {% if not es_hoy %}<a class="btn btn-secondary" href="{% url 'turnero:hoy' %}">Hoy</a>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'turnero:hoy' %}?fecha={{ fecha_siguiente|date:'Y-m-d' }}">Día siguiente →</a>
+    <a class="btn" href="{% url 'reservas:nueva' %}">+ Nueva reserva</a>
+  </div>
+</div>
+
+<div class="grid grid-3" style="margin-bottom:20px;">
+  <div class="card metric-card"><div class="value">{{ total_reservas }}</div><div class="label">Reservas del día</div></div>
+  <div class="card metric-card"><div class="value">{{ total_personas }}</div><div class="label">Personas</div></div>
+  <div class="card metric-card"><div class="value">${{ total_a_cobrar|floatformat:0 }}</div><div class="label">Falta cobrar hoy</div></div>
+</div>
+
+{% for bloque in bloques %}
+<div class="card" style="margin-bottom:16px;">
+  <h3>{{ bloque.turno.nombre }} <span style="color:var(--text-muted); font-weight:400; font-size:.82rem;">· {{ bloque.turno.hora_inicio|time:"H:i" }}–{{ bloque.turno.hora_fin|time:"H:i" }}</span></h3>
+  <table class="simple">
+    <thead><tr><th>Cliente</th><th>Circuito</th><th>Pers.</th><th>Estado</th><th>Total / Saldo</th><th></th></tr></thead>
+    <tbody>
+      {% for r in bloque.reservas %}
+      <tr>
+        <td><a href="{% url 'contactos:detalle' r.contacto_id %}">{{ r.contacto.nombre }}</a><br><span style="font-size:.75rem; color:var(--text-muted);">{{ r.contacto.telefono }}</span></td>
+        <td>{{ r.circuito.nombre }}{% if r.extras_total %} <span style="font-size:.72rem; color:var(--color-teal);">+extras</span>{% endif %}</td>
+        <td>{{ r.cantidad_personas }}</td>
+        <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
+        <td>${{ r.total|floatformat:0 }}{% if r.saldo > 0 %} · <span style="color:#a33;">debe ${{ r.saldo|floatformat:0 }}</span>{% else %}<span style="color:#3c7a3c;"> · pago</span>{% endif %}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          {% if r.estado == 'confirmado' or r.estado == 'pendiente_sena' %}
+          <form method="post" action="{% url 'reservas:asistio' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:hoy' %}?fecha={{ fecha|date:'Y-m-d' }}"><button class="btn" style="padding:3px 9px; font-size:.78rem;">Asistió</button></form>
+          <form method="post" action="{% url 'reservas:no_show' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:hoy' %}?fecha={{ fecha|date:'Y-m-d' }}"><button class="btn btn-secondary" style="padding:3px 9px; font-size:.78rem;">No vino</button></form>
+          {% endif %}
+          <a href="{% url 'reservas:detalle' r.id %}" style="font-size:.78rem; color:var(--color-teal); margin-left:4px;">detalle</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% empty %}
+<div class="card"><p style="color:var(--text-muted);">No hay reservas para este día.</p></div>
+{% endfor %}
+{% endblock %}

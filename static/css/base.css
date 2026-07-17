@@ -1,0 +1,317 @@
+:root {
+  /* Estancia Cuatro Estaciones — paleta de marca */
+  --color-crema: #fdf5ed;
+  --color-crema-2: #f4efed;
+  --color-durazno: #fee8ca;
+  --color-tan: #ae8d71;
+  --color-tan-2: #bd8e62;
+  --color-marron: #844713;
+  --color-naranja: #ef8627;
+  --color-naranja-2: #eb5f11;
+  --color-verde-oliva: #617245;
+  --color-verde-oscuro: #3c3e22;
+  --color-verde-noche: #252c1a;
+  --color-verde-carbon: #434330;
+  --color-salvia: #8d9f97;
+  --color-teal: #265a58;
+  --color-gris: #dcdcdc;
+  --color-negro: #000100;
+
+  --bg-app: var(--color-crema);
+  --bg-panel: #ffffff;
+  --bg-sidebar: var(--color-verde-noche);
+  --text-main: var(--color-verde-noche);
+  --text-muted: var(--color-salvia);
+  --accent: var(--color-naranja);
+  --accent-strong: var(--color-naranja-2);
+  --border: #e7ded2;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Montserrat', -apple-system, sans-serif;
+
+  --radius: 10px;
+  --shadow: 0 2px 10px rgba(37, 44, 26, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+h1, h2, h3, h4, .brand-serif {
+  font-family: var(--font-display);
+  font-weight: 700;
+  margin: 0 0 .4em 0;
+}
+
+a { color: var(--color-teal); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--bg-sidebar);
+  color: var(--color-crema);
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .brand {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.sidebar .brand small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--color-tan);
+  margin-top: 4px;
+}
+
+.sidebar nav {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar nav a {
+  color: var(--color-crema);
+  opacity: .82;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: .86rem;
+  font-weight: 500;
+}
+
+.sidebar nav a:hover, .sidebar nav a.active {
+  background: rgba(253, 245, 237, .12);
+  opacity: 1;
+  text-decoration: none;
+}
+
+.sidebar .user-box {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(253,245,237,.15);
+  font-size: .8rem;
+  opacity: .85;
+}
+
+.main {
+  padding: 28px 34px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.grid {
+  display: grid;
+  gap: 18px;
+}
+
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+@media (max-width: 900px) {
+  .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+.metric-card .value {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  color: var(--color-verde-oliva);
+}
+
+.metric-card .label {
+  color: var(--text-muted);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.btn {
+  display: inline-block;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--accent-strong); text-decoration: none; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-verde-oliva);
+  border: 1px solid var(--color-verde-oliva);
+}
+
+.btn-secondary:hover { background: var(--color-verde-oliva); color: #fff; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  background: var(--color-gris);
+  color: var(--text-main);
+}
+
+.badge-nueva_consulta { background: var(--color-durazno); color: var(--color-marron); }
+.badge-en_gestion { background: #fde3cf; color: var(--accent-strong); }
+.badge-reserva_confirmada { background: #dbe6d3; color: var(--color-verde-oliva); }
+.badge-requiere_atencion_humana { background: #f6d6d6; color: #a33; }
+
+.badge-pendiente_sena { background: var(--color-durazno); color: var(--color-marron); }
+.badge-confirmado { background: #dbe6d3; color: var(--color-verde-oliva); }
+.badge-completado { background: #d4e7e6; color: var(--color-teal); }
+.badge-cancelado { background: var(--color-gris); color: #666; }
+.badge-no_show { background: #f6d6d6; color: #a33; }
+
+/* tareas */
+.badge-pendiente { background: var(--color-durazno); color: var(--color-marron); }
+.badge-completada { background: #dbe6d3; color: var(--color-verde-oliva); }
+.badge-vencida { background: #f6d6d6; color: #a33; }
+
+/* vouchers */
+.badge-activo { background: #dbe6d3; color: var(--color-verde-oliva); }
+.badge-canjeado { background: #d4e7e6; color: var(--color-teal); }
+.badge-vencido { background: var(--color-gris); color: #666; }
+
+table.simple {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.simple th, table.simple td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: .85rem;
+}
+
+table.simple th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.kanban-col {
+  background: var(--color-crema-2);
+  border-radius: var(--radius);
+  padding: 12px;
+  min-height: 200px;
+}
+
+.kanban-col h3 {
+  font-family: var(--font-body);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.kanban-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  cursor: grab;
+  border-left: 3px solid var(--color-verde-oliva);
+}
+
+.kanban-card.dragging { opacity: .4; }
+.kanban-col.dragover { outline: 2px dashed var(--color-verde-oliva); }
+
+.kanban-card .titulo { font-weight: 600; margin-bottom: 2px; }
+.kanban-card .meta { font-size: .76rem; color: var(--text-muted); }
+
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 5px; }
+.form-row input, .form-row select, .form-row textarea {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: .88rem;
+}
+
+.form-row input[type="checkbox"] {
+  width: auto;
+}
+
+.form-row ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.form-row ul li label { display: inline; font-weight: 400; }
+.form-row ul input[type="checkbox"] { margin-right: 5px; }
+
+.login-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-verde-noche);
+}
+
+.login-card {
+  background: var(--bg-panel);
+  padding: 40px;
+  border-radius: var(--radius);
+  width: 340px;
+  text-align: center;
+}
+
+.login-card .brand-serif { font-size: 1.6rem; }

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Configuración{% endblock %}
+{% block content %}
+<div class="topbar"><h1>Configuración</h1></div>
+<p style="color:var(--text-muted); margin-top:-14px; margin-bottom:24px;">Todo lo del negocio se edita desde acá — sin tocar código ni n8n.</p>
+
+<div class="grid grid-3">
+  {% for nombre, url, desc in secciones %}
+  <a href="{% url url %}" class="card" style="display:block; color:inherit;">
+    <h3 style="color:var(--color-verde-oliva);">{{ nombre }}</h3>
+    <p style="color:var(--text-muted); font-size:.84rem; margin:0;">{{ desc }}</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

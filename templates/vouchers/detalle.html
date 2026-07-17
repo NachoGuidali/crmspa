@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Voucher {{ voucher.codigo }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'vouchers:lista' %}" style="color:var(--text-muted); font-size:.8rem;">← Vouchers</a></p>
+    <h1>Voucher {{ voucher.codigo }}</h1>
+  </div>
+  <div style="display:flex; gap:8px;">
+    {% if voucher.vigente %}
+    <a href="{% url 'vouchers:canjear' voucher.pk %}" class="btn">Canjear</a>
+    <form method="post" action="{% url 'vouchers:anular' voucher.pk %}">{% csrf_token %}
+      <button class="btn btn-secondary" type="submit" onclick="return confirm('¿Anular este voucher?')">Anular</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
+<div class="grid grid-2" style="align-items:start;">
+  <div class="card" style="background:var(--color-verde-oscuro); color:var(--color-crema); text-align:center; padding:34px;">
+    <div style="font-family:var(--font-display); font-size:1.3rem;">Estancia Cuatro Estaciones</div>
+    <div style="font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--color-tan); margin-bottom:18px;">Gift Voucher</div>
+    <div style="font-family:var(--font-display); font-size:1.6rem;">{{ voucher.circuito.nombre }}</div>
+    <div style="font-size:2rem; font-family:var(--font-display); margin:8px 0;">${{ voucher.monto|floatformat:0 }}</div>
+    <div style="font-family:monospace; font-size:1.2rem; letter-spacing:.1em; background:rgba(253,245,237,.12); padding:8px; border-radius:8px;">{{ voucher.codigo }}</div>
+    {% if voucher.mensaje_regalo %}<p style="margin-top:16px; font-style:italic;">"{{ voucher.mensaje_regalo }}"</p>{% endif %}
+    <div style="font-size:.74rem; margin-top:12px; color:var(--color-tan);">Válido hasta {{ voucher.fecha_vencimiento|date:"d/m/Y" }}</div>
+  </div>
+
+  <div class="card">
+    <h3>Datos</h3>
+    <p style="font-size:.88rem;"><strong>Estado:</strong> <span class="badge badge-{{ voucher.estado }}">{{ voucher.get_estado_display }}</span></p>
+    <p style="font-size:.88rem;"><strong>Comprador:</strong> {{ voucher.comprador_nombre }} {{ voucher.comprador_telefono }}</p>
+    <p style="font-size:.88rem;"><strong>Para:</strong> {{ voucher.destinatario_nombre|default:"—" }}</p>
+    <p style="font-size:.88rem;"><strong>Comprado:</strong> {{ voucher.fecha_compra|date:"d/m/Y" }} · {{ voucher.medio_pago|default:"—" }}</p>
+    {% if voucher.reserva_canje %}
+    <p style="font-size:.88rem;"><strong>Canjeado:</strong> {{ voucher.canjeado_at|date:"d/m/Y H:i" }} → reserva de {{ voucher.reserva_canje.contacto.nombre }} el {{ voucher.reserva_canje.fecha|date:"d/m/Y" }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

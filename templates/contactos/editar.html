@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ contacto.nombre }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'contactos:detalle' contacto.pk %}" style="color:var(--text-muted); font-size:.8rem;">← Ficha</a></p>
+    <h1>Editar contacto</h1>
+  </div>
+</div>
+<div class="card" style="max-width:560px;">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<div style="color:#a33; font-size:.78rem;">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn">Guardar</button>
+  </form>
+</div>
+{% endblock %}

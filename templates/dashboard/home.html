@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <h1>Dashboard</h1>
+    <p style="color:var(--text-muted); margin:0;">{{ desde|date:"d/m/Y" }} — {{ hasta|date:"d/m/Y" }}</p>
+  </div>
+  <div style="display:flex; gap:12px; align-items:end;">
+    <a href="{% url 'dashboard:caja' %}" class="btn btn-secondary">Caja del día</a>
+    <a href="{% url 'dashboard:salud' %}" class="btn btn-secondary">Salud del sistema</a>
+    <form method="get" style="display:flex; gap:8px; align-items:end;">
+      <div class="form-row" style="margin:0;">
+        <label>Desde</label>
+        <input type="date" name="desde" value="{{ desde|date:'Y-m-d' }}">
+      </div>
+      <div class="form-row" style="margin:0;">
+        <label>Hasta</label>
+        <input type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}">
+      </div>
+      <button class="btn btn-secondary" type="submit">Filtrar</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:24px;">
+  <div class="card metric-card">
+    <div class="value">${{ ingresos_totales|floatformat:0 }}</div>
+    <div class="label">Ingresos del período</div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">${{ senas_pendientes|floatformat:0 }}</div>
+    <div class="label">Señas pendientes de cobro</div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">{{ contactos_nuevos }}</div>
+    <div class="label">Clientes nuevos</div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">{{ clientes_recurrentes }}</div>
+    <div class="label">Clientes recurrentes</div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-bottom:24px;">
+  <div class="card">
+    <h3>Turnos por estado</h3>
+    <table class="simple">
+      {% for estado, count in turnos_por_estado.items %}
+      <tr><td><span class="badge badge-{{ estado }}">{{ estado }}</span></td><td>{{ count }}</td></tr>
+      {% empty %}<tr><td colspan="2">Sin datos en el período.</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h3>Ingresos por circuito</h3>
+    <table class="simple">
+      {% for row in ingresos_por_circuito %}
+      <tr><td>{{ row.reserva__circuito__nombre|default:"—" }}</td><td>${{ row.total|floatformat:0 }}</td></tr>
+      {% empty %}<tr><td colspan="2">Sin datos en el período.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>% de ocupación por circuito</h3>
+    <table class="simple">
+      <tr><th>Circuito</th><th>Personas</th><th>Ocupación</th></tr>
+      {% for row in ocupacion_por_circuito %}
+      <tr><td>{{ row.circuito }}</td><td>{{ row.personas }}</td><td>{{ row.pct }}%</td></tr>
+      {% empty %}<tr><td colspan="3">Sin datos en el período.</td></tr>{% endfor %}
+    </table>
+    {% if circuito_mas_vendido %}
+    <p style="margin-top:12px; font-size:.82rem; color:var(--text-muted);">
+      Circuito más vendido: <strong>{{ circuito_mas_vendido.circuito__nombre }}</strong> ({{ circuito_mas_vendido.c }} reservas)
+    </p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h3>Horarios pico</h3>
+    <table class="simple">
+      {% for row in horarios_pico %}
+      <tr><td>{{ row.turno__nombre }}</td><td>{{ row.c }} reservas</td></tr>
+      {% empty %}<tr><td colspan="2">Sin datos en el período.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

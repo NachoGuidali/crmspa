@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Inbox WhatsApp{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Inbox WhatsApp</h1>
+  <a href="{% url 'whatsapp:inbox' %}" class="btn btn-secondary">Ver como lista</a>
+</div>
+
+<div class="kanban">
+  {% for col in columnas %}
+  <div class="kanban-col" data-estado="{{ col.estado }}">
+    <h3>{{ col.label }} ({{ col.conversaciones|length }})</h3>
+    <div class="kanban-cards">
+      {% for c in col.conversaciones %}
+      <div class="kanban-card" draggable="true" data-id="{{ c.id }}"
+           onclick="window.location='{% url 'whatsapp:inbox' %}?conv={{ c.id }}'">
+        <div class="titulo">{{ c.get_display_name }}</div>
+        <div class="meta">{{ c.telefono }} · {{ c.ultimo_mensaje_at|timesince }}</div>
+        {% if c.mensajes_no_leidos %}<span class="badge badge-requiere_atencion_humana">{{ c.mensajes_no_leidos }} sin leer</span>{% endif %}
+        {% if not c.bot_activo %}<span class="badge">bot off</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script src="{% static 'js/kanban.js' %}"></script>
+<script>initKanban('{% url "whatsapp:mover" 0 %}'.replace('0', '__ID__'));</script>
+{% endblock %}

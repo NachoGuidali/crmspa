@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Tareas{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1>Tareas</h1>
+  <div style="display:flex; gap:6px;">
+    <a href="?filtro=mias" class="btn {% if filtro != 'pendientes' and filtro != 'todas' %}btn{% else %}btn-secondary{% endif %}">Mías</a>
+    <a href="?filtro=pendientes" class="btn {% if filtro == 'pendientes' %}btn{% else %}btn-secondary{% endif %}">Pendientes</a>
+    <a href="?filtro=todas" class="btn {% if filtro == 'todas' %}btn{% else %}btn-secondary{% endif %}">Todas</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:18px;">
+  <h3>Nueva tarea</h3>
+  <form method="post" action="{% url 'tareas:crear' %}">
+    {% csrf_token %}
+    <div class="grid grid-3">
+      {% for field in form %}
+      <div class="form-row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn">Agregar tarea</button>
+  </form>
+</div>
+
+<div class="card">
+  <table class="simple">
+    <thead><tr><th>Tipo</th><th>Descripción</th><th>Contacto</th><th>Asignada a</th><th>Cuándo</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for t in tareas %}
+      <tr>
+        <td>{{ t.get_tipo_display }}</td>
+        <td>{{ t.descripcion }}</td>
+        <td>{% if t.contacto %}<a href="{% url 'contactos:detalle' t.contacto.pk %}">{{ t.contacto.nombre }}</a>{% else %}—{% endif %}</td>
+        <td>{{ t.asignado_a.get_full_name|default:t.asignado_a.username|default:"—" }}</td>
+        <td>{{ t.fecha_programada|date:"d/m H:i" }}</td>
+        <td>{% if t.vencida %}<span class="badge badge-no_show">vencida</span>{% else %}<span class="badge badge-{{ t.estado }}">{{ t.get_estado_display }}</span>{% endif %}</td>
+        <td>
+          {% if t.estado != 'completada' %}
+          <form method="post" action="{% url 'tareas:completar' t.pk %}" style="display:inline;">{% csrf_token %}
+            <button class="btn btn-secondary" type="submit" style="padding:4px 10px;">Completar</button>
+          </form>
+          {% else %}✓{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No hay tareas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

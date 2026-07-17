@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ contacto.nombre }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'contactos:lista' %}" style="color:var(--text-muted); font-size:.8rem;">← Contactos</a></p>
+    <h1>{{ contacto.nombre }}</h1>
+  </div>
+  <a href="{% url 'contactos:editar' contacto.pk %}" class="btn btn-secondary">Editar datos</a>
+</div>
+
+<div class="grid grid-3" style="align-items:start;">
+  <div class="card">
+    <h3>Datos</h3>
+    <p style="font-size:.88rem;"><strong>Teléfono:</strong> {{ contacto.telefono }}</p>
+    <p style="font-size:.88rem;"><strong>Email:</strong> {{ contacto.email|default:"—" }}</p>
+    <p style="font-size:.88rem;"><strong>Nacimiento:</strong> {{ contacto.fecha_nacimiento|date:"d/m/Y"|default:"—" }}</p>
+    <p style="font-size:.88rem;"><strong>Cliente desde:</strong> {{ contacto.fecha_alta|date:"d/m/Y" }}</p>
+    <p style="font-size:.88rem;"><strong>Total gastado:</strong> ${{ total_gastado|floatformat:0 }}</p>
+    <p style="font-size:.82rem; color:var(--text-muted);">
+      Recordatorios: {% if contacto.recibir_recordatorios %}✅{% else %}🚫{% endif %} ·
+      Promociones: {% if contacto.recibir_promociones %}✅{% else %}🚫{% endif %}
+    </p>
+    <div style="margin-top:8px;">
+      {% for e in contacto.etiquetas.all %}<span class="badge" style="background:{{ e.color }}; color:#fff;">{{ e.nombre }}</span> {% endfor %}
+    </div>
+    {% with extras=contacto.campos_extra %}
+    {% if extras %}
+    <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+      {% for campo, valor in extras %}
+      <p style="font-size:.88rem;"><strong>{{ campo.nombre }}:</strong> {{ valor }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="card" style="grid-column: span 2;">
+    <h3>Historial de reservas</h3>
+    <table class="simple">
+      <thead><tr><th>Fecha</th><th>Circuito</th><th>Turno</th><th>Estado</th><th>Pagado</th><th></th></tr></thead>
+      <tbody>
+        {% for r in reservas %}
+        <tr>
+          <td>{{ r.fecha|date:"d/m/Y" }}</td>
+          <td>{{ r.circuito.nombre }}</td>
+          <td>{{ r.turno.nombre }}</td>
+          <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
+          <td>${{ r.monto_pagado|floatformat:0 }} / seña ${{ r.monto_sena|floatformat:0 }}</td>
+          <td>
+            <details>
+              <summary style="cursor:pointer; color:var(--color-teal); font-size:.8rem;">Registrar pago</summary>
+              <form method="post" action="{% url 'contactos:registrar_pago' r.pk %}" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                {% csrf_token %}
+                <select name="tipo" style="padding:5px; border-radius:6px; border:1px solid var(--border);">
+                  <option value="sena">Seña</option><option value="saldo">Saldo</option>
+                </select>
+                <input type="number" name="monto" placeholder="Monto" style="width:90px; padding:5px; border-radius:6px; border:1px solid var(--border);" required>
+                <select name="medio_pago" style="padding:5px; border-radius:6px; border:1px solid var(--border);">
+                  <option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option>
+                  <option value="mercado_pago">Mercado Pago</option><option value="tarjeta">Tarjeta</option>
+                </select>
+                <button class="btn" type="submit" style="padding:5px 12px;">Registrar</button>
+              </form>
+            </details>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">Sin reservas todavía.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h3>Notas internas</h3>
+  <form method="post" action="{% url 'contactos:agregar_nota' contacto.pk %}" style="display:flex; gap:8px; margin-bottom:14px;">
+    {% csrf_token %}
+    {{ nota_form.texto }}
+    <button class="btn" type="submit">Agregar</button>
+  </form>
+  {% for n in notas %}
+  <div style="border-left:3px solid var(--color-tan); padding:6px 12px; margin-bottom:8px;">
+    <div style="font-size:.88rem;">{{ n.texto }}</div>
+    <div style="font-size:.72rem; color:var(--text-muted);">{{ n.autor.get_full_name|default:n.autor.username|default:"—" }} · {{ n.created_at|date:"d/m/Y H:i" }}</div>
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:.85rem;">Sin notas todavía.</p>
+  {% endfor %}
+</div>
+{% endblock %}

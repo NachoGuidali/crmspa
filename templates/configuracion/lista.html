@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'configuracion:hub' %}" style="color:var(--text-muted); font-size:.8rem;">← Configuración</a></p>
+    <h1>{{ titulo }}</h1>
+  </div>
+  {% if crear_url %}<a href="{% url crear_url %}" class="btn">+ Nuevo</a>{% endif %}
+</div>
+
+<div class="card">
+  <table class="simple">
+    <thead>
+      <tr>
+        {% for col in columnas %}<th>{{ col }}</th>{% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pk, valores in filas %}
+      <tr>
+        {% for v in valores %}<td>{{ v }}</td>{% endfor %}
+        <td style="text-align:right; white-space:nowrap;">
+          {% if accion_extra_url %}<a href="{% url accion_extra_url pk %}" style="color:var(--color-teal);">{{ accion_extra_label }}</a> · {% endif %}
+          {% if editar_url %}<a href="{% url editar_url pk %}">Editar</a>{% endif %}
+          {% if borrar_url %} · <a href="{% url borrar_url pk %}" style="color:#a33;">Borrar</a>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="{{ columnas|length|add:1 }}">Sin registros todavía.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
