@@ -312,21 +312,19 @@
   <div class="detalles-grid" style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(300px,1.4fr);gap:clamp(32px,6vw,64px);align-items:center">
     <div data-reveal="true" style="opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease">
       <div style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#265a58;margin-bottom:14px">Pasión por los detalles</div>
-      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(24px,3.5vw,36px);color:#252c1a;line-height:1.2;margin:0 0 16px">Spa Cuatro Estaciones en tu casa.</h2>
-      <p style="font-size:14px;line-height:1.75;color:#434330;margin:0">Piezas elaboradas especialmente por nosotros: bálsamos y jabones artesanales pensados para prolongar la experiencia.</p>
+      <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(24px,3.5vw,36px);color:#252c1a;line-height:1.2;margin:0 0 16px">Brunch SIN TACC</h2>
+      <p style="font-size:14px;line-height:1.75;color:#434330;margin:0">Sabemos lo importante que es sentirse tranquilo al momento de comer. Por eso preparamos todo por separado y con muchísimo cuidado. Nuestro brunch es artesanal, abundante y elaborado con ingredientes de primera calidad, para que disfruten la experiencia sin preocupaciones.</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px">
-      <sc-for list="{{ productos }}" as="p" hint-placeholder-count="2">
-        <div data-reveal="true" style="background:#fdf5ed;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
-          <div style="height:180px;position:relative;overflow:hidden">
-            <img src="fotos/{{ p.fotoArchivo }}" alt="{{ p.nombre }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-          </div>
-          <div style="padding:20px 20px 24px">
-            <div style="font-family:'Bodoni Moda',serif;font-size:18px;color:#252c1a;margin-bottom:6px">{{ p.nombre }}</div>
-            <div style="font-size:12.5px;line-height:1.6;color:#617245">{{ p.desc }}</div>
-          </div>
-        </div>
-      </sc-for>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px">
+      <div data-reveal="true" style="border-radius:4px;overflow:hidden;height:280px;position:relative;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
+        <img src="fotos/brunch-01.jpg" alt="Brunch sin TACC artesanal" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
+      <div data-reveal="true" style="border-radius:4px;overflow:hidden;height:280px;position:relative;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
+        <img src="fotos/brunch-02.jpg" alt="Mesa de brunch dulce y salado" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
+      <div data-reveal="true" style="border-radius:4px;overflow:hidden;height:280px;position:relative;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
+        <img src="fotos/brunch-03.jpg" alt="Picada de campo artesanal" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
     </div>
   </div>
 </section>
@@ -429,7 +427,20 @@
     </div>
     <div>
       <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Seguinos</div>
-      <a href="https://www.instagram.com/_.spacuatroestaciones._/" target="_blank" style="font-size:13px;color:#fdf5ed" style-hover="color:#ef8627">@_.spacuatroestaciones._</a>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <a href="https://www.instagram.com/_.spacuatroestaciones._/" target="_blank" style="display:inline-flex;align-items:center;gap:10px;font-size:13px;color:#fdf5ed" style-hover="color:#ef8627">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 01-1.38-.9 3.7 3.7 0 01-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.38A5.85 5.85 0 00.63 4.14c-.3.76-.5 1.64-.56 2.9C.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.12.66.66 1.33 1.08 2.12 1.38.76.3 1.64.5 2.91.56C8.33 24 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.85 5.85 0 002.12-1.38 5.85 5.85 0 001.38-2.12c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.85 5.85 0 00-1.38-2.12A5.85 5.85 0 0019.86.63c-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0z"/><path d="M12 5.84A6.16 6.16 0 1018.16 12 6.16 6.16 0 0012 5.84M12 16a4 4 0 114-4 4 4 0 01-4 4M18.41 4.15a1.44 1.44 0 101.44 1.44 1.44 1.44 0 00-1.44-1.44z"/></svg>
+          @_.spacuatroestaciones._
+        </a>
+        <a href="#" target="_blank" style="display:inline-flex;align-items:center;gap:10px;font-size:13px;color:#fdf5ed" style-hover="color:#ef8627">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+          Facebook
+        </a>
+        <a href="#" target="_blank" style="display:inline-flex;align-items:center;gap:10px;font-size:13px;color:#fdf5ed" style-hover="color:#ef8627">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.08-.14 1.62.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+          TikTok
+        </a>
+      </div>
     </div>
   </div>
   <div style="max-width:1240px;margin:0 auto;padding-top:24px;font-size:11px;color:#8d9f97;text-align:center">© {{ anio }} Estancia Cuatro Estaciones — Spa de Campo</div>
