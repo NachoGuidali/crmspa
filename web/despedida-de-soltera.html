@@ -139,7 +139,7 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:26px;max-width:760px;margin:0 auto">
       <sc-for list="{{ circuitos }}" as="c" hint-placeholder-count="2">
         <div style="background:{{ c.flyer.bg }};color:{{ c.flyer.text }};border:1px solid {{ c.flyer.accent }};border-radius:16px;padding:32px 26px 26px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
-          <svg width="30" height="34" viewBox="0 0 46 52"><circle cx="23" cy="14" r="13" fill="{{ c.flyer.accent }}"></circle><rect x="20" y="26" width="6" height="22" fill="{{ c.flyer.accent }}" opacity="0.55"></rect></svg>
+          <div style="width:52px;height:36px;background-color:{{ c.flyer.accent }};-webkit-mask:url('logo.png') center/contain no-repeat;mask:url('logo.png') center/contain no-repeat" aria-label="Logo Estancia Cuatro Estaciones"></div>
           <div>
             <div style="font-family:'Bodoni Moda',serif;font-weight:700;font-size:25px;line-height:1;color:{{ c.flyer.text }}">{{ c.flyer.headline }}</div>
             <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:22px;margin-top:4px;color:{{ c.flyer.accent }}">{{ c.flyer.tierNombre }}</div>
@@ -221,7 +221,7 @@
   <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:44px;padding-bottom:44px;border-bottom:1px solid rgba(253,245,237,.1)">
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-        <svg width="26" height="30" viewBox="0 0 46 52" style="flex:none"><circle cx="23" cy="14" r="13" fill="#eb5f11"></circle><circle cx="14" cy="20" r="9" fill="#617245"></circle><circle cx="32" cy="20" r="9" fill="#8d9f97"></circle><rect x="20" y="26" width="6" height="22" fill="#bd8e62"></rect></svg>
+        <img src="logo.png" alt="Estancia Cuatro Estaciones" style="height:34px;width:auto;filter:brightness(0) invert(1);flex:none">
         <span style="font-family:'Bodoni Moda',serif;font-size:16px;color:#fdf5ed">Estancia Cuatro Estaciones</span>
       </div>
       <p style="font-size:12.5px;line-height:1.8;color:#dcdcdc;margin:0;max-width:280px">Spa de campo familiar en el corazón de Virrey del Pino, Zona Oeste — naturaleza, relajación y gastronomía en un mismo lugar.</p>
