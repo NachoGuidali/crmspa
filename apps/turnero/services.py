@@ -113,3 +113,37 @@ def disponibilidad_circuito(circuito, fecha):
         })
 
     return {'fecha': fecha.isoformat(), 'habilitado': True, 'turnos': resultado}
+
+
+def disponibilidad_rango(circuito, desde, hasta, personas=None):
+    """
+    Disponibilidad de un circuito para un rango de fechas (para que el bot muestre
+    'qué días hay' o sugiera alternativas cuando un día pedido está lleno).
+    Devuelve una lista de días, cada uno con los turnos que tienen lugar.
+    """
+    from datetime import timedelta
+
+    dias = []
+    d = desde
+    while d <= hasta:
+        info = disponibilidad_circuito(circuito, d)
+        turnos_libres = [
+            t for t in info['turnos']
+            if not t['bloqueado'] and t['cupo_disponible'] > 0
+            and (personas is None or t['cupo_disponible'] >= personas)
+        ]
+        dias.append({
+            'fecha': d.isoformat(),
+            'habilitado': info['habilitado'],
+            'hay_lugar': bool(turnos_libres),
+            'turnos_libres': [
+                {
+                    'turno_id': t['turno_id'], 'turno_nombre': t['turno_nombre'],
+                    'hora_inicio': t['hora_inicio'], 'hora_fin': t['hora_fin'],
+                    'cupo_disponible': t['cupo_disponible'],
+                }
+                for t in turnos_libres
+            ],
+        })
+        d += timedelta(days=1)
+    return dias

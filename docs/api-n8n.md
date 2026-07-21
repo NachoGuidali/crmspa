@@ -167,6 +167,35 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
 ```
 - `habilitado: false` → el negocio no atiende ese día (`turnos` vacío).
 - Ofrecé al cliente solo los turnos con `cupo_disponible > 0` y `bloqueado: false`.
+
+### Disponibilidad de un rango de fechas (varios días de una)
+`GET /api/v1/disponibilidad/rango/?circuito_id=3&desde=2026-08-01&hasta=2026-08-31&personas=6`
+
+Para cuando el cliente pregunta **"¿qué días hay este mes?"** o para **sugerir alternativas**
+cuando el día que pidió está lleno. `personas` es opcional (filtra los turnos que tengan lugar
+para esa cantidad). El rango máximo es **62 días**.
+
+**200:**
+```json
+{
+  "circuito_id": 3, "circuito_nombre": "Spa Grupal Clásico",
+  "desde": "2026-08-01", "hasta": "2026-08-31",
+  "dias": [
+    {
+      "fecha": "2026-08-01", "habilitado": true, "hay_lugar": true,
+      "turnos_libres": [
+        {"turno_id": 2, "turno_nombre": "Turno tarde", "hora_inicio": "15:00", "hora_fin": "19:00", "cupo_disponible": 8}
+      ]
+    },
+    {"fecha": "2026-08-02", "habilitado": true, "hay_lugar": false, "turnos_libres": []}
+  ]
+}
+```
+Cómo lo usa el bot:
+- **"¿qué días hay en agosto?"** → filtrá los `dias` con `hay_lugar: true`.
+- **"el sábado 23 no hay, ¿cuándo sí?"** → consultá el rango desde esa fecha y ofrecé el primer
+  día con `hay_lugar: true` (o el primero cuyo `turnos_libres` incluya el turno que quiere).
+- **400** si el rango está invertido (`hasta < desde`) o supera 62 días.
 - `ocupado_por_otro_circuito: true` → (solo en **modo spa exclusivo**) el turno ya está
   reservado por otro circuito, así que no hay lugar aunque sea otro servicio.
 - **404** `{"error": "circuito_not_found"}`.
@@ -393,6 +422,7 @@ Para multimedia:
 | POST | `/api/v1/contactos/` | X-Api-Key | Crear/completar cliente |
 | GET | `/api/v1/circuitos/` | X-Api-Key | Circuitos con precio+seña por fecha |
 | GET | `/api/v1/disponibilidad/` | X-Api-Key | Cupo por turno de un circuito/fecha |
+| GET | `/api/v1/disponibilidad/rango/` | X-Api-Key | Días con lugar en un rango (mes / alternativas) |
 | POST | `/api/v1/reservas/` | X-Api-Key | Crear reserva |
 | GET | `/api/v1/reservas/<id>/` | X-Api-Key | Ver reserva |
 | POST | `/api/v1/reservas/<id>/confirmar-sena/` | X-Api-Key | Registrar seña y confirmar |
