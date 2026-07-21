@@ -22,6 +22,10 @@
     @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
     html{scroll-behavior:smooth}
     ::selection{background:#eb5f11;color:#fdf5ed}
+    .foto-zoom{transition:transform .55s ease;cursor:zoom-in;display:block;width:100%;height:auto}
+    .foto-zoom:hover{transform:scale(1.07)}
+    #lightbox{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.92);display:none;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+    #lightbox img{max-width:95%;max-height:92%;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
     .nav-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:16px clamp(18px,2.4vw,34px);flex:1 1 auto}
     .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:10px;margin-left:auto}
     .nav-toggle span{display:block;width:24px;height:2px;background:#fdf5ed;border-radius:2px;transition:transform .3s ease,opacity .3s ease}
@@ -270,7 +274,7 @@
     <div style="column-width:290px;column-gap:14px">
       <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="12">
         <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
-          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="width:100%;height:auto;display:block">
+          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" class="foto-zoom" style="width:100%;height:auto;display:block">
         </div>
       </sc-for>
     </div>
@@ -299,7 +303,7 @@
     <div style="column-width:290px;column-gap:14px">
       <sc-for list="{{ brunchGaleria }}" as="g" hint-placeholder-count="6">
         <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
-          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="width:100%;height:auto;display:block">
+          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" class="foto-zoom" style="width:100%;height:auto;display:block">
         </div>
       </sc-for>
     </div>
@@ -316,13 +320,13 @@
     </div>
     <div style="column-width:175px;column-gap:14px">
       <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
-        <img src="fotos/brunch-tacc1.jpg" alt="Brunch sin TACC artesanal" style="width:100%;height:auto;display:block">
+        <img src="fotos/brunch-tacc1.jpg" alt="Brunch sin TACC artesanal" class="foto-zoom" style="width:100%;height:auto;display:block">
       </div>
       <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
-        <img src="fotos/brunch-tacc2.jpg" alt="Mesa de brunch dulce y salado" style="width:100%;height:auto;display:block">
+        <img src="fotos/brunch-tacc2.jpg" alt="Mesa de brunch dulce y salado" class="foto-zoom" style="width:100%;height:auto;display:block">
       </div>
       <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
-        <img src="fotos/brunch-tacc3.jpg" alt="Picada de campo artesanal" style="width:100%;height:auto;display:block">
+        <img src="fotos/brunch-tacc3.jpg" alt="Picada de campo artesanal" class="foto-zoom" style="width:100%;height:auto;display:block">
       </div>
     </div>
   </div>
@@ -444,6 +448,8 @@
   <div style="max-width:1240px;margin:0 auto;padding-top:24px;font-size:11px;color:#8d9f97;text-align:center">© {{ anio }} Estancia Cuatro Estaciones — Spa de Campo</div>
 </footer>
 
+<div id="lightbox"><img src="" alt=""></div>
+
 </div>
 
 </x-dc>
@@ -541,6 +547,25 @@ class Component extends DCLogic {
         slides[hi].style.opacity = '1';
       }, 5000);
     }
+
+    // Lightbox: al hacer click en una foto de galería, la abre en grande.
+    var lb = document.getElementById('lightbox');
+    var lbImg = lb ? lb.querySelector('img') : null;
+    if (lb && lbImg) {
+      this._onFotoClick = function (e) {
+        var img = e.target.closest ? e.target.closest('.foto-zoom') : null;
+        if (img && img.tagName === 'IMG') {
+          lbImg.src = img.src;
+          lbImg.alt = img.alt || '';
+          lb.style.display = 'flex';
+        }
+      };
+      this._cerrarLb = function () { lb.style.display = 'none'; };
+      this._onLbKey = function (e) { if (e.key === 'Escape') lb.style.display = 'none'; };
+      document.addEventListener('click', this._onFotoClick);
+      lb.addEventListener('click', this._cerrarLb);
+      document.addEventListener('keydown', this._onLbKey);
+    }
   }
 
   componentWillUnmount() {
@@ -552,6 +577,8 @@ class Component extends DCLogic {
       window.removeEventListener('orientationchange', this._ajustarHero);
     }
     if (this._heroCarrusel) clearInterval(this._heroCarrusel);
+    if (this._onFotoClick) document.removeEventListener('click', this._onFotoClick);
+    if (this._onLbKey) document.removeEventListener('keydown', this._onLbKey);
   }
 
   renderVals() {
