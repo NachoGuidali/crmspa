@@ -99,7 +99,7 @@
 
 <!-- HERO -->
 <section id="inicio" style="position:relative;height:clamp(360px,52vw,620px);display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden">
-  <img src="fotos/galeria-11.jpg" alt="Despedida de Soltera — Estancia Cuatro Estaciones" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <img src="fotos/despedida-01.jpg" alt="Despedida de Soltera — Estancia Cuatro Estaciones" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
   <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(60,38,14,.5), rgba(37,44,26,.68))"></div>
   <div style="position:relative;z-index:2;padding:0 24px">
     <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#ef8627;margin-bottom:18px">Spa de Campo · Virrey del Pino</div>
@@ -117,10 +117,10 @@ Creamos una experiencia para que la novia y sus amigas disfruten juntas de una j
 No es una despedida tradicional. Es una forma diferente, exclusiva y original de celebrar este momento tan especial. ✨</p>
   </div>
 
-  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
-    <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="6">
-      <div style="position:relative;aspect-ratio:1/1;border-radius:4px;overflow:hidden">
-        <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <div style="max-width:1100px;margin:0 auto;column-width:280px;column-gap:16px">
+    <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="8">
+      <div style="break-inside:avoid;margin:0 0 16px;border-radius:4px;overflow:hidden">
+        <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="width:100%;height:auto;display:block">
       </div>
     </sc-for>
   </div>
@@ -280,12 +280,14 @@ class Component extends DCLogic {
     const navClass = this.state.navOpen ? 'open' : '';
     const mobileClass = this.state.mobileOpen ? 'mobile-open' : '';
     const galeria = [
-      { foto: 'banner-5-amigas-batas.jpg', caption: 'Amigas con batas' },
-      { foto: 'galeria-04.jpg', caption: 'Grupo de amigas, atardecer' },
-      { foto: 'galeria-11.jpg', caption: 'Brindis final' },
-      { foto: 'galeria-03.jpg', caption: 'Brunch de campo' },
-      { foto: 'galeria-09.jpg', caption: 'Velas y ambientaci\u00f3n' },
-      { foto: 'brunch-05.jpg', caption: 'Mesa dulce' },
+      { foto: 'despedida-01.jpg', caption: 'Amigas disfrutando la jornada' },
+      { foto: 'despedida-02.jpg', caption: 'Brindis entre amigas' },
+      { foto: 'despedida-03.jpg', caption: 'Relax en el spa' },
+      { foto: 'despedida-04.jpg', caption: 'Grupo de amigas' },
+      { foto: 'despedida-05.jpg', caption: 'Momento especial' },
+      { foto: 'despedida-06.jpg', caption: 'Celebraci\u00f3n en el campo' },
+      { foto: 'despedida-07.jpg', caption: 'Circuito de aguas' },
+      { foto: 'despedida-08.jpg', caption: 'Recuerdos inolvidables' },
     ];
 
     // NOTA: contenido y precios son PLACEHOLDER; reemplazar con los datos reales.
