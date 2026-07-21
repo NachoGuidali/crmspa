@@ -267,10 +267,10 @@
       <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#844713;margin-bottom:14px">Galería</div>
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(26px,4vw,40px);color:#252c1a;margin:0">Un recorrido por el Spa de Campo.</h2>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;grid-auto-flow:dense;gap:14px">
+    <div style="column-width:290px;column-gap:14px">
       <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="12">
-        <div data-reveal="true" style="grid-column:span {{ g.colSpan }};grid-row:span {{ g.rowSpan }};position:relative;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
-          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
+          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="width:100%;height:auto;display:block">
         </div>
       </sc-for>
     </div>
@@ -296,10 +296,10 @@
 <!-- GALERIA BRUNCH -->
 <section data-screen-label="Galería Brunch" style="background:#fdf5ed;padding:clamp(40px,6vw,72px) clamp(20px,6vw,80px)">
   <div style="max-width:1240px;margin:0 auto">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;grid-auto-flow:dense;gap:14px">
+    <div style="column-width:290px;column-gap:14px">
       <sc-for list="{{ brunchGaleria }}" as="g" hint-placeholder-count="6">
-        <div data-reveal="true" style="grid-column:span {{ g.colSpan }};grid-row:span {{ g.rowSpan }};position:relative;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
-          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
+          <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" style="width:100%;height:auto;display:block">
         </div>
       </sc-for>
     </div>
@@ -314,15 +314,15 @@
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(24px,3.5vw,36px);color:#252c1a;line-height:1.2;margin:0 0 16px">Brunch SIN TACC</h2>
       <p style="font-size:14px;line-height:1.75;color:#434330;margin:0">Sabemos lo importante que es sentirse tranquilo al momento de comer. Por eso preparamos todo por separado y con muchísimo cuidado. Nuestro brunch es artesanal, abundante y elaborado con ingredientes de primera calidad, para que disfruten la experiencia sin preocupaciones.</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px">
-      <div data-reveal="true" style="border-radius:4px;overflow:hidden;height:280px;position:relative;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
-        <img src="fotos/brunch-tacc1.jpg" alt="Brunch sin TACC artesanal" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <div style="column-width:175px;column-gap:14px">
+      <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
+        <img src="fotos/brunch-tacc1.jpg" alt="Brunch sin TACC artesanal" style="width:100%;height:auto;display:block">
       </div>
-      <div data-reveal="true" style="border-radius:4px;overflow:hidden;height:280px;position:relative;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
-        <img src="fotos/brunch-tacc2.jpg" alt="Mesa de brunch dulce y salado" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
+        <img src="fotos/brunch-tacc2.jpg" alt="Mesa de brunch dulce y salado" style="width:100%;height:auto;display:block">
       </div>
-      <div data-reveal="true" style="border-radius:4px;overflow:hidden;height:280px;position:relative;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease,box-shadow .35s ease,translate .35s ease" style-hover="box-shadow:0 20px 40px rgba(0,0,0,.15);translate:0 -6px">
-        <img src="fotos/brunch-tacc3.jpg" alt="Picada de campo artesanal" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
+        <img src="fotos/brunch-tacc3.jpg" alt="Picada de campo artesanal" style="width:100%;height:auto;display:block">
       </div>
     </div>
   </div>
