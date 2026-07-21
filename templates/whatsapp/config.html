@@ -61,9 +61,21 @@
         <input type="text" name="meta_verify_token" value="{{ config.meta_verify_token }}" placeholder="lo elegís vos y lo cargás en Meta"></div>
       <div class="form-row"><label>Versión de la Graph API</label>
         <input type="text" name="meta_api_version" value="{{ config.meta_api_version|default:'v21.0' }}" placeholder="v21.0"></div>
-      <p style="font-size:.78rem; color:var(--text-muted); margin-top:8px;">
-        El envío/recepción por Meta se activa en la próxima etapa. Por ahora esta sección guarda las credenciales.
+      <p style="font-size:.78rem; color:var(--text-muted); margin:10px 0 4px;">
+        URL del webhook (cargala en Meta → WhatsApp → Configuration, con el Verify Token de arriba):
       </p>
+      <input type="text" readonly value="{{ webhook_meta_url }}" onclick="this.select()" style="cursor:pointer;">
+      {% if meta_info %}
+        {% if meta_info.error %}
+        <p style="font-size:.8rem; color:#a33; margin-top:10px;">No se pudo conectar con Meta: {{ meta_info.error }}</p>
+        {% else %}
+        <p style="font-size:.82rem; color:var(--color-verde-oliva); margin-top:10px;">
+          ✓ Conectado: <strong>{{ meta_info.display_phone_number }}</strong>
+          {% if meta_info.verified_name %}({{ meta_info.verified_name }}){% endif %}
+          {% if meta_info.quality_rating %} · calidad {{ meta_info.quality_rating }}{% endif %}
+        </p>
+        {% endif %}
+      {% endif %}
     </div>
   </div>
 

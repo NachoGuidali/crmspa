@@ -13,12 +13,16 @@ from .models import Conversacion, Mensaje
 logger = logging.getLogger('apps.whatsapp')
 
 
-def procesar_webhook_entrante(payload: dict) -> list:
+def procesar_webhook_entrante(payload: dict, origen: str = 'evolution') -> list:
     """
-    Parsea el payload de Evolution API, guarda los mensajes/conversaciones,
+    Parsea el payload entrante (Evolution o Meta), guarda los mensajes/conversaciones,
     y devuelve la lista de mensajes entrantes procesados (para reenviar a n8n).
     """
-    mensajes = webhook.parse_incoming_webhook(payload)
+    if origen == 'meta':
+        from . import webhook_meta
+        mensajes = webhook_meta.parse_incoming_webhook(payload)
+    else:
+        mensajes = webhook.parse_incoming_webhook(payload)
     procesados = []
     for m in mensajes:
         resultado = _guardar_mensaje_entrante(m)
@@ -94,11 +98,6 @@ def enviar_mensaje(*, telefono, mensaje='', media_url='', media_type='', usuario
     por afuera de esto, o el mensaje no queda registrado en el historial del inbox.
     """
     from utils.phone import normalize_ar_phone
-
-    from .models import ConfiguracionWhatsApp
-    if ConfiguracionWhatsApp.get_proveedor() == ConfiguracionWhatsApp.Proveedor.META:
-        raise EnvioError('El proveedor Meta todavía no está implementado para el envío. '
-                         'Elegí Evolution en Configuración → WhatsApp, o esperá la próxima etapa.')
 
     telefono = normalize_ar_phone(telefono)
     conversacion, _ = Conversacion.objects.get_or_create(telefono=telefono)

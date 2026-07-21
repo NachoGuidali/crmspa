@@ -6,6 +6,7 @@ app_name = 'whatsapp'
 
 urlpatterns = [
     path('webhook/evolution/', views.EvolutionWebhookView.as_view(), name='webhook_evolution'),
+    path('webhook/meta/', views.MetaWebhookView.as_view(), name='webhook_meta'),
     path('api/enviar/', views.EnviarMensajeView.as_view(), name='enviar'),
     path('api/handoff/', views.HandoffView.as_view(), name='handoff'),
 ]

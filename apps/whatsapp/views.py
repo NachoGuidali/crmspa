@@ -1,13 +1,18 @@
+import json
 import logging
 
+from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.integraciones.mixins import ApiKeyLoggedView
 
-from . import services, webhook
+from . import services, webhook, webhook_meta
 from .models import ConfiguracionWhatsApp, Conversacion, Mensaje
 from .serializers import EnviarMensajeSerializer, HandoffSerializer
 from .tasks import forward_to_n8n
@@ -73,6 +78,40 @@ class EvolutionWebhookView(APIView):
             cache.set('whatsapp_qr_code', b64, timeout=55)
             cache.set('whatsapp_qr_text', code, timeout=55)
             logger.info('QR de WhatsApp cacheado desde webhook')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class MetaWebhookView(View):
+    """
+    Webhook de WhatsApp Cloud API (Meta).
+    - GET: handshake de verificación al suscribir el webhook (hub.challenge).
+    - POST: mensajes entrantes, validados con la firma X-Hub-Signature-256.
+    Usa la firma cruda de request.body (por eso es una View de Django, no DRF).
+    """
+
+    def get(self, request):
+        mode = request.GET.get('hub.mode', '')
+        token = request.GET.get('hub.verify_token', '')
+        challenge = request.GET.get('hub.challenge', '')
+        configured = ConfiguracionWhatsApp.get_setting('meta_verify_token')
+        if webhook_meta.verify_webhook_get(mode, token, configured):
+            return HttpResponse(challenge, status=200)
+        return HttpResponse('Forbidden', status=403)
+
+    def post(self, request):
+        app_secret = ConfiguracionWhatsApp.get_setting('meta_app_secret')
+        signature = request.headers.get('X-Hub-Signature-256', '')
+        if app_secret and not webhook_meta.verify_signature(request.body, signature, app_secret):
+            logger.warning('Webhook Meta rechazado — firma inválida')
+            return HttpResponse('Forbidden', status=403)
+        try:
+            payload = json.loads(request.body or '{}')
+        except (ValueError, TypeError):
+            return HttpResponse('OK', status=200)
+
+        for procesado in services.procesar_webhook_entrante(payload, origen='meta'):
+            forward_to_n8n.delay(procesado)
+        return HttpResponse('OK', status=200)
 
 
 class EnviarMensajeView(ApiKeyLoggedView, APIView):

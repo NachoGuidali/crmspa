@@ -207,18 +207,25 @@ def config_whatsapp(request):
         return redirect('whatsapp:config')
 
     estado = 'desconocido'
+    meta_info = None
     if config.proveedor == ConfiguracionWhatsApp.Proveedor.EVOLUTION and config.evolution_api_url:
         from . import sender
         try:
             estado = sender.get_connection_state()
         except Exception:
             estado = 'error'
+    elif config.proveedor == ConfiguracionWhatsApp.Proveedor.META and config.meta_access_token and config.meta_phone_number_id:
+        from . import sender_meta
+        meta_info = sender_meta.get_phone_number_info()
 
     webhook_evolution = request.build_absolute_uri(reverse('whatsapp_api:webhook_evolution'))
+    webhook_meta = request.build_absolute_uri(reverse('whatsapp_api:webhook_meta'))
     return render(request, 'whatsapp/config.html', {
         'config': config,
         'connection_state': estado,
         'webhook_evolution_url': webhook_evolution,
+        'webhook_meta_url': webhook_meta,
+        'meta_info': meta_info,
         'PROVEEDORES': ConfiguracionWhatsApp.Proveedor.choices,
     })
 

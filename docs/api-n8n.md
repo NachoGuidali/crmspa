@@ -47,8 +47,9 @@ X-Api-Key: <uuid-de-la-api-key>
 - Cada llamada queda registrada en `WebhookLog` (auditoría: endpoint, IP, body, status).
 - Sin key válida → `401`/`403`.
 
-**Excepción:** el webhook entrante de Evolution (`/whatsapp/webhook/evolution/`) **no** usa
-`X-Api-Key`; usa el header `apikey` con el *webhook token* (ver §7).
+**Excepción:** los webhooks entrantes del proveedor (`/whatsapp/webhook/evolution/` y
+`/whatsapp/webhook/meta/`) **no** usan `X-Api-Key`: Evolution usa el header `apikey` con el
+*webhook token*; Meta usa su *verify token* (GET) y la firma `X-Hub-Signature-256` (POST). Ver §7.
 
 ### Rate limiting
 
@@ -455,12 +456,25 @@ Cliente → WhatsApp → Evolution API
    → n8n → POST /whatsapp/api/enviar/   (el CRM manda la respuesta por Evolution)
 ```
 
-### 7.1 Webhook entrante (Evolution → CRM)
-`POST /whatsapp/webhook/evolution/`
+### 7.1 Webhook entrante (proveedor → CRM)
+
+El CRM soporta **dos proveedores de WhatsApp**, configurables en *Configuración → WhatsApp*:
+**Evolution API** (no oficial, con QR) o **Meta Cloud API** (oficial). El proveedor es
+**transparente para n8n**: el mensaje entrante llega al mismo pipeline y se reenvía con el
+mismo payload (§7.2), y para responder n8n usa siempre `POST /whatsapp/api/enviar/` (§7.3).
+No cambia nada en n8n según el proveedor.
+
+**Evolution** — `POST /whatsapp/webhook/evolution/`
 - Autenticación: header **`apikey`** = *webhook token* (config en *Configuración WhatsApp*).
   En producción, sin token configurado el webhook **se rechaza** (agujero de seguridad).
-- El CRM parsea el evento de Evolution, guarda el mensaje en el inbox (**deduplicado** por
-  `message_id`, así un reenvío de Evolution no duplica) y **reenvía a n8n**.
+
+**Meta** — `GET`/`POST /whatsapp/webhook/meta/`
+- `GET`: handshake de verificación de Meta (`hub.challenge`) con el *Verify Token*.
+- `POST`: mensajes entrantes, validados con la firma **`X-Hub-Signature-256`** (App Secret).
+- Esta URL se carga en Meta → WhatsApp → Configuration.
+
+En ambos casos el CRM parsea el evento, guarda el mensaje en el inbox (**deduplicado** por
+`message_id`) y **reenvía a n8n**.
 
 ### 7.2 Payload que el CRM le manda a n8n
 
@@ -648,6 +662,7 @@ a un asesor?". Todos los filtros son opcionales.
 | POST | `/whatsapp/api/enviar/` | X-Api-Key | Enviar mensaje al cliente |
 | POST | `/whatsapp/api/handoff/` | X-Api-Key | Derivar a humano |
 | POST | `/whatsapp/webhook/evolution/` | webhook token | Entrada de mensajes (Evolution) |
+| GET/POST | `/whatsapp/webhook/meta/` | verify token + firma | Entrada de mensajes (Meta Cloud API) |
 | POST | `{N8N_RESERVA_APROBADA_URL}` | (webhook n8n) | **CRM → n8n**: reserva confirmada, avisar al cliente |
 
 > **Variable de entorno nueva:** `N8N_RESERVA_APROBADA_URL` — la URL del webhook de n8n que el
