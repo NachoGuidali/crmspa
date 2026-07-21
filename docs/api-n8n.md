@@ -9,6 +9,32 @@ Contrato completo de la API que **n8n** consume para operar el bot de WhatsApp.
 
 ---
 
+## 0. Del contrato a los endpoints reales
+
+Todo lo que pediste en `pedido-a-crm.md` está implementado. Cambian algunos detalles:
+los paths reales van bajo **`/api/v1/`** y hay un par de diferencias de forma. Este es el mapa
+uno a uno para que ajustes los nodos:
+
+| En el contrato | Endpoint real | Diferencias a tener en cuenta |
+|---|---|---|
+| `POST /api/conversaciones` | `POST /api/v1/conversaciones/` | — |
+| `GET /api/conversaciones/:telefono` | `GET /api/v1/conversaciones/<telefono>/` | — |
+| `PATCH /api/conversaciones/:telefono` | `PATCH /api/v1/conversaciones/<telefono>/` | — |
+| `POST /api/conversaciones/:telefono/mensajes` | `POST /api/v1/conversaciones/<telefono>/mensajes/` | — |
+| `GET /api/conversaciones?inactiva_desde_horas=` | `GET /api/v1/conversaciones/?inactiva_desde_horas=` | mismos query params |
+| `bot_bloqueado` | (mismo campo) | Internamente es el inverso de `bot_activo`. Lo leés/escribís como `bot_bloqueado`; en el CRM el staff lo reactiva con el botón **"Prender bot"**. |
+| `GET /api/turnero?desde=&dias=` | `GET /api/v1/turnero/?desde=&dias=` | La lista de días viene **envuelta** en `{ "desde", "dias", "turnero": [...] }` (leé `.turnero`). Cada turno usa `turno_nombre` (no `turno`). Incluye `dia_semana`. |
+| `POST /api/reservas` (con `resumen` + `estado`) | `POST /api/v1/reservas/bot/` | **No mandes `estado`**: lo decide el CRM según `medio_pago`. Además del `resumen`, mandá los datos **estructurados** (`circuito_id`, `turno_id`, `fecha`, `cantidad_personas`) para que valide cupo. Ver §5. |
+| `GET /api/reservas?fecha=&estado=confirmada` | `GET /api/v1/reservas/agenda/?fecha=` | Devuelve `{telefono, nombre, horario}`. Acepta `estado=confirmada` o `confirmado`. |
+| `PATCH /api/reservas` (por teléfono, MP acreditado) | `POST /api/v1/reservas/confirmar-pago/` | Body `{"telefono": "..."}`. Busca la reserva `pendiente_pago` más reciente y la confirma. |
+| Webhook `reserva-aprobada` | igual | Lo dispara el CRM a `N8N_RESERVA_APROBADA_URL` (§7.5). |
+
+> **Nombres de estado:** el CRM usa el masculino `confirmado` (no `confirmada`). Donde importa,
+> los endpoints aceptan las dos formas. Los estados de pago son `pendiente_aprobacion`
+> (transferencia) y `pendiente_pago` (Mercado Pago) — ver §5.
+
+---
+
 ## 1. Autenticación
 
 Casi todos los endpoints exigen una **API Key** en el header:
@@ -216,13 +242,14 @@ decidir si hay lugar — este endpoint es solo para pintar ocupación.
 
 - `desde` opcional (default hoy), formato `YYYY-MM-DD`. `dias` opcional (default 14, máximo 62).
 
-**200:**
+**200:** (la lista de días viene envuelta en `turnero`; cada día trae `dia_semana`)
 ```json
 {
   "desde": "2026-08-01", "dias": 14,
   "turnero": [
     {
       "fecha": "2026-08-01",
+      "dia_semana": "sabado",
       "turnos": [
         {"turno_id": 1, "turno_nombre": "Turno mañana", "hora_inicio": "10:00", "hora_fin": "14:00", "ocupado": true, "personas": 3, "reservas": 1},
         {"turno_id": 2, "turno_nombre": "Turno tarde", "hora_inicio": "15:00", "hora_fin": "19:00", "ocupado": false, "personas": 0, "reservas": 0}
@@ -231,6 +258,8 @@ decidir si hay lugar — este endpoint es solo para pintar ocupación.
   ]
 }
 ```
+- `dia_semana`: `lunes`…`domingo` (sin tildes). `ocupado: true` cuando hay al menos una reserva
+  que ocupa el slot; `personas` es la suma de personas de esas reservas.
 - **400** `{"error": "desde_invalido"}` o `{"error": "dias_invalido"}`.
 
 ---
@@ -623,3 +652,30 @@ a un asesor?". Todos los filtros son opcionales.
 
 > **Variable de entorno nueva:** `N8N_RESERVA_APROBADA_URL` — la URL del webhook de n8n que el
 > CRM llama al confirmar una reserva (§7.5). Configurala en el `.env` del backend.
+
+---
+
+## 10. Variables de entorno (del lado de n8n)
+
+En tu instancia de n8n configurá:
+
+| Variable | Valor | Para qué |
+|---|---|---|
+| `CRM_API_BASE` | `https://<dominio-del-crm>/api/v1/` | Base de todos los endpoints de este doc. |
+| `CRM_API_KEY` | la API Key generada en el admin del CRM | Va en el header `X-Api-Key` de cada request. |
+| `EVOLUTION_API_BASE` | URL del servidor de Evolution API | Solo si n8n habla directo con Evolution para algo puntual; el **envío de mensajes va por el CRM** (`POST /whatsapp/api/enviar/`), no directo. |
+| `EVOLUTION_INSTANCE` | nombre de la instancia de WhatsApp | Debe coincidir con la instancia configurada en el CRM (*Configuración → WhatsApp*). |
+
+Del lado del **CRM** (`.env` del backend) se configura `N8N_RESERVA_APROBADA_URL` (§7.5) para
+el único webhook CRM → n8n.
+
+> **Enviá siempre por el CRM, no directo a Evolution.** Aunque tengas `EVOLUTION_API_BASE`, todo
+> mensaje saliente debe ir por `POST /whatsapp/api/enviar/`: así queda registrado en el inbox y
+> recepción ve la conversación completa. Ver §7.3.
+
+### Sobre Redis
+
+No hace falta usar Redis como base de datos: **todo el estado del flujo vive en el CRM**
+(`/api/v1/conversaciones/`), para no tener dos fuentes de verdad. Si más adelante aparecen
+mensajes pisados por llegar muy seguido del mismo contacto, se puede sumar un lock corto por
+teléfono; no es necesario para el volumen actual.

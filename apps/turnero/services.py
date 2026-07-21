@@ -124,6 +124,7 @@ def turnero_crudo(desde, dias=14):
 
     from apps.reservas.models import Reserva
 
+    dias_semana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
     turnos = list(Turno.objects.filter(activo=True).order_by('hora_inicio'))
     hasta = desde + timedelta(days=max(dias, 1) - 1)
 
@@ -154,7 +155,11 @@ def turnero_crudo(desde, dias=14):
                 'personas': personas,
                 'reservas': cant,
             })
-        resultado.append({'fecha': d.isoformat(), 'turnos': slots})
+        resultado.append({
+            'fecha': d.isoformat(),
+            'dia_semana': dias_semana[d.weekday()],
+            'turnos': slots,
+        })
         d += timedelta(days=1)
     return resultado
 
