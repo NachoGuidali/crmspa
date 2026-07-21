@@ -19,7 +19,17 @@ class RespuestaRapidaAdmin(admin.ModelAdmin):
 
 @admin.register(ConfiguracionWhatsApp)
 class ConfiguracionWhatsAppAdmin(admin.ModelAdmin):
-    list_display = ('evolution_instance_name', 'evolution_api_url')
+    list_display = ('proveedor', 'evolution_instance_name', 'meta_phone_number_id')
+    fieldsets = (
+        (None, {'fields': ('proveedor',)}),
+        ('Evolution API', {'fields': (
+            'evolution_api_url', 'evolution_api_key', 'evolution_instance_name', 'webhook_token',
+        )}),
+        ('Meta Cloud API', {'fields': (
+            'meta_phone_number_id', 'meta_waba_id', 'meta_access_token',
+            'meta_app_secret', 'meta_verify_token', 'meta_api_version',
+        )}),
+    )
 
     def has_add_permission(self, request):
         return not ConfiguracionWhatsApp.objects.exists()

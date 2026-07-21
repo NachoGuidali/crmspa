@@ -4,8 +4,21 @@ from django.db import models
 
 
 class ConfiguracionWhatsApp(models.Model):
-    """Singleton — credenciales de Evolution API, editables desde el admin."""
+    """Singleton — proveedor de WhatsApp (Evolution API o Meta Cloud API) y sus credenciales.
+    Editable desde Configuración → WhatsApp (o el admin)."""
 
+    class Proveedor(models.TextChoices):
+        EVOLUTION = 'evolution', 'Evolution API (no oficial, con QR)'
+        META = 'meta', 'Meta Cloud API (oficial)'
+
+    proveedor = models.CharField(
+        max_length=20, choices=Proveedor.choices, default=Proveedor.EVOLUTION,
+        verbose_name='Proveedor de WhatsApp',
+        help_text='Qué canal usa el CRM para enviar/recibir. Evolution conecta escaneando un QR; '
+                  'Meta es la API oficial (requiere número y app aprobados en Meta).',
+    )
+
+    # --- Evolution API ---
     evolution_api_url = models.CharField(max_length=200, blank=True, verbose_name='Evolution API URL')
     evolution_api_key = models.CharField(max_length=200, blank=True, verbose_name='API Key')
     evolution_instance_name = models.CharField(
@@ -14,6 +27,30 @@ class ConfiguracionWhatsApp(models.Model):
     webhook_token = models.CharField(
         max_length=100, blank=True, verbose_name='Token de webhook',
         help_text='Token secreto que Evolution API envía en el header al hacer webhook.',
+    )
+
+    # --- Meta Cloud API ---
+    meta_phone_number_id = models.CharField(
+        max_length=50, blank=True, verbose_name='Phone Number ID',
+        help_text='ID del número en Meta (WhatsApp → API Setup).',
+    )
+    meta_waba_id = models.CharField(
+        max_length=50, blank=True, verbose_name='WhatsApp Business Account ID',
+    )
+    meta_access_token = models.CharField(
+        max_length=500, blank=True, verbose_name='Access Token',
+        help_text='Token permanente del System User con permiso whatsapp_business_messaging.',
+    )
+    meta_app_secret = models.CharField(
+        max_length=100, blank=True, verbose_name='App Secret',
+        help_text='Para validar la firma X-Hub-Signature-256 de los webhooks.',
+    )
+    meta_verify_token = models.CharField(
+        max_length=100, blank=True, verbose_name='Verify Token',
+        help_text='Token que vos elegís y cargás en Meta al configurar el webhook (verificación GET).',
+    )
+    meta_api_version = models.CharField(
+        max_length=10, blank=True, default='v21.0', verbose_name='Versión de la Graph API',
     )
 
     class Meta:
@@ -28,18 +65,20 @@ class ConfiguracionWhatsApp(models.Model):
         super().save(*args, **kwargs)
         cache.delete('whatsapp_config')
 
+    _CAMPOS_CONFIG = [
+        'proveedor',
+        'evolution_api_url', 'evolution_api_key', 'evolution_instance_name', 'webhook_token',
+        'meta_phone_number_id', 'meta_waba_id', 'meta_access_token', 'meta_app_secret',
+        'meta_verify_token', 'meta_api_version',
+    ]
+
     @classmethod
     def get_config(cls):
         config = cache.get('whatsapp_config')
         if config is None:
             try:
                 obj = cls.objects.get(pk=1)
-                config = {
-                    'evolution_api_url': obj.evolution_api_url,
-                    'evolution_api_key': obj.evolution_api_key,
-                    'evolution_instance_name': obj.evolution_instance_name,
-                    'webhook_token': obj.webhook_token,
-                }
+                config = {campo: getattr(obj, campo) for campo in cls._CAMPOS_CONFIG}
             except cls.DoesNotExist:
                 config = {}
             cache.set('whatsapp_config', config, 300)
@@ -50,9 +89,8 @@ class ConfiguracionWhatsApp(models.Model):
         config = cls.get_config()
         if key in config:
             db_val = config[key]
-            if key == 'webhook_token':
-                return db_val
-            if db_val:
+            # Estos campos valen aunque estén vacíos (no caen al fallback de settings).
+            if key in ('webhook_token', 'proveedor') or db_val:
                 return db_val
         settings_map = {
             'evolution_api_url': 'EVOLUTION_API_URL',
@@ -60,6 +98,10 @@ class ConfiguracionWhatsApp(models.Model):
             'evolution_instance_name': 'EVOLUTION_INSTANCE',
         }
         return getattr(settings, settings_map.get(key, ''), '')
+
+    @classmethod
+    def get_proveedor(cls):
+        return cls.get_setting('proveedor') or cls.Proveedor.EVOLUTION
 
 
 class Conversacion(models.Model):

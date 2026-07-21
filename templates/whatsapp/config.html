@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Configuración de WhatsApp{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'configuracion:hub' %}" style="color:var(--text-muted); font-size:.8rem;">← Configuración</a></p>
+    <h1>WhatsApp</h1>
+  </div>
+</div>
+<p style="color:var(--text-muted); margin-top:-10px; margin-bottom:22px;">
+  Elegí por dónde manda y recibe mensajes el CRM. <strong>Evolution</strong> conecta escaneando un QR
+  (no oficial, gratis). <strong>Meta</strong> es la API oficial (requiere número y app aprobados en Meta).
+</p>
+
+{% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
+<form method="post" id="configForm">
+  {% csrf_token %}
+
+  <div class="card" style="margin-bottom:18px;">
+    <h3 style="margin-top:0;">Proveedor</h3>
+    <div style="display:flex; gap:22px; flex-wrap:wrap;">
+      {% for value, label in PROVEEDORES %}
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:.92rem;">
+        <input type="radio" name="proveedor" value="{{ value }}" {% if config.proveedor == value %}checked{% endif %}
+               onchange="toggleProveedor()"> {{ label }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start; gap:18px;">
+
+    <!-- ── Evolution ── -->
+    <div class="card" id="card-evolution">
+      <h3 style="margin-top:0;">Evolution API</h3>
+      <div class="form-row"><label>URL de Evolution API</label>
+        <input type="text" name="evolution_api_url" value="{{ config.evolution_api_url }}" placeholder="http://evolution-api:8080"></div>
+      <div class="form-row"><label>API Key</label>
+        <input type="text" name="evolution_api_key" value="{{ config.evolution_api_key }}" placeholder="tu-api-key"></div>
+      <div class="form-row"><label>Nombre de instancia</label>
+        <input type="text" name="evolution_instance_name" value="{{ config.evolution_instance_name|default:'crmspa' }}" placeholder="crmspa"></div>
+      <div class="form-row"><label>Token del webhook</label>
+        <input type="text" name="webhook_token" value="{{ config.webhook_token }}" placeholder="token-secreto"></div>
+      <p style="font-size:.78rem; color:var(--text-muted); margin:10px 0 4px;">URL del webhook (se registra sola al guardar):</p>
+      <input type="text" readonly value="{{ webhook_evolution_url }}" onclick="this.select()" style="cursor:pointer;">
+    </div>
+
+    <!-- ── Meta ── -->
+    <div class="card" id="card-meta">
+      <h3 style="margin-top:0;">Meta Cloud API (oficial)</h3>
+      <div class="form-row"><label>Phone Number ID</label>
+        <input type="text" name="meta_phone_number_id" value="{{ config.meta_phone_number_id }}" placeholder="1234567890"></div>
+      <div class="form-row"><label>WhatsApp Business Account ID</label>
+        <input type="text" name="meta_waba_id" value="{{ config.meta_waba_id }}" placeholder="1234567890"></div>
+      <div class="form-row"><label>Access Token</label>
+        <input type="text" name="meta_access_token" value="{{ config.meta_access_token }}" placeholder="EAAG..."></div>
+      <div class="form-row"><label>App Secret</label>
+        <input type="text" name="meta_app_secret" value="{{ config.meta_app_secret }}" placeholder="para validar la firma del webhook"></div>
+      <div class="form-row"><label>Verify Token</label>
+        <input type="text" name="meta_verify_token" value="{{ config.meta_verify_token }}" placeholder="lo elegís vos y lo cargás en Meta"></div>
+      <div class="form-row"><label>Versión de la Graph API</label>
+        <input type="text" name="meta_api_version" value="{{ config.meta_api_version|default:'v21.0' }}" placeholder="v21.0"></div>
+      <p style="font-size:.78rem; color:var(--text-muted); margin-top:8px;">
+        El envío/recepción por Meta se activa en la próxima etapa. Por ahora esta sección guarda las credenciales.
+      </p>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <button type="submit" class="btn">Guardar configuración</button>
+  </div>
+</form>
+
+<!-- ── Conexión / QR (solo Evolution) ── -->
+<div class="card" id="card-conexion" style="margin-top:18px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h3 style="margin:0;">Conexión de WhatsApp</h3>
+    <span id="statusBadge" class="badge badge-{{ connection_state }}">{{ connection_state }}</span>
+  </div>
+
+  <div id="qrBox" style="display:flex; align-items:center; justify-content:center; min-height:300px; background:#fff; border:1px dashed var(--border); border-radius:12px; margin:16px 0; padding:16px;">
+    <div style="text-align:center; color:#888; font-size:.85rem;">Cargando…</div>
+  </div>
+  <p id="qrHint" style="font-size:.8rem; color:var(--text-muted); text-align:center; margin-top:0;">
+    Escaneá con WhatsApp → <strong>Dispositivos vinculados</strong> → Vincular un dispositivo.
+  </p>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+    <button type="button" class="btn btn-secondary" onclick="refreshQR(true)">Actualizar QR</button>
+    <button type="button" class="btn btn-secondary" onclick="checkStatus()">Ver estado</button>
+    <button type="button" class="btn btn-secondary" style="color:#a33; border-color:#a33;" onclick="logoutInstance()">Desconectar</button>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const STATE_LABELS = { open: 'Conectado', close: 'Desconectado', connecting: 'Conectando…', error: 'Error' };
+let qrPoll = null;
+
+function currentProveedor() {
+  const el = document.querySelector('input[name="proveedor"]:checked');
+  return el ? el.value : 'evolution';
+}
+
+function toggleProveedor() {
+  const esEvolution = currentProveedor() === 'evolution';
+  document.getElementById('card-evolution').style.opacity = esEvolution ? '1' : '.45';
+  document.getElementById('card-meta').style.opacity = esEvolution ? '.45' : '1';
+  document.getElementById('card-conexion').style.display = esEvolution ? '' : 'none';
+  if (esEvolution) { startQRPolling(); } else if (qrPoll) { clearInterval(qrPoll); qrPoll = null; }
+}
+
+function setBadge(state) {
+  const b = document.getElementById('statusBadge');
+  b.className = 'badge badge-' + state;
+  b.textContent = STATE_LABELS[state] || state;
+}
+
+function showConnected() {
+  document.getElementById('qrBox').innerHTML =
+    '<div style="text-align:center; color:var(--color-verde-oliva); font-weight:600;">✓ WhatsApp conectado</div>';
+  document.getElementById('qrHint').style.display = 'none';
+  setBadge('open');
+  if (qrPoll) { clearInterval(qrPoll); qrPoll = null; }
+}
+
+function showQR(b64) {
+  const src = b64.startsWith('data:') ? b64 : 'data:image/png;base64,' + b64;
+  document.getElementById('qrBox').innerHTML = '<img src="' + src + '" alt="QR" style="max-width:300px; border-radius:8px;">';
+  document.getElementById('qrHint').style.display = '';
+}
+
+async function refreshQR(force) {
+  const box = document.getElementById('qrBox');
+  if (force) box.innerHTML = '<div style="color:#888; font-size:.85rem;">Generando QR…</div>';
+  try {
+    const res = await fetch('{% url 'whatsapp:config_qr' %}');
+    const data = await res.json();
+    if (data.connected) { showConnected(); return; }
+    if (data.qr_base64) { showQR(data.qr_base64); }
+    else { box.innerHTML = '<div style="color:#888; font-size:.85rem;">Generando QR… esperá unos segundos.</div>'; }
+  } catch (e) {
+    box.innerHTML = '<div style="color:#a33; font-size:.85rem;">Error de conexión con Evolution</div>';
+  }
+}
+
+async function checkStatus() {
+  try {
+    const res = await fetch('{% url 'whatsapp:config_estado' %}');
+    const data = await res.json();
+    setBadge(data.state);
+    if (data.connected) showConnected();
+  } catch (e) { setBadge('error'); }
+}
+
+async function logoutInstance() {
+  if (!confirm('¿Desconectar WhatsApp de esta instancia?')) return;
+  await fetch('{% url 'whatsapp:config_logout' %}', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+  location.reload();
+}
+
+function startQRPolling() {
+  if (qrPoll) return;
+  refreshQR(true);
+  qrPoll = setInterval(refreshQR, 5000);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  toggleProveedor();
+  setInterval(checkStatus, 12000);
+});
+</script>
+{% endblock %}

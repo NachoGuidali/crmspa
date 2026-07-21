@@ -29,10 +29,20 @@ class EvolutionWebhookView(APIView):
     def post(self, request):
         token = request.headers.get('apikey', '')
         configured = ConfiguracionWhatsApp.get_setting('webhook_token')
-        if not webhook.verify_webhook_token(token, configured):
+        # Aceptamos el webhook_token configurado o la propia API key de Evolution
+        # (algunas versiones mandan la instance key en el header).
+        evo_key = ConfiguracionWhatsApp.get_setting('evolution_api_key')
+        if not webhook.verify_webhook_token(token, configured) and not (evo_key and token == evo_key):
             return Response({'error': 'invalid_token'}, status=401)
 
         payload = request.data if isinstance(request.data, dict) else {}
+
+        # El QR de vinculación llega por webhook: lo cacheamos para mostrarlo en Configuración.
+        event = str(payload.get('event', '')).upper().replace('.', '_')
+        if event == 'QRCODE_UPDATED':
+            self._cachear_qr(payload)
+            return Response({'ok': True})
+
         procesados = services.procesar_webhook_entrante(payload)
 
         for extra in procesados:
@@ -48,6 +58,21 @@ class EvolutionWebhookView(APIView):
             forward_to_n8n.delay(enriched)
 
         return Response({'ok': True, 'procesados': len(procesados)})
+
+    @staticmethod
+    def _cachear_qr(payload):
+        from django.core.cache import cache
+
+        data = payload.get('data', {}) or {}
+        qr = data.get('qrcode', data) or {}
+        code = qr.get('code', '')
+        b64 = qr.get('base64', '')
+        if b64 and ',' in b64:
+            b64 = b64.split(',', 1)[1]
+        if code or b64:
+            cache.set('whatsapp_qr_code', b64, timeout=55)
+            cache.set('whatsapp_qr_text', code, timeout=55)
+            logger.info('QR de WhatsApp cacheado desde webhook')
 
 
 class EnviarMensajeView(ApiKeyLoggedView, APIView):

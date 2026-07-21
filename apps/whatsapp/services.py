@@ -95,6 +95,11 @@ def enviar_mensaje(*, telefono, mensaje='', media_url='', media_type='', usuario
     """
     from utils.phone import normalize_ar_phone
 
+    from .models import ConfiguracionWhatsApp
+    if ConfiguracionWhatsApp.get_proveedor() == ConfiguracionWhatsApp.Proveedor.META:
+        raise EnvioError('El proveedor Meta todavía no está implementado para el envío. '
+                         'Elegí Evolution en Configuración → WhatsApp, o esperá la próxima etapa.')
+
     telefono = normalize_ar_phone(telefono)
     conversacion, _ = Conversacion.objects.get_or_create(telefono=telefono)
     contacto = conversacion.contacto or Contacto.objects.filter(telefono=telefono).first()

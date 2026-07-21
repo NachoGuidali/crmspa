@@ -30,6 +30,7 @@ def hub(request):
         ('Circuitos', 'configuracion:circuitos', 'Alta/edición de circuitos, precios y seña.'),
         ('Feriados', 'configuracion:feriados', 'Días especiales: cerrados o con tarifa de fin de semana.'),
         ('Bloqueos', 'configuracion:bloqueos', 'Bloqueos manuales de turnos/días.'),
+        ('WhatsApp', 'whatsapp:config', 'Elegir proveedor (Evolution con QR o Meta oficial) y conectar el número.'),
         ('Plantillas de mensaje', 'configuracion:plantillas', 'Mensajes del bot editables sin tocar n8n.'),
         ('Respuestas rápidas', 'configuracion:respuestas', 'Atajos para que recepción responda rápido en el inbox.'),
         ('Campos personalizados', 'configuracion:campos', 'Campos extra de contacto (ej. aniversario) para filtrar y segmentar.'),

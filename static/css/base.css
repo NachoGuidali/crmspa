@@ -204,6 +204,13 @@ a:hover { text-decoration: underline; }
 .badge-cancelado { background: var(--color-gris); color: #666; }
 .badge-no_show { background: #f6d6d6; color: #a33; }
 
+/* Estado de conexión de WhatsApp (Evolution) */
+.badge-open { background: #dbe6d3; color: var(--color-verde-oliva); }
+.badge-connecting { background: var(--color-durazno); color: var(--color-marron); }
+.badge-close { background: #f6d6d6; color: #a33; }
+.badge-error { background: var(--color-gris); color: #666; }
+.badge-desconocido { background: var(--color-gris); color: #666; }
+
 /* tareas */
 .badge-pendiente { background: var(--color-durazno); color: var(--color-marron); }
 .badge-completada { background: #dbe6d3; color: var(--color-verde-oliva); }

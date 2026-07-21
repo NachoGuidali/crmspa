@@ -156,3 +156,119 @@ def kanban_move(request, pk):
     conversacion.bot_activo = nuevo_estado != Conversacion.Estado.REQUIERE_ATENCION_HUMANA
     conversacion.save()
     return JsonResponse({'ok': True})
+
+
+# ── Configuración de WhatsApp (proveedor, Evolution + QR, Meta) ───────────────
+
+from .models import ConfiguracionWhatsApp
+
+
+def _es_dueno(user):
+    return user.is_superuser or getattr(user, 'rol', '') == 'dueno'
+
+
+@login_required
+def config_whatsapp(request):
+    """Configuración → WhatsApp: elegir proveedor y cargar credenciales."""
+    if not _es_dueno(request.user):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+
+    config = ConfiguracionWhatsApp.objects.filter(pk=1).first() or ConfiguracionWhatsApp()
+
+    if request.method == 'POST':
+        config.proveedor = request.POST.get('proveedor', ConfiguracionWhatsApp.Proveedor.EVOLUTION)
+        # Evolution
+        config.evolution_api_url = request.POST.get('evolution_api_url', '').strip()
+        config.evolution_api_key = request.POST.get('evolution_api_key', '').strip()
+        config.evolution_instance_name = request.POST.get('evolution_instance_name', '').strip() or 'crmspa'
+        config.webhook_token = request.POST.get('webhook_token', '').strip()
+        # Meta
+        config.meta_phone_number_id = request.POST.get('meta_phone_number_id', '').strip()
+        config.meta_waba_id = request.POST.get('meta_waba_id', '').strip()
+        config.meta_access_token = request.POST.get('meta_access_token', '').strip()
+        config.meta_app_secret = request.POST.get('meta_app_secret', '').strip()
+        config.meta_verify_token = request.POST.get('meta_verify_token', '').strip()
+        config.meta_api_version = request.POST.get('meta_api_version', '').strip() or 'v21.0'
+        config.save()
+
+        # Si es Evolution, damos de alta la instancia y registramos el webhook.
+        if config.proveedor == ConfiguracionWhatsApp.Proveedor.EVOLUTION and config.evolution_api_url:
+            from . import sender
+            webhook_url = request.build_absolute_uri(reverse('whatsapp_api:webhook_evolution'))
+            try:
+                sender.ensure_instance_exists()
+                sender.setup_instance_webhook(webhook_url)
+                messages.success(request, 'Configuración guardada. Instancia y webhook de Evolution listos.')
+            except Exception as e:
+                messages.warning(request, f'Guardado, pero no se pudo registrar la instancia/webhook: {e}')
+        else:
+            messages.success(request, 'Configuración guardada.')
+        return redirect('whatsapp:config')
+
+    estado = 'desconocido'
+    if config.proveedor == ConfiguracionWhatsApp.Proveedor.EVOLUTION and config.evolution_api_url:
+        from . import sender
+        try:
+            estado = sender.get_connection_state()
+        except Exception:
+            estado = 'error'
+
+    webhook_evolution = request.build_absolute_uri(reverse('whatsapp_api:webhook_evolution'))
+    return render(request, 'whatsapp/config.html', {
+        'config': config,
+        'connection_state': estado,
+        'webhook_evolution_url': webhook_evolution,
+        'PROVEEDORES': ConfiguracionWhatsApp.Proveedor.choices,
+    })
+
+
+@login_required
+def config_qr(request):
+    """Devuelve el QR (base64) de Evolution para vincular WhatsApp. Polleado por el front."""
+    if not _es_dueno(request.user):
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    from django.core.cache import cache
+
+    from . import sender
+    try:
+        sender.ensure_instance_exists()
+        estado = sender.get_connection_state()
+        if estado == 'open':
+            cache.delete('whatsapp_qr_code')
+            cache.delete('whatsapp_qr_text')
+            return JsonResponse({'connected': True, 'qr_base64': None})
+        if not cache.get('whatsapp_qr_text') and not cache.get('whatsapp_qr_code'):
+            sender.trigger_connect()
+        return JsonResponse({
+            'connected': False,
+            'qr_base64': cache.get('whatsapp_qr_code'),
+            'qr_code': cache.get('whatsapp_qr_text'),
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def config_estado(request):
+    """Estado de conexión de la instancia de Evolution (para el badge)."""
+    from . import sender
+    try:
+        estado = sender.get_connection_state()
+    except Exception as e:
+        return JsonResponse({'state': 'error', 'connected': False, 'detail': str(e)})
+    return JsonResponse({'state': estado, 'connected': estado == 'open'})
+
+
+@login_required
+@require_POST
+def config_logout(request):
+    """Desvincula el WhatsApp de la instancia de Evolution."""
+    if not _es_dueno(request.user):
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    from . import sender
+    try:
+        sender.logout_instance()
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
