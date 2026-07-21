@@ -196,6 +196,8 @@ a:hover { text-decoration: underline; }
 .badge-reserva_confirmada { background: #dbe6d3; color: var(--color-verde-oliva); }
 .badge-requiere_atencion_humana { background: #f6d6d6; color: #a33; }
 
+.badge-pendiente_pago { background: #fde3c4; color: #8a4b0e; }
+.badge-pendiente_aprobacion { background: #ffe9a8; color: #7a5a00; }
 .badge-pendiente_sena { background: var(--color-durazno); color: var(--color-marron); }
 .badge-confirmado { background: #dbe6d3; color: var(--color-verde-oliva); }
 .badge-completado { background: #d4e7e6; color: var(--color-teal); }

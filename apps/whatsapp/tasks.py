@@ -48,3 +48,34 @@ def _derivar_a_humano_por_falla_n8n(payload: dict):
     conv.estado = Conversacion.Estado.REQUIERE_ATENCION_HUMANA
     conv.bot_activo = False
     conv.save(update_fields=['estado', 'bot_activo'])
+
+
+@shared_task(bind=True, max_retries=5, retry_backoff=10, retry_backoff_max=600, retry_jitter=True)
+def notificar_reserva_aprobada(self, reserva_id):
+    """Avisa a n8n que una reserva quedó confirmada, para que el bot mande la
+    confirmación final al cliente por WhatsApp."""
+    from apps.reservas.models import Reserva
+
+    url = settings.N8N_RESERVA_APROBADA_URL
+    if not url:
+        logger.warning('N8N_RESERVA_APROBADA_URL no configurado — no se avisa al bot de la reserva %s', reserva_id)
+        return
+
+    reserva = (
+        Reserva.objects.select_related('contacto', 'turno', 'circuito').filter(pk=reserva_id).first()
+    )
+    if reserva is None:
+        return
+
+    payload = {
+        'telefono': reserva.contacto.telefono,
+        'nombre': reserva.contacto.nombre,
+        'horario_confirmado': f'{reserva.fecha.isoformat()} ({reserva.turno.nombre})',
+        'resumen': reserva.resumen or '',
+    }
+    try:
+        response = requests.post(url, json=payload, timeout=15)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        logger.warning('Error avisando reserva aprobada a n8n (intento %s): %s', self.request.retries + 1, exc)
+        raise self.retry(exc=exc)

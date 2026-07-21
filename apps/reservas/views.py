@@ -1,3 +1,8 @@
+import base64
+import binascii
+from datetime import date
+
+from django.core.files.base import ContentFile
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -77,6 +82,73 @@ class ReservaCancelarView(ApiKeyLoggedView, APIView):
         return Response(ReservaSerializer(reserva).data)
 
 
+class ReservaBotCrearView(ApiKeyLoggedView, APIView):
+    """POST /api/v1/reservas/bot/ — el bot crea la reserva con el medio de pago elegido.
+    transferencia → pendiente_aprobacion (con comprobante); mercado_pago → pendiente_pago (con link).
+    Manda fecha+turno+personas estructurados (valida cupo)."""
+
+    def post(self, request):
+        data = request.data
+        # El comprobante viene en base64 (transferencia)
+        comprobante = None
+        b64 = data.get('comprobante_base64')
+        if b64:
+            try:
+                raw = base64.b64decode(b64)
+            except (binascii.Error, ValueError):
+                return Response({'error': 'comprobante_base64_invalido'}, status=400)
+            mime = data.get('comprobante_mimetype', 'image/jpeg')
+            ext = (mime.split('/')[-1] or 'jpg').split(';')[0]
+            comprobante = ContentFile(raw, name=f'comprobante.{ext}')
+
+        try:
+            reserva = services.crear_reserva_bot(
+                telefono=data['telefono'],
+                nombre_contacto=data.get('nombre_contacto', ''),
+                circuito_id=data['circuito_id'],
+                turno_id=data['turno_id'],
+                fecha=date.fromisoformat(data['fecha']),
+                cantidad_personas=int(data.get('cantidad_personas', 1)),
+                medio_pago=data.get('medio_pago', ''),
+                resumen=data.get('resumen', ''),
+                comprobante=comprobante,
+                link_pago=data.get('link_pago', ''),
+            )
+        except services.ReservaError as e:
+            return Response({'error': str(e)}, status=422)
+        except (KeyError, ValueError) as e:
+            return Response({'error': 'datos_invalidos', 'detalle': str(e)}, status=400)
+
+        self._contacto_relacionado = reserva.contacto
+        return Response(ReservaSerializer(reserva).data, status=201)
+
+
+class ReservaConfirmarPagoView(ApiKeyLoggedView, APIView):
+    """POST /api/v1/reservas/confirmar-pago/ — Mercado Pago acreditó: confirma por teléfono.
+    Body: {"telefono": "..."}. Busca la reserva pendiente de pago más reciente y la confirma."""
+
+    def post(self, request):
+        from utils.phone import normalize_ar_phone
+
+        telefono = request.data.get('telefono', '')
+        if not telefono:
+            return Response({'error': 'telefono_requerido'}, status=400)
+        telefono = normalize_ar_phone(telefono)
+
+        reserva = (
+            Reserva.objects.filter(
+                contacto__telefono=telefono, estado=Reserva.Estado.PENDIENTE_PAGO,
+            )
+            .order_by('-created_at').first()
+        )
+        if not reserva:
+            return Response({'error': 'reserva_pendiente_pago_no_encontrada'}, status=404)
+
+        services.confirmar_reserva(reserva)
+        self._contacto_relacionado = reserva.contacto
+        return Response(ReservaSerializer(reserva).data)
+
+
 class ReservaReprogramarView(ApiKeyLoggedView, APIView):
     """POST /api/v1/reservas/<id>/reprogramar/ — mueve la reserva a otra fecha/turno.
     Conserva la seña ya pagada y libera el cupo anterior."""
@@ -100,6 +172,41 @@ class ReservaReprogramarView(ApiKeyLoggedView, APIView):
 
         self._contacto_relacionado = reserva.contacto
         return Response(ReservaSerializer(reserva).data)
+
+
+class ReservasAgendaView(ApiKeyLoggedView, APIView):
+    """GET /api/v1/reservas/agenda/?fecha=YYYY-MM-DD&estado=confirmado
+    Reservas de una fecha (por defecto confirmadas): las usa el bot para los recordatorios
+    automáticos (24hs antes y el mismo día). Devuelve {telefono, nombre, horario}."""
+
+    def get(self, request):
+        fecha_raw = request.query_params.get('fecha')
+        if not fecha_raw:
+            return Response({'error': 'fecha_requerida'}, status=400)
+        try:
+            fecha = date.fromisoformat(fecha_raw)
+        except ValueError:
+            return Response({'error': 'fecha_invalida', 'detalle': 'formato YYYY-MM-DD'}, status=400)
+
+        estado = request.query_params.get('estado', Reserva.Estado.CONFIRMADO)
+        # Aceptamos "confirmada"/"confirmado" indistintamente.
+        if estado in ('confirmada', 'confirmado'):
+            estado = Reserva.Estado.CONFIRMADO
+
+        reservas = (
+            Reserva.objects.filter(fecha=fecha, estado=estado)
+            .select_related('contacto', 'turno')
+            .order_by('turno__hora_inicio')
+        )
+        data = [
+            {
+                'telefono': r.contacto.telefono,
+                'nombre': r.contacto.nombre,
+                'horario': f'{r.fecha.isoformat()} ({r.turno.nombre})',
+            }
+            for r in reservas
+        ]
+        return Response(data)
 
 
 class ReservasPorContactoView(ApiKeyLoggedView, APIView):

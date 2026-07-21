@@ -11,7 +11,7 @@
 </div>
 <p style="color:var(--text-muted); margin-top:-14px; margin-bottom:16px; font-size:.82rem;">Arrastrá una tarjeta para cambiar el estado, o hacé clic para ver el detalle (reprogramar/cancelar).</p>
 
-<div class="kanban" style="grid-template-columns: repeat(5, 1fr);">
+<div class="kanban" style="grid-template-columns: repeat(7, minmax(185px, 1fr)); overflow-x: auto;">
   {% for col in columnas %}
   <div class="kanban-col" data-estado="{{ col.estado }}">
     <h3>{{ col.label }} ({{ col.reservas|length }})</h3>

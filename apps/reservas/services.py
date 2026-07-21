@@ -106,6 +106,47 @@ def crear_reserva(
 
 
 @transaction.atomic
+def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha,
+                      cantidad_personas=1, medio_pago='', resumen='',
+                      comprobante=None, link_pago=''):
+    """Crea una reserva desde el bot de WhatsApp: valida cupo (estructurado) y setea el estado
+    según el medio de pago.
+      - transferencia → pendiente_aprobacion (el staff verifica el comprobante)
+      - mercado_pago  → pendiente_pago (se confirma solo cuando MP avisa)
+    """
+    reserva = crear_reserva(
+        telefono=telefono, nombre_contacto=nombre_contacto,
+        circuito_id=circuito_id, turno_id=turno_id, fecha=fecha,
+        cantidad_personas=cantidad_personas,
+    )
+    reserva.origen = Reserva.Origen.WHATSAPP_BOT
+    reserva.resumen = resumen or ''
+    reserva.medio_pago = medio_pago or ''
+
+    if medio_pago == Reserva.MedioPago.TRANSFERENCIA:
+        reserva.estado = Reserva.Estado.PENDIENTE_APROBACION
+        if comprobante is not None:
+            reserva.comprobante = comprobante
+    elif medio_pago == Reserva.MedioPago.MERCADO_PAGO:
+        reserva.estado = Reserva.Estado.PENDIENTE_PAGO
+        reserva.link_pago = link_pago or ''
+    # otros medios quedan como pendiente_sena (el que puso crear_reserva)
+
+    reserva.save()
+    return reserva
+
+
+def confirmar_reserva(reserva):
+    """Confirma la reserva (Mercado Pago acreditó, o el staff aprobó el comprobante de
+    transferencia) y le avisa al bot para que mande la confirmación final al cliente."""
+    reserva.estado = Reserva.Estado.CONFIRMADO
+    reserva.save(update_fields=['estado', 'updated_at'])
+    from apps.whatsapp.tasks import notificar_reserva_aprobada
+    notificar_reserva_aprobada.delay(reserva.id)
+    return reserva
+
+
+@transaction.atomic
 def confirmar_sena(reserva, monto, medio_pago):
     Pago.objects.create(reserva=reserva, monto=monto, medio_pago=medio_pago, tipo=Pago.Tipo.SENA)
     reserva.monto_pagado += monto

@@ -89,6 +89,18 @@ class Conversacion(models.Model):
     ultimo_mensaje_at = models.DateTimeField(null=True, blank=True)
     mensajes_no_leidos = models.PositiveIntegerField(default=0)
     archivada = models.BooleanField(default=False, db_index=True)
+    # Estado del flujo conversacional que maneja el bot de n8n. Es una bolsa libre de datos
+    # (estado_flujo, personas, tipo_propuesta, fecha_solicitada, intentos_fecha,
+    # horario_confirmado, datos_contacto, override_regla, reserva_creada). El CRM es la única
+    # fuente de verdad: el bot la lee y la va actualizando por la API de conversaciones.
+    estado_bot = models.JSONField(default=dict, blank=True)
+
+    # Campos que el bot maneja dentro de estado_bot pero que tienen efectos/consultas propias.
+    ESTADO_FLUJO_DERIVADO = 'derivado'
+    CAMPOS_FLUJO = [
+        'estado_flujo', 'personas', 'tipo_propuesta', 'fecha_solicitada', 'intentos_fecha',
+        'horario_confirmado', 'datos_contacto', 'override_regla', 'reserva_creada',
+    ]
 
     class Meta:
         ordering = ['-ultimo_mensaje_at']
@@ -100,6 +112,30 @@ class Conversacion(models.Model):
 
     def get_display_name(self):
         return self.nombre_contacto or self.telefono
+
+    @property
+    def reserva_creada(self):
+        return bool(self.estado_bot.get('reserva_creada'))
+
+    @property
+    def estado_flujo(self):
+        return self.estado_bot.get('estado_flujo')
+
+    def estado_bot_publico(self):
+        """El diccionario plano que consume el bot (mergea la bolsa con los campos derivados)."""
+        data = {campo: self.estado_bot.get(campo) for campo in self.CAMPOS_FLUJO}
+        data.setdefault('estado_flujo', 'nuevo')
+        data['reserva_creada'] = self.reserva_creada
+        data['override_regla'] = bool(self.estado_bot.get('override_regla'))
+        data.update({
+            'telefono': self.telefono,
+            'nombre': self.nombre_contacto,
+            # bot_bloqueado es la cara pública de bot_activo: si el bot está apagado (handoff
+            # o reserva ya hecha), está "bloqueado" y no debe responder.
+            'bot_bloqueado': not self.bot_activo,
+            'last_message_ts': self.ultimo_mensaje_at,
+        })
+        return data
 
 
 class Mensaje(models.Model):

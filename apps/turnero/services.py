@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import Count, Sum
 
 from .models import BloqueoManual, Feriado, Turno
 
@@ -113,6 +113,50 @@ def disponibilidad_circuito(circuito, fecha):
         })
 
     return {'fecha': fecha.isoformat(), 'habilitado': True, 'turnos': resultado}
+
+
+def turnero_crudo(desde, dias=14):
+    """Ocupación cruda por (fecha, turno) para todo el spa, SIN reglas de negocio ni circuito.
+    Para cada día del rango y cada turno activo devuelve si hay una reserva que ocupa el slot
+    y cuántas personas suma. El bot lo usa como fuente de verdad simple del turnero; toda la
+    lógica de cupo/precio/exclusividad vive en el CRM y no se expone acá."""
+    from datetime import timedelta
+
+    from apps.reservas.models import Reserva
+
+    turnos = list(Turno.objects.filter(activo=True).order_by('hora_inicio'))
+    hasta = desde + timedelta(days=max(dias, 1) - 1)
+
+    ocupacion = {}
+    reservas = (
+        Reserva.objects.filter(
+            fecha__gte=desde, fecha__lte=hasta,
+            estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO,
+        )
+        .values('fecha', 'turno_id')
+        .annotate(personas=Sum('cantidad_personas'), reservas=Count('id'))
+    )
+    for row in reservas:
+        ocupacion[(row['fecha'], row['turno_id'])] = (row['personas'] or 0, row['reservas'])
+
+    resultado = []
+    d = desde
+    while d <= hasta:
+        slots = []
+        for turno in turnos:
+            personas, cant = ocupacion.get((d, turno.id), (0, 0))
+            slots.append({
+                'turno_id': turno.id,
+                'turno_nombre': turno.nombre,
+                'hora_inicio': turno.hora_inicio.strftime('%H:%M'),
+                'hora_fin': turno.hora_fin.strftime('%H:%M'),
+                'ocupado': cant > 0,
+                'personas': personas,
+                'reservas': cant,
+            })
+        resultado.append({'fecha': d.isoformat(), 'turnos': slots})
+        d += timedelta(days=1)
+    return resultado
 
 
 def disponibilidad_rango(circuito, desde, hasta, personas=None):

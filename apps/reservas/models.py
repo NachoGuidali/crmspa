@@ -4,13 +4,19 @@ from django.db import models
 
 class Reserva(models.Model):
     class Estado(models.TextChoices):
+        PENDIENTE_PAGO = 'pendiente_pago', 'Pendiente de pago (Mercado Pago)'
+        PENDIENTE_APROBACION = 'pendiente_aprobacion', 'Pendiente de aprobación (transferencia)'
         PENDIENTE_SENA = 'pendiente_sena', 'Pendiente de seña'
         CONFIRMADO = 'confirmado', 'Confirmado'
         COMPLETADO = 'completado', 'Completado'
         CANCELADO = 'cancelado', 'Cancelado'
         NO_SHOW = 'no_show', 'No-show'
 
-    ESTADOS_QUE_OCUPAN_CUPO = [Estado.PENDIENTE_SENA, Estado.CONFIRMADO, Estado.COMPLETADO]
+    # Estados que reservan el cupo (aunque el pago todavía no esté confirmado/verificado).
+    ESTADOS_QUE_OCUPAN_CUPO = [
+        Estado.PENDIENTE_PAGO, Estado.PENDIENTE_APROBACION, Estado.PENDIENTE_SENA,
+        Estado.CONFIRMADO, Estado.COMPLETADO,
+    ]
 
     class MedioPago(models.TextChoices):
         EFECTIVO = 'efectivo', 'Efectivo'
@@ -18,6 +24,10 @@ class Reserva(models.Model):
         MERCADO_PAGO = 'mercado_pago', 'Mercado Pago'
         TARJETA = 'tarjeta', 'Tarjeta'
         OTRO = 'otro', 'Otro'
+
+    class Origen(models.TextChoices):
+        MANUAL = 'manual', 'Carga manual'
+        WHATSAPP_BOT = 'whatsapp_bot', 'Bot de WhatsApp'
 
     contacto = models.ForeignKey(
         'contactos.Contacto', on_delete=models.PROTECT, related_name='reservas'
@@ -50,6 +60,21 @@ class Reserva(models.Model):
     sena_reembolsable = models.BooleanField(
         null=True, blank=True,
         help_text='Al cancelar: True si corresponde reembolsar la seña, False si queda retenida.',
+    )
+
+    origen = models.CharField(
+        max_length=20, choices=Origen.choices, default=Origen.MANUAL,
+        help_text='De dónde vino la reserva (carga manual del staff o bot de WhatsApp).',
+    )
+    resumen = models.TextField(
+        blank=True, help_text='Resumen que arma el bot para mostrar en la tarjeta.',
+    )
+    comprobante = models.ImageField(
+        upload_to='comprobantes/', null=True, blank=True,
+        help_text='Comprobante de transferencia que sube el cliente por el bot.',
+    )
+    link_pago = models.URLField(
+        blank=True, max_length=500, help_text='Link de pago de Mercado Pago.',
     )
 
     notas = models.TextField(blank=True)

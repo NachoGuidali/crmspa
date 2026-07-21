@@ -174,6 +174,20 @@ def cancelar(request, pk):
     return redirect('reservas:detalle', pk=pk)
 
 
+@login_required
+@require_POST
+def aprobar(request, pk):
+    """Aprueba una reserva (transferencia verificada por el staff) → confirmada + avisa al bot."""
+    from django.contrib import messages
+    reserva = get_object_or_404(Reserva, pk=pk)
+    if reserva.estado in (Reserva.Estado.PENDIENTE_APROBACION, Reserva.Estado.PENDIENTE_PAGO):
+        services.confirmar_reserva(reserva)
+        messages.success(request, 'Reserva confirmada. Se le avisó al bot para notificar al cliente.')
+    else:
+        messages.error(request, 'Esta reserva no está pendiente de aprobación.')
+    return redirect('reservas:detalle', pk=pk)
+
+
 def _redirect_next(request, pk):
     next_url = request.POST.get('next')
     return redirect(next_url) if next_url else redirect('reservas:detalle', pk=pk)

@@ -14,6 +14,29 @@
 
 {% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
 
+{% if reserva.origen == 'whatsapp_bot' or reserva.comprobante or reserva.link_pago or reserva.resumen %}
+<div class="card" style="margin-bottom:16px; border-left:4px solid var(--accent, #8a4b0e);">
+  <h3 style="margin-top:0;">Pago / Aprobación</h3>
+  {% if reserva.origen == 'whatsapp_bot' %}<p style="font-size:.82rem; color:var(--text-muted); margin-top:-6px;">Reserva generada por el bot de WhatsApp.</p>{% endif %}
+  {% if reserva.medio_pago %}<p style="font-size:.88rem;"><strong>Medio de pago:</strong> {{ reserva.get_medio_pago_display }}</p>{% endif %}
+  {% if reserva.resumen %}<p style="font-size:.88rem; white-space:pre-line;"><strong>Resumen del bot:</strong><br>{{ reserva.resumen }}</p>{% endif %}
+  {% if reserva.link_pago %}<p style="font-size:.88rem;"><strong>Link de pago:</strong> <a href="{{ reserva.link_pago }}" target="_blank" rel="noopener">{{ reserva.link_pago }}</a></p>{% endif %}
+  {% if reserva.comprobante %}
+  <p style="font-size:.88rem;"><strong>Comprobante de transferencia:</strong></p>
+  <a href="{{ reserva.comprobante.url }}" target="_blank" rel="noopener">
+    <img src="{{ reserva.comprobante.url }}" alt="Comprobante" style="max-width:320px; max-height:420px; border:1px solid var(--border,#ddd); border-radius:8px;">
+  </a>
+  {% endif %}
+
+  {% if reserva.estado == 'pendiente_aprobacion' or reserva.estado == 'pendiente_pago' %}
+  <form method="post" action="{% url 'reservas:aprobar' reserva.pk %}" style="margin-top:14px;">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:#1f8a4c;" onclick="return confirm('¿Confirmar esta reserva? Se le avisará al bot para notificar al cliente.')">✓ Aprobar y confirmar</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="grid grid-3" style="align-items:start;">
   <div class="card">
     <h3>Detalle</h3>

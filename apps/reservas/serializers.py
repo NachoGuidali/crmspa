@@ -33,7 +33,7 @@ class ReservaSerializer(serializers.ModelSerializer):
             'id', 'contacto_nombre', 'contacto_telefono', 'circuito_nombre', 'turno_nombre',
             'fecha', 'cantidad_personas', 'acompanantes', 'estado',
             'precio_total', 'monto_sena', 'monto_pagado', 'medio_pago', 'vencimiento_sena',
-            'notas', 'pagos',
+            'origen', 'resumen', 'link_pago', 'comprobante', 'notas', 'pagos',
         ]
 
 

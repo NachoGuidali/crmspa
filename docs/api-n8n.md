@@ -205,6 +205,34 @@ Cómo lo usa el bot:
 > disponibilidad de cualquier otro circuito para esa mañana viene con `cupo_disponible: 0`.
 > El cupo del grupo se limita a la capacidad del circuito.
 
+### Turnero crudo (ocupación simple, sin reglas)
+`GET /api/v1/turnero/?desde=2026-08-01&dias=14`
+
+Vista **cruda** del turnero: para cada día y cada turno, si está **ocupado** y cuántas
+**personas** suma, **sin** aplicar reglas de negocio ni distinguir circuito. Es una fuente de
+verdad simple para que el bot arme un calendario; toda la lógica de cupo/precio/exclusividad
+vive en el CRM y **no** se expone acá. Preferí `disponibilidad` / `disponibilidad/rango` para
+decidir si hay lugar — este endpoint es solo para pintar ocupación.
+
+- `desde` opcional (default hoy), formato `YYYY-MM-DD`. `dias` opcional (default 14, máximo 62).
+
+**200:**
+```json
+{
+  "desde": "2026-08-01", "dias": 14,
+  "turnero": [
+    {
+      "fecha": "2026-08-01",
+      "turnos": [
+        {"turno_id": 1, "turno_nombre": "Turno mañana", "hora_inicio": "10:00", "hora_fin": "14:00", "ocupado": true, "personas": 3, "reservas": 1},
+        {"turno_id": 2, "turno_nombre": "Turno tarde", "hora_inicio": "15:00", "hora_fin": "19:00", "ocupado": false, "personas": 0, "reservas": 0}
+      ]
+    }
+  ]
+}
+```
+- **400** `{"error": "desde_invalido"}` o `{"error": "dias_invalido"}`.
+
 ---
 
 ## 5. Reservas
@@ -242,6 +270,53 @@ Cómo lo usa el bot:
 }
 ```
 **422** `{"error": "sin_cupo: ..."}` (ver tabla de errores en §2).
+
+### Crear reserva desde el bot (con medio de pago)
+`POST /api/v1/reservas/bot/`
+
+Igual que crear reserva, pero pensado para el flujo del bot: además de los datos
+estructurados (que **siguen validando cupo**) lleva el **medio de pago elegido**, un
+**resumen** en texto y, según el caso, el **comprobante** o el **link de pago**.
+
+```json
+{
+  "telefono": "3815551234",
+  "nombre_contacto": "Ana Pérez",
+  "circuito_id": 1,
+  "turno_id": 2,
+  "fecha": "2026-07-11",
+  "cantidad_personas": 2,
+  "medio_pago": "transferencia",
+  "resumen": "2 personas · Circuito Relax · sábado 11/07 · turno mañana",
+  "comprobante_base64": "<imagen del comprobante en base64>",
+  "comprobante_mimetype": "image/jpeg"
+}
+```
+
+- **`medio_pago: "transferencia"`** → la reserva nace en **`pendiente_aprobacion`**. Mandá el
+  comprobante en `comprobante_base64` (+ `comprobante_mimetype`, default `image/jpeg`). Una
+  persona del spa lo revisa y **aprueba manualmente** desde el CRM; recién ahí se confirma y
+  el CRM te avisa por el webhook `reserva-aprobada` (ver §7.5).
+- **`medio_pago: "mercado_pago"`** → la reserva nace en **`pendiente_pago`**. Pasá el
+  `link_pago`. Cuando MP acredita, confirmás con **`confirmar-pago`** (abajo).
+- `resumen` es texto libre para que el staff vea de un vistazo lo que armó el bot.
+- `cantidad_personas`, `circuito_id`, `turno_id` y `fecha` son obligatorios y **se validan
+  igual que en la reserva normal** (cupo atómico, mínimos/máximos, modo exclusivo).
+
+**201** → ReservaSerializer (incluye `origen: "whatsapp_bot"`, `estado`, `resumen`, `link_pago`).
+**422** `{"error": "sin_cupo: ..."}` · **400** `{"error": "datos_invalidos"}` o `comprobante_base64_invalido`.
+
+### Confirmar pago de Mercado Pago (por teléfono)
+`POST /api/v1/reservas/confirmar-pago/`
+```json
+{"telefono": "3815551234"}
+```
+- Para el flujo automático de MP: cuando el bot detecta el pago acreditado, llama acá.
+- Busca la reserva **`pendiente_pago`** más reciente de ese teléfono y la pasa a
+  **`confirmado`**, disparando el webhook `reserva-aprobada` (§7.5).
+
+**200** → ReservaSerializer con `estado: "confirmado"` ·
+**404** `{"error": "reserva_pendiente_pago_no_encontrada"}` · **400** `{"error": "telefono_requerido"}`.
 
 ### Ver una reserva
 `GET /api/v1/reservas/<id>/` → **200** ReservaSerializer · **404** `{"error": "reserva_not_found"}`
@@ -284,9 +359,30 @@ Cómo lo usa el bot:
 **200** → lista de ReservaSerializer (más recientes primero). Útil para que el bot diga
 "tenés un turno confirmado el 11/07" o para reconocer clientes recurrentes.
 
+### Agenda de una fecha (para recordatorios)
+`GET /api/v1/reservas/agenda/?fecha=2026-07-25&estado=confirmada`
+
+Reservas de una fecha (por defecto **confirmadas**). Pensado para los recordatorios
+automáticos: se llama con `fecha=mañana` (24hs antes) y con `fecha=hoy` (el mismo día).
+Acepta `estado=confirmada` o `confirmado` indistintamente.
+
+**200:**
+```json
+[
+  {"telefono": "+5493815551234", "nombre": "Ana Pérez", "horario": "2026-07-25 (Turno mañana)"}
+]
+```
+- **400** `{"error": "fecha_requerida"}` o `{"error": "fecha_invalida"}`.
+
 ### Estados de una reserva
-`pendiente_sena` → `confirmado` → `completado` · o `cancelado` · o `no_show`.
-(`completado`/`no_show` los marca recepción desde el turnero al cierre del día.)
+- `pendiente_sena` — reserva normal esperando la seña.
+- `pendiente_aprobacion` — transferencia con comprobante, esperando que el staff la apruebe.
+- `pendiente_pago` — Mercado Pago, esperando que se acredite el pago.
+- `confirmado` → `completado` · o `cancelado` · o `no_show`.
+
+Flujo: (`pendiente_sena` | `pendiente_aprobacion` | `pendiente_pago`) → `confirmado` →
+`completado`. Los cuatro primeros estados **ocupan cupo**. (`completado`/`no_show` los marca
+recepción desde el turnero al cierre del día.)
 
 ---
 
@@ -398,19 +494,99 @@ Para multimedia:
 > **n8n se cae** y no responde tras varios reintentos, el CRM hace el handoff automáticamente
 > para que la conversación aparezca destacada en el inbox y nadie quede sin respuesta.
 
+### 7.5 Reserva aprobada (CRM → n8n)
+El CRM llama a un webhook **tuyo** cuando una reserva pasa a **`confirmado`**, para que el bot
+le mande la confirmación final al cliente. Ocurre en dos casos:
+- El staff **aprueba** manualmente una transferencia (`pendiente_aprobacion` → `confirmado`).
+- Se confirma un pago de **Mercado Pago** vía `confirmar-pago` (`pendiente_pago` → `confirmado`).
+
+`POST {N8N_RESERVA_APROBADA_URL}` (configurable, ej. `https://n8n.tu-dominio/webhook/reserva-aprobada`)
+```json
+{
+  "telefono": "+5493815551234",
+  "nombre": "Ana Pérez",
+  "horario_confirmado": "2026-07-11 (Turno mañana)",
+  "resumen": "2 personas · Circuito Relax · sábado 11/07"
+}
+```
+- Se envía de forma asíncrona con reintentos. Si `N8N_RESERVA_APROBADA_URL` no está
+  configurada, el CRM simplemente no avisa (no falla la aprobación).
+- En n8n: recibí este webhook y mandá el mensaje de confirmación al cliente con
+  `POST /whatsapp/api/enviar/`.
+
+### 7.6 Estado de la conversación (flujo del bot)
+El CRM es la **única fuente de verdad** del estado del flujo: el bot no guarda nada en Redis,
+lo lee y actualiza acá. Cada conversación tiene una bolsa de campos del flujo.
+
+**Crear conversación** — `POST /api/v1/conversaciones/`
+```json
+{"telefono": "5491122334455", "nombre": "Juana", "estado_flujo": "nuevo"}
+```
+Crea la conversación la primera vez que escribe un número (si ya existe, no pisa el estado).
+**201** (creada) / **200** (ya existía) → el objeto de estado (abajo).
+
+**Leer estado** — `GET /api/v1/conversaciones/<telefono>/`
+```json
+{
+  "telefono": "+5491122334455", "nombre": "Juana",
+  "estado_flujo": "turno_fecha", "personas": 4, "tipo_propuesta": "Spa de Parejas",
+  "fecha_solicitada": "2026-07-25", "intentos_fecha": 1, "horario_confirmado": null,
+  "datos_contacto": null, "reserva_creada": false, "override_regla": false,
+  "bot_bloqueado": false, "last_message_ts": "2026-07-20T14:32:00Z"
+}
+```
+**404** `{"error": "conversacion_no_encontrada"}` si el número no existe todavía.
+
+**Actualizar (parcial)** — `PATCH /api/v1/conversaciones/<telefono>/`
+Mandá **solo** los campos que cambian (nunca todos juntos). Campos aceptados:
+`estado_flujo`, `personas`, `tipo_propuesta`, `fecha_solicitada` (puede ir `null` para
+limpiarla), `intentos_fecha`, `horario_confirmado`, `datos_contacto`, `reserva_creada`,
+`override_regla`, `bot_bloqueado`. `estado_flujo` posibles: `nuevo`, `menu`, `turno_personas`,
+`turno_fecha`, `turno_datos_contacto`, `turno_pago`, `derivado`.
+```json
+{"estado_flujo": "turno_datos_contacto", "horario_confirmado": "2026-07-25 (mañana)", "intentos_fecha": 0, "fecha_solicitada": null}
+```
+**200** → el objeto de estado actualizado.
+
+> **Bloqueo automático:** cuando `estado_flujo` pasa a `"derivado"` **o** `reserva_creada`
+> pasa a `true`, el CRM pone `bot_bloqueado: true` (apaga el bot). Mientras esté bloqueado, el
+> bot no debe responder — solo guardar los mensajes (abajo). En el CRM, el staff lo reactiva
+> con el botón **"Prender bot"** en el inbox (o el bot puede mandar `{"bot_bloqueado": false}`).
+
+**Guardar un mensaje sin responder** — `POST /api/v1/conversaciones/<telefono>/mensajes/`
+```json
+{"texto": "hola, sigo interesada", "de": "cliente"}
+```
+Con el bot bloqueado, igual guardá el mensaje entrante para que el staff lo vea en el inbox.
+`de`: `cliente` (entrante) u otro valor (saliente). **201** `{"ok": true, "mensaje_id": ..., "conversacion_id": ...}`.
+
+**Conversaciones para seguimiento** — `GET /api/v1/conversaciones/?inactiva_desde_horas=72&reserva_creada=false&estado_flujo_distinto_de=derivado`
+1 vez por día: "¿qué conversaciones llevan 72hs sin respuesta, sin reserva y sin haber pasado
+a un asesor?". Todos los filtros son opcionales.
+**200** → `[{"telefono": "...", "nombre_contacto": "..."}]`.
+
 ---
 
 ## 8. Flujo recomendado de reserva (en n8n)
 
 1. Llega mensaje → nodo Webhook. Chequear `bot_n8n_activo` (si false, cortar) y
    `fuera_de_horario` (si true, auto-reply).
-2. Interpretar la intención (NLU / prompt).
+   - Leé el estado del flujo: `GET /conversaciones/<telefono>/` (o `POST /conversaciones/`
+     si es la primera vez). Si `bot_bloqueado: true`, guardá el mensaje con
+     `POST /conversaciones/<telefono>/mensajes/` y no respondas.
+2. Interpretar la intención (NLU / prompt). Guardá el avance con `PATCH /conversaciones/<telefono>/`.
 3. Ofrecer circuitos: `GET /circuitos/?fecha=...` → mostrar `precio` y `monto_sena`.
 4. Ver horarios: `GET /disponibilidad/?circuito_id=&fecha=` → ofrecer turnos con cupo.
-5. Crear reserva: `POST /reservas/` → responder con seña y datos de pago.
-6. Cuando el cliente paga: `POST /reservas/<id>/confirmar-sena/`.
-7. Si el cliente quiere cambiar: `POST /reservas/<id>/reprogramar/`.
-8. Si no entendés o es un reclamo: `POST /whatsapp/api/handoff/`.
+5. Crear reserva con el medio de pago: `POST /reservas/bot/`.
+   - **Transferencia** → mandá `comprobante_base64`; queda `pendiente_aprobacion`. El staff la
+     aprueba en el CRM y te llega el webhook `reserva-aprobada` (§7.5) → confirmás al cliente.
+   - **Mercado Pago** → pasá `link_pago`; queda `pendiente_pago`. Cuando MP acredita, llamás a
+     `POST /reservas/confirmar-pago/` con el teléfono → se confirma y llega el webhook.
+6. Si el cliente quiere cambiar: `POST /reservas/<id>/reprogramar/`.
+7. Si no entendés o es un reclamo: `POST /whatsapp/api/handoff/`.
+
+> Para reservas cargadas por recepción (no por el bot) se sigue usando `POST /reservas/` +
+> `confirmar-sena/`. El flujo del bot con medio de pago es `/reservas/bot/`.
 
 ---
 
@@ -423,14 +599,27 @@ Para multimedia:
 | GET | `/api/v1/circuitos/` | X-Api-Key | Circuitos con precio+seña por fecha |
 | GET | `/api/v1/disponibilidad/` | X-Api-Key | Cupo por turno de un circuito/fecha |
 | GET | `/api/v1/disponibilidad/rango/` | X-Api-Key | Días con lugar en un rango (mes / alternativas) |
-| POST | `/api/v1/reservas/` | X-Api-Key | Crear reserva |
+| GET | `/api/v1/turnero/` | X-Api-Key | Ocupación cruda por (fecha, turno), sin reglas |
+| POST | `/api/v1/reservas/` | X-Api-Key | Crear reserva (recepción) |
+| POST | `/api/v1/reservas/bot/` | X-Api-Key | Crear reserva del bot (con medio de pago) |
+| POST | `/api/v1/reservas/confirmar-pago/` | X-Api-Key | Confirmar pago MP por teléfono |
+| GET | `/api/v1/reservas/agenda/` | X-Api-Key | Reservas confirmadas de una fecha (recordatorios) |
 | GET | `/api/v1/reservas/<id>/` | X-Api-Key | Ver reserva |
 | POST | `/api/v1/reservas/<id>/confirmar-sena/` | X-Api-Key | Registrar seña y confirmar |
 | POST | `/api/v1/reservas/<id>/reprogramar/` | X-Api-Key | Cambiar fecha/turno |
 | POST | `/api/v1/reservas/<id>/cancelar/` | X-Api-Key | Cancelar (con política de seña) |
 | GET | `/api/v1/reservas/por-telefono/` | X-Api-Key | Historial del cliente |
+| POST | `/api/v1/conversaciones/` | X-Api-Key | Crear conversación |
+| GET | `/api/v1/conversaciones/` | X-Api-Key | Conversaciones para seguimiento |
+| GET | `/api/v1/conversaciones/<telefono>/` | X-Api-Key | Leer estado del flujo del bot |
+| PATCH | `/api/v1/conversaciones/<telefono>/` | X-Api-Key | Actualizar estado del flujo (parcial) |
+| POST | `/api/v1/conversaciones/<telefono>/mensajes/` | X-Api-Key | Guardar mensaje con el bot bloqueado |
 | GET | `/api/v1/vouchers/<codigo>/` | X-Api-Key | Validar gift card |
 | POST | `/api/v1/vouchers/canjear/` | X-Api-Key | Canjear gift card |
 | POST | `/whatsapp/api/enviar/` | X-Api-Key | Enviar mensaje al cliente |
 | POST | `/whatsapp/api/handoff/` | X-Api-Key | Derivar a humano |
 | POST | `/whatsapp/webhook/evolution/` | webhook token | Entrada de mensajes (Evolution) |
+| POST | `{N8N_RESERVA_APROBADA_URL}` | (webhook n8n) | **CRM → n8n**: reserva confirmada, avisar al cliente |
+
+> **Variable de entorno nueva:** `N8N_RESERVA_APROBADA_URL` — la URL del webhook de n8n que el
+> CRM llama al confirmar una reserva (§7.5). Configurala en el `.env` del backend.

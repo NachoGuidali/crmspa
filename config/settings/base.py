@@ -153,6 +153,9 @@ EVOLUTION_API_URL = config('EVOLUTION_API_URL', default='')
 EVOLUTION_API_KEY = config('EVOLUTION_API_KEY', default='')
 EVOLUTION_INSTANCE = config('EVOLUTION_INSTANCE', default='crmspa')
 N8N_WEBHOOK_URL = config('N8N_WEBHOOK_URL', default='')
+# Webhook de n8n que el CRM llama cuando se confirma/aprueba una reserva (para que el bot
+# le mande la confirmación final al cliente). Ej: https://n8n.tu-dominio/webhook/reserva-aprobada
+N8N_RESERVA_APROBADA_URL = config('N8N_RESERVA_APROBADA_URL', default='')
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
 

@@ -104,6 +104,19 @@
       </div>
     </div>
 
+    {% with ef=selected.estado_bot %}
+    {% if ef.estado_flujo or ef.personas or ef.tipo_propuesta or ef.reserva_creada %}
+    <div class="wa-bot-estado" style="padding:6px 14px; font-size:.78rem; color:var(--text-muted); border-bottom:1px solid var(--border,#eee); display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <span title="Paso del flujo del bot">🤖 <strong>{{ ef.estado_flujo|default:"—" }}</strong></span>
+      {% if ef.tipo_propuesta %}<span>· {{ ef.tipo_propuesta }}</span>{% endif %}
+      {% if ef.personas %}<span>· {{ ef.personas }} pers.</span>{% endif %}
+      {% if ef.fecha_solicitada %}<span>· 📅 {{ ef.fecha_solicitada }}</span>{% endif %}
+      {% if ef.reserva_creada %}<span>· ✅ reservó</span>{% endif %}
+      {% if not selected.bot_activo %}<span style="color:#a33;">· bot bloqueado</span>{% endif %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <div class="wa-chat" id="waChat" data-conv="{{ selected.pk }}" data-last="{{ last_msg_id }}">
       {% for m in mensajes %}
       <div class="wa-bubble {{ m.direccion }}">{{ m.contenido }}<div class="ts">{{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}</div></div>
