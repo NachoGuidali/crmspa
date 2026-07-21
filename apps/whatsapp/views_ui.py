@@ -194,8 +194,14 @@ def config_whatsapp(request):
 
         # Si es Evolution, damos de alta la instancia y registramos el webhook.
         if config.proveedor == ConfiguracionWhatsApp.Proveedor.EVOLUTION and config.evolution_api_url:
+            from django.conf import settings as dj_settings
+
             from . import sender
-            webhook_url = request.build_absolute_uri(reverse('whatsapp_api:webhook_evolution'))
+            # Por defecto la URL pública (autodetectada); si EVOLUTION_WEBHOOK_URL está seteada
+            # (p.ej. la interna de Docker), usamos esa para que Evolution alcance el CRM.
+            webhook_url = dj_settings.EVOLUTION_WEBHOOK_URL or request.build_absolute_uri(
+                reverse('whatsapp_api:webhook_evolution')
+            )
             try:
                 sender.ensure_instance_exists()
                 sender.setup_instance_webhook(webhook_url)

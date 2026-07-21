@@ -153,6 +153,12 @@ EVOLUTION_API_URL = config('EVOLUTION_API_URL', default='')
 EVOLUTION_API_KEY = config('EVOLUTION_API_KEY', default='')
 EVOLUTION_INSTANCE = config('EVOLUTION_INSTANCE', default='crmspa')
 N8N_WEBHOOK_URL = config('N8N_WEBHOOK_URL', default='')
+# URL del webhook que el CRM registra en Evolution para recibir mensajes/QR. Por defecto se
+# detecta sola desde el request (dominio público). Si el contenedor de Evolution no puede
+# alcanzar el dominio público, apuntala al nombre interno de Docker:
+#   EVOLUTION_WEBHOOK_URL=http://web:8000/whatsapp/webhook/evolution/
+# (y agregá 'web' a ALLOWED_HOSTS).
+EVOLUTION_WEBHOOK_URL = config('EVOLUTION_WEBHOOK_URL', default='')
 # Webhook de n8n que el CRM llama cuando se confirma/aprueba una reserva (para que el bot
 # le mande la confirmación final al cliente). Ej: https://n8n.tu-dominio/webhook/reserva-aprobada
 N8N_RESERVA_APROBADA_URL = config('N8N_RESERVA_APROBADA_URL', default='')
