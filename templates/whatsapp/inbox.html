@@ -16,6 +16,7 @@
       <span class="titulo">Conversaciones</span>
       <div style="display:flex; gap:6px; align-items:center;">
         {% if unread_total %}<span class="wa-unread">{{ unread_total }}</span>{% endif %}
+        <a href="{% url 'whatsapp:nueva_conversacion' %}" class="wa-btn-sm" title="Nuevo mensaje">+ Nuevo</a>
         <a href="{% url 'whatsapp:kanban' %}" class="wa-btn-sm" title="Ver como kanban">Kanban</a>
       </div>
     </div>

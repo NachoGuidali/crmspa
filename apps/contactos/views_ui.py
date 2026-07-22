@@ -60,6 +60,23 @@ def export_csv(request):
 
 
 @login_required
+def crear(request):
+    """Alta de un contacto nuevo. Acepta ?telefono= para prellenar (ej. desde el inbox)."""
+    if request.method == 'POST':
+        form = ContactoForm(request.POST)
+        if form.is_valid():
+            contacto = form.save()
+            return redirect('contactos:detalle', pk=contacto.pk)
+    else:
+        initial = {}
+        tel = request.GET.get('telefono', '').strip()
+        if tel:
+            initial['telefono'] = tel
+        form = ContactoForm(initial=initial)
+    return render(request, 'contactos/nuevo.html', {'form': form})
+
+
+@login_required
 def detalle(request, pk):
     contacto = get_object_or_404(Contacto, pk=pk)
     reservas = contacto.reservas.select_related('circuito', 'turno').order_by('-fecha')

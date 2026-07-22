@@ -6,6 +6,7 @@ app_name = 'contactos'
 
 urlpatterns = [
     path('', views_ui.lista, name='lista'),
+    path('nuevo/', views_ui.crear, name='crear'),
     path('export/', views_ui.export_csv, name='export_csv'),
     path('<int:pk>/', views_ui.detalle, name='detalle'),
     path('<int:pk>/editar/', views_ui.editar, name='editar'),

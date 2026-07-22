@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Nuevo mensaje{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'whatsapp:inbox' %}" style="color:var(--text-muted); font-size:.8rem;">← Inbox</a></p>
+    <h1>Nuevo mensaje</h1>
+  </div>
+</div>
+
+{% if messages %}{% for m in messages %}<div class="card" style="border-color:#a33; margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
+<div class="card" style="max-width:560px;">
+  <form method="post" id="nuevoMsgForm">
+    {% csrf_token %}
+
+    <div class="form-row">
+      <label>Elegir un contacto</label>
+      <select name="contacto_id" id="contactoSelect">
+        <option value="">— Ninguno (uso un número) —</option>
+        {% for c in contactos %}
+        <option value="{{ c.id }}" data-tel="{{ c.telefono }}">{{ c.nombre }} · {{ c.telefono }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="text-align:center; color:var(--text-muted); font-size:.8rem; margin:6px 0;">— o —</div>
+
+    <div class="form-row">
+      <label>Ingresar un número</label>
+      <input type="text" name="telefono" id="telefonoInput" placeholder="Ej: 3815551234 o +5493815551234" autocomplete="off">
+      <div id="avisoContacto" style="font-size:.8rem; margin-top:6px;"></div>
+    </div>
+
+    <div class="form-row">
+      <label>Primer mensaje (opcional)</label>
+      <textarea name="mensaje" rows="3" placeholder="Escribí el mensaje para arrancar la conversación…"></textarea>
+    </div>
+
+    <button type="submit" class="btn">Abrir conversación</button>
+  </form>
+</div>
+
+{{ contactos|json_script:"contactos-data" }}
+<script>
+const CONTACTOS = JSON.parse(document.getElementById('contactos-data').textContent);
+
+const select = document.getElementById('contactoSelect');
+const telInput = document.getElementById('telefonoInput');
+const aviso = document.getElementById('avisoContacto');
+
+// Elegir contacto limpia el número, y viceversa (no ambiguo).
+select.addEventListener('change', () => { if (select.value) { telInput.value = ''; aviso.innerHTML = ''; } });
+
+function soloDigitos(s) { return (s || '').replace(/\D/g, ''); }
+
+// Compara por dígitos: match si uno termina con el otro (mínimo 8 dígitos, ignora prefijos 54/9/0/15).
+function buscarContactoPorNumero(num) {
+  const d = soloDigitos(num);
+  if (d.length < 8) return null;
+  const cola = d.slice(-8);
+  return CONTACTOS.find(c => soloDigitos(c.telefono).slice(-8) === cola) || null;
+}
+
+telInput.addEventListener('input', () => {
+  if (telInput.value) select.value = '';
+  const match = buscarContactoPorNumero(telInput.value);
+  if (match) {
+    aviso.style.color = 'var(--color-verde-oliva)';
+    aviso.innerHTML = '✓ Este número ya es un contacto: <strong>' + match.nombre + '</strong> (se va a vincular solo).';
+  } else if (soloDigitos(telInput.value).length >= 8) {
+    aviso.style.color = 'var(--text-muted)';
+    aviso.innerHTML = 'Número nuevo (no está en la agenda de contactos).';
+  } else {
+    aviso.innerHTML = '';
+  }
+});
+</script>
+{% endblock %}

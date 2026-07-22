@@ -63,6 +63,49 @@ def inbox(request):
 
 
 @login_required
+def nueva_conversacion(request):
+    """Abrir/crear una conversación desde el inbox: eligiendo un contacto o tipeando un número.
+    Si el número ya existe como contacto, se vincula solo (y el front lo avisa en vivo)."""
+    from apps.contactos.models import Contacto
+    from utils.phone import normalize_ar_phone
+
+    if request.method == 'POST':
+        contacto_id = request.POST.get('contacto_id', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        mensaje = request.POST.get('mensaje', '').strip()
+
+        if contacto_id:
+            c = Contacto.objects.filter(pk=contacto_id).first()
+            if c:
+                telefono = c.telefono
+        if not telefono:
+            messages.error(request, 'Elegí un contacto o ingresá un número.')
+            return redirect('whatsapp:nueva_conversacion')
+
+        telefono = normalize_ar_phone(telefono)
+        conv, _ = Conversacion.objects.get_or_create(telefono=telefono)
+        # Vincular el contacto si ese número ya existe en la agenda.
+        if not conv.contacto:
+            c = Contacto.objects.filter(telefono=telefono).first()
+            if c:
+                conv.contacto = c
+                if not conv.nombre_contacto:
+                    conv.nombre_contacto = c.nombre
+                conv.save(update_fields=['contacto', 'nombre_contacto'])
+
+        if mensaje:
+            try:
+                services.enviar_mensaje(telefono=telefono, mensaje=mensaje, usuario=request.user)
+            except services.EnvioError as exc:
+                messages.error(request, f'No se pudo enviar: {exc}')
+
+        return redirect(f"{reverse('whatsapp:inbox')}?conv={conv.pk}")
+
+    contactos = list(Contacto.objects.order_by('nombre').values('id', 'nombre', 'telefono'))
+    return render(request, 'whatsapp/nueva_conversacion.html', {'contactos': contactos})
+
+
+@login_required
 @require_POST
 def inbox_accion(request):
     conv = get_object_or_404(Conversacion, pk=request.POST.get('conv_pk'))

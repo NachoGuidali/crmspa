@@ -6,6 +6,7 @@ app_name = 'whatsapp'
 
 urlpatterns = [
     path('', views_ui.inbox, name='inbox'),
+    path('nuevo/', views_ui.nueva_conversacion, name='nueva_conversacion'),
     path('config/', views_ui.config_whatsapp, name='config'),
     path('config/qr/', views_ui.config_qr, name='config_qr'),
     path('config/estado/', views_ui.config_estado, name='config_estado'),
