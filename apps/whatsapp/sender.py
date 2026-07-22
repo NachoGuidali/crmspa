@@ -43,6 +43,16 @@ def send_media_message(to, media_url, mediatype, filename='', caption=''):
     return _backend().send_media_message(to, media_url, mediatype, filename=filename, caption=caption)
 
 
+def send_uploaded_media(to, raw, mime, filename='', caption='', is_ptt=False):
+    """Envía un archivo subido desde el inbox (bytes crudos) por el proveedor activo."""
+    return _backend().send_uploaded_media(to, raw, mime, filename=filename, caption=caption, is_ptt=is_ptt)
+
+
+def download_and_save_media(message_data, conv_pk):
+    """Descarga un archivo entrante y lo guarda local. Devuelve la URL local o ''."""
+    return _backend().download_and_save_media(message_data, conv_pk)
+
+
 def get_connection_state() -> str:
     """Estado de conexión del proveedor activo (Evolution: instancia; Meta: token+número)."""
     return _backend().get_connection_state()

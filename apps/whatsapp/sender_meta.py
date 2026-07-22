@@ -1,10 +1,13 @@
 """Proveedor: WhatsApp Cloud API (Meta, oficial). Graph API."""
 import json
 import logging
+import os
 import time
 
 import requests
 from django.conf import settings
+
+from .media_utils import ext_from_mime, get_mediatype
 
 logger = logging.getLogger('apps.whatsapp')
 
@@ -108,6 +111,73 @@ def send_media_message(to: str, media_url: str, mediatype: str, filename: str = 
         mediatype: media_obj,
     }
     return _post_message(payload, timeout=30)
+
+
+def send_uploaded_media(to: str, raw: bytes, mime: str, filename: str = '', caption: str = '', is_ptt: bool = False) -> dict:
+    """Sube el archivo a Meta (POST /media) y lo envía por su media id."""
+    mediatype = get_mediatype(mime)
+    media_id = _upload_media(raw, mime, filename)
+
+    media_obj = {'id': media_id}
+    if caption and mediatype in ('image', 'video', 'document'):
+        media_obj['caption'] = caption
+    if filename and mediatype == 'document':
+        media_obj['filename'] = filename
+    payload = {
+        'messaging_product': 'whatsapp',
+        'to': _normalize_phone(to),
+        'type': mediatype,
+        mediatype: media_obj,
+    }
+    return _post_message(payload, timeout=30)
+
+
+def _upload_media(raw: bytes, mime: str, filename: str = '') -> str:
+    """Sube un archivo al endpoint de media de Meta y devuelve su id."""
+    url = _url(f'{_phone_number_id()}/media')
+    files = {
+        'file': (filename or f'archivo{ext_from_mime(mime)}', raw, mime),
+        'messaging_product': (None, 'whatsapp'),
+        'type': (None, mime),
+    }
+    headers = {'Authorization': f'Bearer {_access_token()}'}  # sin Content-Type: multipart lo pone requests
+    r = requests.post(url, files=files, headers=headers, timeout=30)
+    if not r.ok:
+        logger.error('Meta upload media error %s: %s', r.status_code, r.text[:300])
+    r.raise_for_status()
+    return r.json().get('id', '')
+
+
+def download_and_save_media(message_data: dict, conv_pk: int) -> str:
+    """Descarga un archivo entrante de Meta (metadata → URL temporal con Bearer) y lo guarda
+    localmente. Devuelve la URL local o '' si falla."""
+    media_id = message_data.get('media_id', '')
+    filename = message_data.get('media_filename', '')
+    if not media_id:
+        return ''
+    try:
+        meta = requests.get(_url(media_id), headers=_headers(), timeout=15)
+        if not meta.ok:
+            logger.warning('Media metadata %s: %s', meta.status_code, meta.text[:200])
+            return ''
+        info = meta.json()
+        download_url = info.get('url', '')
+        mime = info.get('mime_type', message_data.get('media_mime', '')) or 'application/octet-stream'
+        if not download_url:
+            return ''
+        dl = requests.get(download_url, headers={'Authorization': f'Bearer {_access_token()}'}, timeout=30)
+        if not dl.ok:
+            return ''
+        ext = ext_from_mime(mime, filename)
+        safe_name = f'{media_id[:24]}{ext}'
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads', f'conv_{conv_pk}')
+        os.makedirs(upload_dir, exist_ok=True)
+        with open(os.path.join(upload_dir, safe_name), 'wb') as f:
+            f.write(dl.content)
+        return f'{settings.MEDIA_URL}uploads/conv_{conv_pk}/{safe_name}'
+    except Exception as e:
+        logger.error('Error descargando media Meta %s: %s', media_id, e)
+        return ''
 
 
 def get_phone_number_info() -> dict:

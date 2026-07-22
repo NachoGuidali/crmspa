@@ -1,9 +1,13 @@
+import base64
 import json
 import logging
+import os
 import time
 
 import requests
 from django.conf import settings
+
+from .media_utils import ext_from_mime, get_mediatype
 
 logger = logging.getLogger('apps.whatsapp')
 
@@ -170,6 +174,79 @@ def setup_instance_webhook(webhook_url: str) -> bool:
     except Exception as e:
         logger.error('Error configurando webhook Evolution: %s', e)
         return False
+
+
+def send_uploaded_media(to: str, raw: bytes, mime: str, filename: str = '', caption: str = '', is_ptt: bool = False) -> dict:
+    """Envía un archivo subido desde el inbox. Evolution acepta el media en base64; probamos
+    base64 crudo y, si falla, data-URI. Para notas de voz usa el endpoint de audio (PTT)."""
+    b64 = base64.b64encode(raw).decode('utf-8')
+    mediatype = get_mediatype(mime)
+
+    intentos = []
+    if is_ptt and mediatype == 'audio':
+        intentos.append(lambda data: _send_audio(to, data, filename))
+    intentos.append(lambda data: send_media_message(to, data, mediatype, filename=filename, caption=caption))
+
+    last_exc = None
+    for enviar in intentos:
+        for data in (b64, f'data:{mime};base64,{b64}'):
+            try:
+                return enviar(data)
+            except requests.RequestException as exc:
+                last_exc = exc
+    raise last_exc
+
+
+def _send_audio(to: str, audio_b64: str, filename: str = '') -> dict:
+    url = _evo_url(f'/message/sendWhatsAppAudio/{_instance()}')
+    payload = {'number': _normalize_phone(to), 'audio': audio_b64}
+    if filename:
+        payload['fileName'] = filename
+    start = time.monotonic()
+    response = None
+    try:
+        response = requests.post(url, json=payload, headers=_evo_headers(), timeout=30)
+        response.raise_for_status()
+        return {'id': _extract_message_id(response.json())}
+    finally:
+        _log_request(url, 'POST', {'number': payload['number'], 'audio': '<base64>'}, response,
+                     int((time.monotonic() - start) * 1000))
+
+
+def download_and_save_media(message_data: dict, conv_pk: int) -> str:
+    """Descarga el archivo (desencriptado) de un mensaje entrante de Evolution y lo guarda
+    localmente. Devuelve la URL local (/media/...) o '' si falla."""
+    message_id = message_data.get('message_id', '')
+    filename = message_data.get('media_filename', '')
+    if not message_id:
+        return ''
+    try:
+        url = _evo_url(f'/chat/getBase64FromMediaMessage/{_instance()}')
+        r = requests.post(url, json={'message': {'key': {'id': message_id}}}, headers=_evo_headers(), timeout=30)
+        if not r.ok:
+            logger.warning('getBase64FromMediaMessage %s: %s', r.status_code, r.text[:200])
+            return ''
+        data = r.json()
+        b64 = data.get('base64') or data.get('data') or ''
+        if not b64:
+            return ''
+        if ',' in b64:
+            b64 = b64.split(',', 1)[1]
+        mime = data.get('mimetype') or message_data.get('media_mime') or 'application/octet-stream'
+        return _guardar_media_local(base64.b64decode(b64), mime, filename, conv_pk, message_id)
+    except Exception as e:
+        logger.error('Error descargando media %s: %s', message_id, e)
+        return ''
+
+
+def _guardar_media_local(contenido: bytes, mime: str, filename: str, conv_pk: int, ref: str) -> str:
+    ext = ext_from_mime(mime, filename)
+    safe_name = f'{ref[:24]}{ext}'
+    upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads', f'conv_{conv_pk}')
+    os.makedirs(upload_dir, exist_ok=True)
+    with open(os.path.join(upload_dir, safe_name), 'wb') as f:
+        f.write(contenido)
+    return f'{settings.MEDIA_URL}uploads/conv_{conv_pk}/{safe_name}'
 
 
 def logout_instance() -> None:

@@ -73,6 +73,28 @@
   </div>
 </div>
 
+{% if contacto.archivos %}
+<div class="card" style="margin-top:18px;">
+  <h3>Archivos de WhatsApp <span style="font-weight:400; color:var(--text-muted); font-size:.82rem;">({{ contacto.archivos|length }})</span></h3>
+  <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;">
+    {% for a in contacto.archivos reversed %}
+    <div style="width:130px; font-size:.72rem; color:var(--text-muted);">
+      {% if a.tipo == 'image' %}
+      <a href="{{ a.url }}" target="_blank"><img src="{{ a.url }}" style="width:130px; height:130px; object-fit:cover; border-radius:8px; border:1px solid var(--border);"></a>
+      {% elif a.tipo == 'audio' %}
+      <audio controls preload="none" src="{{ a.url }}" style="width:130px;"></audio>
+      {% elif a.tipo == 'video' %}
+      <video controls preload="none" src="{{ a.url }}" style="width:130px; border-radius:8px;"></video>
+      {% else %}
+      <a href="{{ a.url }}" target="_blank" style="display:block; padding:14px; background:var(--bg-app); border-radius:8px; text-align:center; text-decoration:none;">📎<br>{{ a.filename|default:"Archivo"|truncatechars:18 }}</a>
+      {% endif %}
+      <div style="margin-top:3px;">{% if a.direccion == 'out' %}↗ enviado{% else %}↙ recibido{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="card" style="margin-top:18px;">
   <h3>Notas internas</h3>
   <form method="post" action="{% url 'contactos:agregar_nota' contacto.pk %}" style="display:flex; gap:8px; margin-bottom:14px;">

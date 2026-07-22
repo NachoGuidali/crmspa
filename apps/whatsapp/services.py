@@ -43,28 +43,54 @@ def _guardar_mensaje_entrante(m: dict):
         return None
 
     telefono = m['from_phone']
+    contact_name = m.get('contact_name', '')
+
+    # Alta automática del contacto al primer mensaje de un número desconocido.
+    contacto, _ = Contacto.objects.get_or_create(
+        telefono=telefono, defaults={'nombre': contact_name or telefono},
+    )
+    if contact_name and (not contacto.nombre or contacto.nombre == contacto.telefono):
+        contacto.nombre = contact_name
+        contacto.save(update_fields=['nombre'])
+
     conversacion, creada = Conversacion.objects.get_or_create(
         telefono=telefono,
-        defaults={'nombre_contacto': m.get('contact_name', '')},
+        defaults={'nombre_contacto': contact_name, 'contacto': contacto},
     )
+    campos = []
+    if not conversacion.contacto_id:
+        conversacion.contacto = contacto
+        campos.append('contacto')
+    if contact_name and not conversacion.nombre_contacto:
+        conversacion.nombre_contacto = contact_name
+        campos.append('nombre_contacto')
+    if campos:
+        conversacion.save(update_fields=campos)
 
-    if creada:
-        contacto = Contacto.objects.filter(telefono=telefono).first()
-        if contacto:
-            conversacion.contacto = contacto
-    elif not conversacion.nombre_contacto and m.get('contact_name'):
-        conversacion.nombre_contacto = m['contact_name']
+    # Media entrante: descargar y guardar local (la URL cruda de Evolution viene encriptada
+    # y Meta solo manda un media_id).
+    tipo = m.get('type', Mensaje.Tipo.TEXTO)
+    media_url = m.get('media_url', '')
+    if tipo in ('image', 'audio', 'video', 'document') and (message_id or m.get('media_id')):
+        try:
+            from . import sender
+            local = sender.download_and_save_media(m, conversacion.pk)
+            if local:
+                media_url = local
+        except Exception:
+            logger.exception('No se pudo descargar media entrante (message_id=%s)', message_id)
 
     try:
         with transaction.atomic():
             Mensaje.objects.create(
                 conversacion=conversacion,
-                contacto=conversacion.contacto,
+                contacto=contacto,
                 whatsapp_message_id=message_id,
                 direccion=Mensaje.Direccion.ENTRANTE,
-                tipo=m['type'],
-                contenido=m['content'],
-                media_url=m.get('media_url', ''),
+                tipo=tipo,
+                contenido=m.get('content', ''),
+                media_url=media_url,
+                media_id=m.get('media_id', ''),
                 media_mime=m.get('media_mime', ''),
                 media_filename=m.get('media_filename', ''),
                 status=Mensaje.Status.LEIDO,
@@ -74,6 +100,13 @@ def _guardar_mensaje_entrante(m: dict):
         # Otra entrega del mismo webhook llegó en paralelo y ya lo guardó.
         logger.info('Webhook duplicado (carrera) ignorado (message_id=%s)', message_id)
         return None
+
+    # Guardar el archivo en la ficha del contacto.
+    if media_url and tipo != Mensaje.Tipo.TEXTO:
+        contacto.registrar_archivo(
+            url=media_url, tipo=tipo, mime=m.get('media_mime', ''),
+            filename=m.get('media_filename', ''), direccion='in',
+        )
 
     conversacion.ultimo_mensaje_at = m['timestamp']
     conversacion.mensajes_no_leidos += 1

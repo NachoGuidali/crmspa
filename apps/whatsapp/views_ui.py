@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from . import services
-from .models import Conversacion, PlantillaMensaje, RespuestaRapida
+from .models import Conversacion, Mensaje, PlantillaMensaje, RespuestaRapida
 
 
 def _conversaciones_filtradas(request):
@@ -60,6 +60,81 @@ def inbox(request):
         'estado_filtro': request.GET.get('estado', ''),
         'no_leidos': request.GET.get('no_leidos', ''),
     })
+
+
+@login_required
+@require_POST
+def enviar_media(request, pk):
+    """Envía un archivo (foto/audio/documento) desde el inbox y lo guarda en la ficha del contacto."""
+    import os
+    import re
+
+    from django.conf import settings as dj_settings
+    from django.utils import timezone
+
+    from . import sender
+    from .media_utils import get_mediatype
+
+    MAX_MB = 16
+    conv = get_object_or_404(Conversacion, pk=pk)
+    archivo = request.FILES.get('archivo')
+    caption = request.POST.get('caption', '').strip()
+    is_ptt = request.POST.get('ptt') == '1'
+
+    if not archivo:
+        return JsonResponse({'ok': False, 'error': 'No se recibió ningún archivo.'}, status=400)
+    if archivo.size > MAX_MB * 1024 * 1024:
+        return JsonResponse({'ok': False, 'error': f'El archivo supera los {MAX_MB}MB.'}, status=400)
+
+    mime = archivo.content_type or 'application/octet-stream'
+    mediatype = get_mediatype(mime)
+    filename = archivo.name or 'archivo'
+    raw = archivo.read()
+
+    # Guardar local (para verlo en el inbox y en la ficha del contacto).
+    safe_name = re.sub(r'[^\w.\-]', '_', filename)
+    upload_dir = os.path.join(dj_settings.MEDIA_ROOT, 'uploads', f'conv_{pk}')
+    os.makedirs(upload_dir, exist_ok=True)
+    with open(os.path.join(upload_dir, safe_name), 'wb') as f:
+        f.write(raw)
+    local_url = f'{dj_settings.MEDIA_URL}uploads/conv_{pk}/{safe_name}'
+
+    try:
+        resultado = sender.send_uploaded_media(
+            conv.telefono, raw, mime, filename=filename, caption=caption, is_ptt=is_ptt,
+        )
+    except Exception as exc:
+        logger.exception('Error enviando media a %s', conv.telefono)
+        return JsonResponse({'ok': False, 'error': f'No se pudo enviar: {str(exc)[:120]}'}, status=502)
+
+    tipo_map = {
+        'image': Mensaje.Tipo.IMAGEN, 'video': Mensaje.Tipo.VIDEO,
+        'audio': Mensaje.Tipo.AUDIO, 'document': Mensaje.Tipo.DOCUMENTO,
+    }
+    tipo = tipo_map.get(mediatype, Mensaje.Tipo.DOCUMENTO)
+    msg = Mensaje.objects.create(
+        conversacion=conv,
+        contacto=conv.contacto,
+        whatsapp_message_id=resultado.get('id', ''),
+        direccion=Mensaje.Direccion.SALIENTE,
+        tipo=tipo,
+        contenido=caption,
+        media_url=local_url,
+        media_mime=mime,
+        media_filename=filename,
+        status=Mensaje.Status.ENVIADO if resultado.get('id') else Mensaje.Status.PENDIENTE,
+        enviado_por=request.user,
+        timestamp=timezone.now(),
+    )
+    if conv.contacto:
+        conv.contacto.registrar_archivo(url=local_url, tipo=tipo, mime=mime, filename=filename, direccion='out')
+    Conversacion.objects.filter(pk=conv.pk).update(ultimo_mensaje_at=msg.timestamp)
+
+    return JsonResponse({'ok': True, 'mensaje': {
+        'id': msg.id, 'direccion': 'out', 'tipo': tipo, 'contenido': caption,
+        'media_url': local_url, 'media_mime': mime, 'media_filename': filename,
+        'timestamp': msg.timestamp.strftime('%d/%m %H:%M'), 'status': msg.get_status_display(),
+    }})
 
 
 @login_required
@@ -166,6 +241,10 @@ def inbox_mensajes(request, pk):
         'id': m.id,
         'direccion': m.direccion,
         'contenido': m.contenido,
+        'tipo': m.tipo,
+        'media_url': m.media_url,
+        'media_mime': m.media_mime,
+        'media_filename': m.media_filename,
         'timestamp': m.timestamp.strftime('%d/%m %H:%M'),
         'status': m.get_status_display(),
     } for m in qs]

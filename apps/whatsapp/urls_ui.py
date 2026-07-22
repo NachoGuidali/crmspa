@@ -14,5 +14,6 @@ urlpatterns = [
     path('accion/', views_ui.inbox_accion, name='accion'),
     path('kanban/', views_ui.kanban, name='kanban'),
     path('<int:pk>/mensajes/', views_ui.inbox_mensajes, name='mensajes'),
+    path('<int:pk>/enviar-media/', views_ui.enviar_media, name='enviar_media'),
     path('<int:pk>/mover/', views_ui.kanban_move, name='mover'),
 ]

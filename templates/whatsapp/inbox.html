@@ -120,7 +120,17 @@
 
     <div class="wa-chat" id="waChat" data-conv="{{ selected.pk }}" data-last="{{ last_msg_id }}">
       {% for m in mensajes %}
-      <div class="wa-bubble {{ m.direccion }}">{{ m.contenido }}<div class="ts">{{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}</div></div>
+      <div class="wa-bubble {{ m.direccion }}">
+        {% if m.media_url %}
+          {% if m.tipo == 'image' %}<a href="{{ m.media_url }}" target="_blank"><img src="{{ m.media_url }}" class="wa-media-img"></a>
+          {% elif m.tipo == 'audio' %}<audio controls preload="none" src="{{ m.media_url }}" class="wa-media-audio"></audio>
+          {% elif m.tipo == 'video' %}<video controls preload="none" src="{{ m.media_url }}" class="wa-media-video"></video>
+          {% else %}<a href="{{ m.media_url }}" target="_blank" class="wa-media-doc">📎 {{ m.media_filename|default:"Archivo" }}</a>
+          {% endif %}
+        {% endif %}
+        {% if m.contenido %}<div class="wa-bubble-text">{{ m.contenido }}</div>{% endif %}
+        <div class="ts">{{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}</div>
+      </div>
       {% empty %}
       <p style="color:var(--text-muted); text-align:center;">Sin mensajes todavía.</p>
       {% endfor %}
@@ -138,9 +148,14 @@
         {% csrf_token %}
         <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
         <input type="hidden" name="accion" value="enviar_texto">
-        <input type="text" name="mensaje" id="waMensajeInput" placeholder="Escribí un mensaje..." autocomplete="off" required>
+        <button type="button" class="btn btn-secondary" id="btnAdjuntar" title="Adjuntar foto, audio o documento" style="padding:6px 10px;">📎</button>
+        <button type="button" class="btn btn-secondary" id="btnGrabar" title="Grabar nota de voz" style="padding:6px 10px;">🎤</button>
+        <input type="text" name="mensaje" id="waMensajeInput" placeholder="Escribí un mensaje..." autocomplete="off">
         <button type="submit" class="btn">Enviar</button>
       </form>
+      <input type="file" id="fileAdjunto" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none;"
+             data-url="{% url 'whatsapp:enviar_media' selected.pk %}">
+      <div id="uploadEstado" style="font-size:.78rem; color:var(--text-muted); padding:0 4px;"></div>
       {% if plantillas %}
       <form method="post" action="{% url 'whatsapp:accion' %}" class="wa-composer-row">
         {% csrf_token %}
@@ -158,30 +173,105 @@
 </div>
 
 {% if selected %}
+<style>
+  .wa-media-img { max-width: 240px; max-height: 300px; border-radius: 8px; display: block; cursor: pointer; }
+  .wa-media-audio { max-width: 260px; display: block; }
+  .wa-media-video { max-width: 260px; max-height: 300px; border-radius: 8px; display: block; }
+  .wa-media-doc { display: inline-block; padding: 8px 10px; background: rgba(0,0,0,.05); border-radius: 8px; text-decoration: none; }
+  .wa-bubble-text { margin-top: 4px; }
+</style>
 <script>
+const CSRF = '{{ csrf_token }}';
+
 function rellenarMensaje(texto) {
   const input = document.getElementById('waMensajeInput');
   if (input) { input.value = texto; input.focus(); }
 }
+
+function esc(s) { return (s || '').replace(/</g, '&lt;'); }
+
+function mediaHtml(m) {
+  if (!m.media_url) return '';
+  const u = m.media_url;
+  if (m.tipo === 'image') return `<a href="${u}" target="_blank"><img src="${u}" class="wa-media-img"></a>`;
+  if (m.tipo === 'audio') return `<audio controls preload="none" src="${u}" class="wa-media-audio"></audio>`;
+  if (m.tipo === 'video') return `<video controls preload="none" src="${u}" class="wa-media-video"></video>`;
+  return `<a href="${u}" target="_blank" class="wa-media-doc">📎 ${esc(m.media_filename) || 'Archivo'}</a>`;
+}
+
+function appendBubble(chat, m) {
+  const div = document.createElement('div');
+  div.className = 'wa-bubble ' + m.direccion;
+  div.innerHTML = mediaHtml(m) +
+    (m.contenido ? `<div class="wa-bubble-text">${esc(m.contenido)}</div>` : '') +
+    `<div class="ts">${m.timestamp} · ${m.status}</div>`;
+  chat.appendChild(div);
+}
+
 (function () {
   const chat = document.getElementById('waChat');
   if (!chat) return;
   chat.scrollTop = chat.scrollHeight;
   const convId = chat.dataset.conv;
   let lastId = parseInt(chat.dataset.last || '0', 10);
+  const estado = document.getElementById('uploadEstado');
+  const fileInput = document.getElementById('fileAdjunto');
+  const msgInput = document.getElementById('waMensajeInput');
 
+  // ── Adjuntar archivo ──
+  document.getElementById('btnAdjuntar').onclick = () => fileInput.click();
+  fileInput.onchange = () => { if (fileInput.files[0]) subirArchivo(fileInput.files[0], false); fileInput.value = ''; };
+
+  async function subirArchivo(file, isPtt) {
+    const fd = new FormData();
+    fd.append('archivo', file);
+    fd.append('caption', (msgInput.value || '').trim());
+    if (isPtt) fd.append('ptt', '1');
+    estado.textContent = 'Enviando ' + (file.name || 'audio') + '…';
+    try {
+      const r = await fetch(fileInput.dataset.url, { method: 'POST', headers: { 'X-CSRFToken': CSRF }, body: fd });
+      const data = await r.json();
+      if (data.ok) {
+        appendBubble(chat, data.mensaje);
+        lastId = Math.max(lastId, data.mensaje.id);
+        chat.scrollTop = chat.scrollHeight;
+        msgInput.value = '';
+        estado.textContent = '';
+      } else { estado.textContent = data.error || 'Error al enviar.'; }
+    } catch (e) { estado.textContent = 'Error de conexión.'; }
+  }
+
+  // ── Grabar nota de voz ──
+  let mediaRecorder = null, chunks = [], grabando = false;
+  const btnGrabar = document.getElementById('btnGrabar');
+  btnGrabar.onclick = async () => {
+    if (grabando) { mediaRecorder.stop(); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      estado.textContent = 'Tu navegador no permite grabar audio.'; return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'mp4' : 'webm');
+        subirArchivo(new File([blob], 'nota-voz.' + ext, { type: blob.type }), true);
+        btnGrabar.textContent = '🎤'; grabando = false;
+      };
+      mediaRecorder.start(); grabando = true; btnGrabar.textContent = '⏹';
+      estado.textContent = 'Grabando… tocá ⏹ para enviar.';
+    } catch (e) { estado.textContent = 'No se pudo acceder al micrófono.'; }
+  };
+
+  // ── Polling de mensajes nuevos ──
   setInterval(function () {
     fetch(`/inbox/${convId}/mensajes/?after=${lastId}`)
       .then((r) => r.json())
       .then((data) => {
-        data.mensajes.forEach((m) => {
-          const div = document.createElement('div');
-          div.className = 'wa-bubble ' + m.direccion;
-          div.innerHTML = m.contenido.replace(/</g, '&lt;') +
-            '<div class="ts">' + m.timestamp + ' · ' + m.status + '</div>';
-          chat.appendChild(div);
-          lastId = Math.max(lastId, m.id);
-        });
+        data.mensajes.forEach((m) => { appendBubble(chat, m); lastId = Math.max(lastId, m.id); });
         if (data.mensajes.length) chat.scrollTop = chat.scrollHeight;
       })
       .catch(() => {});

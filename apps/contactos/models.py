@@ -100,6 +100,10 @@ class Contacto(models.Model):
         default=True, verbose_name='Recibir promociones',
         help_text='Reactivación, cumpleaños y campañas de difusión.',
     )
+    archivos = models.JSONField(
+        default=list, blank=True,
+        help_text='Fotos, audios y documentos intercambiados por WhatsApp con este contacto.',
+    )
     fecha_alta = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -115,6 +119,23 @@ class Contacto(models.Model):
         if self.telefono:
             self.telefono = normalize_ar_phone(self.telefono)
         super().save(*args, **kwargs)
+
+    def registrar_archivo(self, *, url, tipo, mime='', filename='', direccion='in'):
+        """Guarda una referencia de un archivo (foto/audio/documento) intercambiado por
+        WhatsApp en el campo `archivos` del contacto. Evita duplicar por URL."""
+        from django.utils import timezone as _tz
+
+        if not url:
+            return
+        archivos = list(self.archivos or [])
+        if any(a.get('url') == url for a in archivos):
+            return
+        archivos.append({
+            'url': url, 'tipo': tipo, 'mime': mime, 'filename': filename,
+            'direccion': direccion, 'fecha': _tz.now().isoformat(timespec='seconds'),
+        })
+        self.archivos = archivos
+        self.save(update_fields=['archivos', 'updated_at'])
 
     def campos_extra(self):
         """Lista de (campo, valor_formateado) de los campos personalizados activos."""
