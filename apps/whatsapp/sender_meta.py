@@ -48,7 +48,17 @@ def _messages_url() -> str:
 
 
 def _normalize_phone(phone: str) -> str:
-    return phone.lstrip('+')
+    """Formato que espera Meta Cloud API para el destinatario.
+
+    Argentina: el wa_id entrante trae el '9' de celular (54 9 11 ...), pero para ENVIAR
+    Meta espera el número SIN ese 9 (54 + área + número). Si no se saca, Meta responde
+    131030 'recipient not in allowed list' / no entrega. Solo aplica a móviles argentinos
+    (prefijo 549); el resto de los países no se toca.
+    """
+    p = phone.lstrip('+')
+    if p.startswith('549'):
+        p = '54' + p[3:]
+    return p
 
 
 def _log_request(endpoint, method, request_body, response, duracion_ms):
