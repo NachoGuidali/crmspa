@@ -182,15 +182,22 @@ def download_and_save_media(message_data: dict, conv_pk: int) -> str:
 
 def get_phone_number_info() -> dict:
     """verified_name, display_phone_number y quality_rating del número conectado.
-    Se usa como 'test de conexión' de Meta desde la pantalla de configuración."""
+    Se usa como 'test de conexión' de Meta desde la pantalla de configuración.
+    Ante un error, devuelve el mensaje real que manda Meta (token vencido, id
+    equivocado, etc.), no un "401" pelado."""
     url = _url(_phone_number_id())
     try:
         r = requests.get(
             url, headers=_headers(), timeout=10,
-            params={'fields': 'verified_name,display_phone_number,quality_rating,code_verification_status'},
+            params={'fields': 'verified_name,display_phone_number,quality_rating'},
         )
-        r.raise_for_status()
-        return r.json()
+        data = r.json() if r.content else {}
+        if not r.ok:
+            err = data.get('error') or {}
+            msg = err.get('message') or f'{r.status_code} {r.reason}'
+            logger.error('Error consultando el número de Meta: %s', msg)
+            return {'error': msg}
+        return data
     except Exception as e:
         logger.error('Error consultando el número de Meta: %s', e)
         return {'error': str(e)}
