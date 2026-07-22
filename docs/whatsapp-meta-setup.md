@@ -103,15 +103,32 @@ enviar (`54 + área + número`). El CRM ya lo saca solo al enviar por Meta
 
 ## 6. Pasar de número de prueba → número productivo
 
-1. En Meta: **Paso 2. Configuración de producción** → agregá tu **número real** a la WABA
-   (verificación por SMS/llamada) y cargá un **método de pago**.
-2. Si tenés que **verificar el negocio** (Paso 3), subí la documentación.
-3. En el CRM → Configuración → WhatsApp → **Meta**: cambiá el **Phone Number ID** por el del
+**Dónde se agrega el número real:** Meta → menú izquierdo → **Configuración básica → Paso 2.
+Configuración de producción** (o el clásico **WhatsApp Manager → Números de teléfono → Agregar
+número**).
+
+1. **Agregar el número** a la WABA → poner el **nombre para mostrar** (Meta lo revisa) →
+   **verificar** con el código por **SMS o llamada**.
+2. Cargar un **método de pago** en el negocio (sin esto no se envía en producción).
+3. Si corresponde, **verificar el negocio** (Paso 3, subir documentación).
+4. En el CRM → Configuración → WhatsApp → **Meta**: cambiá el **Phone Number ID** por el del
    número productivo (y la **WABA** si es otra). El resto (App Secret, Verify Token) queda igual.
-4. Re-suscribí la WABA a la app si cambió:
-   `curl -X POST ".../WABA_ID/subscribed_apps?access_token=TOKEN"`.
-5. Con número productivo **desaparecen** los dos límites del número de prueba: ya podés escribirle
+5. Re-suscribí la WABA a la app: `curl -X POST ".../WABA_ID/subscribed_apps?access_token=TOKEN"`.
+6. Con número productivo **desaparecen** los dos límites del número de prueba: ya podés escribirle
    a **cualquier** cliente sin agregarlo a ninguna lista.
+
+### ¿El número ya tiene WhatsApp? → Coexistence
+Desde **mayo 2025** Meta permite **Coexistence** (convivencia): un mismo número puede estar en la
+**WhatsApp Business App** y en la **Cloud API a la vez**, sin borrarlo ni perder el historial (los
+mensajes se espejan entre app y API).
+- Número en **WhatsApp Business App** → conectalo con Coexistence, **no hace falta eliminarlo**.
+- Número en **WhatsApp normal (consumer)** → conviene pasarlo antes a Business App / migrarlo;
+  la convivencia es para la Business App.
+- Limitaciones de coexistence: mensajes temporales, listas de difusión y "ver una vez" pueden no
+  funcionar del todo.
+
+> (Antes la regla era que el número **no** podía estar activo en WhatsApp; eso cambió con
+> Coexistence. Verificar siempre en la doc oficial de Meta, que sigue evolucionando.)
 
 > **Plantillas (templates):** con el número productivo, para iniciar conversación **fuera de la
 > ventana de 24 hs** (ej. recordatorios), Meta exige **plantillas aprobadas**. El envío de
