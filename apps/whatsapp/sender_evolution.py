@@ -176,6 +176,12 @@ def setup_instance_webhook(webhook_url: str) -> bool:
         return False
 
 
+def send_template_message(to: str, plantilla, valores=None) -> dict:
+    """Evolution no tiene plantillas HSM: renderizamos el cuerpo con los valores y lo mandamos
+    como texto libre (Evolution no tiene la restricción de la ventana de 24hs)."""
+    return send_text_message(to, plantilla.render_valores(valores))
+
+
 def send_uploaded_media(to: str, raw: bytes, mime: str, filename: str = '', caption: str = '', is_ptt: bool = False) -> dict:
     """Envía un archivo subido desde el inbox. Evolution acepta el media en base64; probamos
     base64 crudo y, si falla, data-URI. Para notas de voz usa el endpoint de audio (PTT)."""

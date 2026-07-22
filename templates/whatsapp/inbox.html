@@ -137,6 +137,12 @@
     </div>
 
     <div class="wa-composer">
+      {% if proveedor_meta and not ventana_abierta %}
+      <div style="background:#ffe9a8; color:#7a5a00; padding:8px 12px; border-radius:8px; font-size:.82rem; margin-bottom:6px;">
+        ⏰ Pasaron más de 24&nbsp;hs desde el último mensaje del cliente. Por Meta el texto libre
+        se va a rechazar — para reabrir la conversación mandá una <strong>plantilla aprobada</strong> (abajo).
+      </div>
+      {% endif %}
       {% if respuestas %}
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
         {% for r in respuestas %}
@@ -165,6 +171,7 @@
         <select name="plantilla_id">
           {% for p in plantillas %}<option value="{{ p.pk }}">{{ p.nombre }}</option>{% endfor %}
         </select>
+        <input type="text" name="valores" placeholder="Valores para 1, 2… separados por | (opcional)" autocomplete="off" style="flex:1;" title="Valores de los posicionales, en orden, separados por |">
         <button type="submit" class="btn btn-secondary">Enviar plantilla</button>
       </form>
       {% endif %}

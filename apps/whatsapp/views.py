@@ -129,8 +129,49 @@ class EnviarMensajeView(ApiKeyLoggedView, APIView):
                 media_url=data['media_url'],
                 media_type=data['media_type'],
             )
+        except services.FueraDeVentanaError as exc:
+            # Meta: pasó la ventana de 24hs → n8n debe mandar una plantilla (/api/enviar-plantilla/).
+            return Response({'ok': False, 'error': 'fuera_de_ventana_24h', 'detalle': str(exc)}, status=409)
         except services.EnvioError as exc:
-            return Response({'ok': False, 'error': 'evolution_api_error', 'detalle': str(exc)}, status=502)
+            return Response({'ok': False, 'error': 'envio_error', 'detalle': str(exc)}, status=502)
+
+        return Response(resultado)
+
+
+class EnviarPlantillaView(ApiKeyLoggedView, APIView):
+    """POST /whatsapp/api/enviar-plantilla/ — manda una plantilla (para iniciar conversación fuera
+    de la ventana de 24hs en Meta, ej. recordatorios).
+    Body: {"telefono": "...", "plantilla": <id o meta_nombre>, "valores": ["Ana", "25/07 mañana"]}."""
+
+    def post(self, request):
+        from .models import PlantillaMensaje
+
+        data = request.data
+        telefono = data.get('telefono') or data.get('phone')
+        if not telefono:
+            return Response({'error': 'telefono_requerido'}, status=400)
+
+        ident = data.get('plantilla') or data.get('template')
+        if not ident:
+            return Response({'error': 'plantilla_requerida'}, status=400)
+
+        plantilla = None
+        if str(ident).isdigit():
+            plantilla = PlantillaMensaje.objects.filter(pk=int(ident)).first()
+        if plantilla is None:
+            plantilla = (
+                PlantillaMensaje.objects.filter(meta_nombre=ident).first()
+                or PlantillaMensaje.objects.filter(nombre=ident).first()
+            )
+        if plantilla is None:
+            return Response({'error': 'plantilla_no_encontrada'}, status=404)
+
+        try:
+            resultado = services.enviar_plantilla(
+                telefono=telefono, plantilla=plantilla, valores=data.get('valores') or [],
+            )
+        except services.EnvioError as exc:
+            return Response({'ok': False, 'error': 'envio_error', 'detalle': str(exc)}, status=502)
 
         return Response(resultado)
 

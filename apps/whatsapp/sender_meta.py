@@ -190,6 +190,46 @@ def download_and_save_media(message_data: dict, conv_pk: int) -> str:
         return ''
 
 
+def send_template_message(to: str, plantilla, valores=None) -> dict:
+    """Envía una plantilla (HSM) aprobada por Meta. `valores` son los parámetros del body
+    en orden ({{1}}, {{2}}, ...)."""
+    components = []
+    if valores:
+        components.append({
+            'type': 'body',
+            'parameters': [{'type': 'text', 'text': str(v)} for v in valores],
+        })
+    payload = {
+        'messaging_product': 'whatsapp',
+        'to': _normalize_phone(to),
+        'type': 'template',
+        'template': {
+            'name': plantilla.get_meta_nombre(),
+            'language': {'code': plantilla.meta_idioma or 'es_AR'},
+            'components': components,
+        },
+    }
+    return _post_message(payload)
+
+
+def fetch_templates_from_meta() -> list:
+    """Trae las plantillas registradas en la WABA con su estado de aprobación."""
+    url = _url(f'{_waba_id()}/message_templates')
+    templates = []
+    params = {'limit': 100}
+    try:
+        while url:
+            r = requests.get(url, headers=_headers(), timeout=15, params=params)
+            r.raise_for_status()
+            data = r.json()
+            templates.extend(data.get('data', []))
+            url = data.get('paging', {}).get('next')
+            params = None
+    except Exception as e:
+        logger.error('Error trayendo plantillas de Meta: %s', e)
+    return templates
+
+
 def get_phone_number_info() -> dict:
     """verified_name, display_phone_number y quality_rating del número conectado.
     Se usa como 'test de conexión' de Meta desde la pantalla de configuración.

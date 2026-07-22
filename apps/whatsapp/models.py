@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
+from django.utils import timezone
 
 
 class ConfiguracionWhatsApp(models.Model):
@@ -131,6 +132,11 @@ class Conversacion(models.Model):
     ultimo_mensaje_at = models.DateTimeField(null=True, blank=True)
     mensajes_no_leidos = models.PositiveIntegerField(default=0)
     archivada = models.BooleanField(default=False, db_index=True)
+    ventana_expira_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Hasta cuándo se puede mandar texto libre por Meta (24hs desde el último '
+                  'mensaje entrante del cliente). Fuera de esa ventana, Meta exige plantilla.',
+    )
     # Estado del flujo conversacional que maneja el bot de n8n. Es una bolsa libre de datos
     # (estado_flujo, personas, tipo_propuesta, fecha_solicitada, intentos_fecha,
     # horario_confirmado, datos_contacto, override_regla, reserva_creada). El CRM es la única
@@ -154,6 +160,12 @@ class Conversacion(models.Model):
 
     def get_display_name(self):
         return self.nombre_contacto or self.telefono
+
+    @property
+    def ventana_abierta(self):
+        """True si estamos dentro de las 24hs desde el último mensaje del cliente.
+        Solo importa para Meta: fuera de la ventana hay que mandar plantilla."""
+        return bool(self.ventana_expira_at and self.ventana_expira_at > timezone.now())
 
     @property
     def reserva_creada(self):
@@ -252,11 +264,36 @@ class PlantillaMensaje(models.Model):
         LISTA_ESPERA = 'lista_espera', 'Lista de espera'
         OTRO = 'otro', 'Otro'
 
+    class MetaCategoria(models.TextChoices):
+        UTILITY = 'utility', 'Utilidad (recordatorios, confirmaciones)'
+        MARKETING = 'marketing', 'Marketing (promociones)'
+        AUTHENTICATION = 'authentication', 'Autenticación (códigos)'
+
     nombre = models.CharField(max_length=100, unique=True)
     tipo = models.CharField(max_length=30, choices=Tipo.choices, default=Tipo.OTRO)
-    cuerpo = models.TextField(help_text='Usar {{variable}} para valores dinámicos, ej. {{nombre}}, {{circuito}}, {{fecha}}.')
+    cuerpo = models.TextField(help_text='Usar {{variable}} para valores dinámicos, ej. {{nombre}}, {{circuito}}, {{fecha}}. '
+                              'Para plantillas de Meta usar posicionales: {{1}}, {{2}}.')
     variables = models.JSONField(default=list, blank=True, help_text='Lista de nombres de variables disponibles.')
     activa = models.BooleanField(default=True)
+
+    # --- Plantilla de Meta (HSM) para mandar fuera de la ventana de 24hs ---
+    meta_nombre = models.CharField(
+        max_length=100, blank=True,
+        help_text='Nombre EXACTO de la plantilla aprobada en Meta (minúsculas y guiones bajos). '
+                  'Si se deja vacío, se usa el "nombre" normalizado.',
+    )
+    meta_idioma = models.CharField(
+        max_length=10, default='es_AR',
+        help_text='Código de idioma de la plantilla en Meta (ej. es_AR, es, en_US).',
+    )
+    meta_categoria = models.CharField(
+        max_length=20, choices=MetaCategoria.choices, default=MetaCategoria.UTILITY,
+    )
+    meta_estado = models.CharField(
+        max_length=20, blank=True,
+        help_text='Estado de aprobación en Meta (APPROVED / PENDING / REJECTED). Se sincroniza.',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -268,6 +305,14 @@ class PlantillaMensaje(models.Model):
     def __str__(self):
         return self.nombre
 
+    def get_meta_nombre(self) -> str:
+        import re
+        return self.meta_nombre or re.sub(r'[^a-z0-9_]', '_', self.nombre.lower())
+
+    @property
+    def aprobada_en_meta(self) -> bool:
+        return self.meta_estado.upper() == 'APPROVED'
+
     def render(self, contexto: dict):
         import re
 
@@ -277,6 +322,19 @@ class PlantillaMensaje(models.Model):
             return str(val) if val is not None else f'{{{{{key}}}}}'
 
         return re.sub(r'\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}', replace, self.cuerpo)
+
+    def render_valores(self, valores) -> str:
+        """Reemplaza los posicionales {{1}}, {{2}}, ... por los valores en orden. Se usa para el
+        preview, para el texto que se guarda en el inbox, y para el fallback de Evolution."""
+        import re
+
+        vals = list(valores or [])
+
+        def repl(match):
+            idx = int(match.group(1)) - 1
+            return str(vals[idx]) if 0 <= idx < len(vals) else match.group(0)
+
+        return re.sub(r'\{\{\s*(\d+)\s*\}\}', repl, self.cuerpo)
 
 
 class RespuestaRapida(models.Model):

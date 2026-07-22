@@ -123,8 +123,13 @@ TarifaCircuitoFormSet = forms.inlineformset_factory(
 class PlantillaMensajeForm(forms.ModelForm):
     class Meta:
         model = PlantillaMensaje
-        fields = ['nombre', 'tipo', 'cuerpo', 'activa']
+        fields = ['nombre', 'tipo', 'cuerpo', 'activa',
+                  'meta_nombre', 'meta_idioma', 'meta_categoria']
         widgets = {'cuerpo': forms.Textarea(attrs={'rows': 5})}
+        help_texts = {
+            'meta_nombre': 'Solo para Meta: nombre EXACTO de la plantilla aprobada (minúsculas y _). '
+                           'Para recordatorios fuera de las 24hs. En Evolution no hace falta.',
+        }
 
 
 class RespuestaRapidaForm(forms.ModelForm):

@@ -53,6 +53,16 @@ def download_and_save_media(message_data, conv_pk):
     return _backend().download_and_save_media(message_data, conv_pk)
 
 
+def send_template_message(to, plantilla, valores=None):
+    """Envía una plantilla. En Meta es una HSM aprobada; en Evolution se manda como texto."""
+    return _backend().send_template_message(to, plantilla, valores)
+
+
+def fetch_templates_from_meta():
+    """Solo Meta: trae las plantillas de la WABA con su estado de aprobación."""
+    return sender_meta.fetch_templates_from_meta()
+
+
 def get_connection_state() -> str:
     """Estado de conexión del proveedor activo (Evolution: instancia; Meta: token+número)."""
     return _backend().get_connection_state()

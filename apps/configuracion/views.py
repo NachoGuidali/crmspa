@@ -53,6 +53,7 @@ class BaseListView(DuenoRequiredMixin, ListView):
     borrar_url = ''
     accion_extra_url = ''       # url name opcional para una acción extra por fila
     accion_extra_label = ''
+    acciones_header = []        # lista de (url_name, label) para botones en el encabezado
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -60,6 +61,7 @@ class BaseListView(DuenoRequiredMixin, ListView):
             'titulo': self.titulo, 'columnas': self.columnas,
             'crear_url': self.crear_url, 'editar_url': self.editar_url, 'borrar_url': self.borrar_url,
             'accion_extra_url': self.accion_extra_url, 'accion_extra_label': self.accion_extra_label,
+            'acciones_header': self.acciones_header,
             'filas': [self.fila(obj) for obj in ctx['object_list']],
         })
         return ctx
@@ -260,13 +262,46 @@ class BloqueoBorrar(DuenoRequiredMixin, DeleteView):
 class PlantillaList(BaseListView):
     model = PlantillaMensaje
     titulo = 'Plantillas de mensaje'
-    columnas = ['Nombre', 'Tipo', 'Activa']
+    columnas = ['Nombre', 'Tipo', 'Meta (nombre)', 'Estado Meta', 'Activa']
     crear_url = 'configuracion:plantilla_crear'
     editar_url = 'configuracion:plantilla_editar'
     borrar_url = 'configuracion:plantilla_borrar'
+    acciones_header = [('configuracion:plantillas_sync_meta', 'Sincronizar con Meta')]
 
     def fila(self, obj):
-        return (obj.pk, [obj.nombre, obj.get_tipo_display(), 'Sí' if obj.activa else 'No'])
+        return (obj.pk, [
+            obj.nombre, obj.get_tipo_display(),
+            obj.get_meta_nombre() if (obj.meta_nombre or obj.meta_estado) else '—',
+            obj.meta_estado or '—',
+            'Sí' if obj.activa else 'No',
+        ])
+
+
+@login_required
+def sincronizar_plantillas_meta(request):
+    """Trae las plantillas de Meta y actualiza el estado de aprobación de las que coinciden por nombre."""
+    if not (request.user.is_superuser or getattr(request.user, 'rol', '') == 'dueno'):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+    from django.contrib import messages as msgs
+
+    from apps.whatsapp import sender
+    from apps.whatsapp.models import ConfiguracionWhatsApp, PlantillaMensaje as PM
+
+    if ConfiguracionWhatsApp.get_proveedor() != ConfiguracionWhatsApp.Proveedor.META:
+        msgs.warning(request, 'La sincronización de plantillas es solo para el proveedor Meta.')
+        return redirect('configuracion:plantillas')
+
+    remotas = {t.get('name'): t for t in sender.fetch_templates_from_meta()}
+    actualizadas = 0
+    for pl in PM.objects.all():
+        info = remotas.get(pl.get_meta_nombre())
+        if info:
+            pl.meta_estado = info.get('status', '')
+            pl.save(update_fields=['meta_estado', 'updated_at'])
+            actualizadas += 1
+    msgs.success(request, f'Sincronizado con Meta: {len(remotas)} plantillas en la WABA, {actualizadas} vinculadas.')
+    return redirect('configuracion:plantillas')
 
 
 class PlantillaCrear(BaseFormView, CreateView):

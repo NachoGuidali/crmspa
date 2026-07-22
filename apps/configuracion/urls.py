@@ -32,6 +32,9 @@ urlpatterns += crud('bloqueos', 'bloqueo', {
     'list': views.BloqueoList, 'crear': views.BloqueoCrear, 'editar': views.BloqueoEditar, 'borrar': views.BloqueoBorrar})
 urlpatterns += crud('plantillas', 'plantilla', {
     'list': views.PlantillaList, 'crear': views.PlantillaCrear, 'editar': views.PlantillaEditar, 'borrar': views.PlantillaBorrar})
+urlpatterns += [
+    path('plantillas/sincronizar-meta/', views.sincronizar_plantillas_meta, name='plantillas_sync_meta'),
+]
 urlpatterns += crud('respuestas-rapidas', 'respuesta', {
     'list': views.RespuestaRapidaList, 'crear': views.RespuestaRapidaCrear,
     'editar': views.RespuestaRapidaEditar, 'borrar': views.RespuestaRapidaBorrar})

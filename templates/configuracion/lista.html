@@ -6,7 +6,10 @@
     <p style="margin:0;"><a href="{% url 'configuracion:hub' %}" style="color:var(--text-muted); font-size:.8rem;">← Configuración</a></p>
     <h1>{{ titulo }}</h1>
   </div>
-  {% if crear_url %}<a href="{% url crear_url %}" class="btn">+ Nuevo</a>{% endif %}
+  <div style="display:flex; gap:8px;">
+    {% for url_name, label in acciones_header %}<a href="{% url url_name %}" class="btn btn-secondary">{{ label }}</a>{% endfor %}
+    {% if crear_url %}<a href="{% url crear_url %}" class="btn">+ Nuevo</a>{% endif %}
+  </div>
 </div>
 
 <div class="card">

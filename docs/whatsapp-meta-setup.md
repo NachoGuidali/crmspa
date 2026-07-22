@@ -130,7 +130,22 @@ mensajes se espejan entre app y API).
 > (Antes la regla era que el número **no** podía estar activo en WhatsApp; eso cambió con
 > Coexistence. Verificar siempre en la doc oficial de Meta, que sigue evolucionando.)
 
-> **Plantillas (templates):** con el número productivo, para iniciar conversación **fuera de la
-> ventana de 24 hs** (ej. recordatorios), Meta exige **plantillas aprobadas**. El envío de
-> plantillas por Meta todavía no está implementado en el CRM — si se van a usar recordatorios por
-> Meta, hay que sumarlo (con Evolution no hace falta).
+## 7. Plantillas y ventana de 24 hs (Meta)
+
+Con Meta, para **iniciar** conversación **fuera de las 24 hs** desde el último mensaje del cliente
+(ej. recordatorios) hay que usar una **plantilla aprobada**. El CRM ya lo maneja:
+
+- **Dentro de 24 hs:** texto/media libre desde el inbox o por `/api/enviar/`.
+- **Fuera de 24 hs:** `/api/enviar/` responde `409 fuera_de_ventana_24h`; hay que mandar una
+  **plantilla** (`/api/enviar-plantilla/`, o desde el inbox el bloque "Enviar plantilla").
+- **Evolution** no tiene esta restricción (texto libre siempre).
+
+**Cómo dejar una plantilla lista:**
+1. Creá y hacé **aprobar** la plantilla en **Meta** (WhatsApp Manager → Plantillas de mensajes),
+   con cuerpo posicional (`{{1}}`, `{{2}}`…).
+2. En el CRM → **Configuración → Plantillas de mensaje** → cargá la plantilla con su
+   **`meta_nombre`** (exacto), **idioma** (ej. `es_AR`) y el mismo cuerpo con `{{1}}`, `{{2}}`.
+3. Botón **"Sincronizar con Meta"** en esa pantalla → trae el **estado de aprobación**
+   (`APPROVED` / `PENDING` / `REJECTED`).
+4. El bot manda la plantilla con `POST /whatsapp/api/enviar-plantilla/`
+   `{"telefono": "...", "plantilla": "recordatorio_turno", "valores": ["Ana", "25/07"]}`.

@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from . import services
-from .models import Conversacion, Mensaje, PlantillaMensaje, RespuestaRapida
+from .models import ConfiguracionWhatsApp, Conversacion, Mensaje, PlantillaMensaje, RespuestaRapida
 
 
 def _conversaciones_filtradas(request):
@@ -47,6 +47,8 @@ def inbox(request):
     last_msg_id = mensajes[-1].id if mensajes else 0
     respuestas = RespuestaRapida.objects.filter(activa=True) if selected else []
 
+    proveedor_meta = ConfiguracionWhatsApp.get_proveedor() == ConfiguracionWhatsApp.Proveedor.META
+
     return render(request, 'whatsapp/inbox.html', {
         'conversaciones': conversaciones,
         'unread_total': unread_total,
@@ -55,6 +57,8 @@ def inbox(request):
         'last_msg_id': last_msg_id,
         'plantillas': plantillas,
         'respuestas': respuestas,
+        'proveedor_meta': proveedor_meta,
+        'ventana_abierta': selected.ventana_abierta if selected else True,
         'estados': Conversacion.Estado.choices,
         'q': request.GET.get('q', ''),
         'estado_filtro': request.GET.get('estado', ''),
@@ -196,9 +200,11 @@ def inbox_accion(request):
 
     elif accion == 'enviar_plantilla':
         plantilla = get_object_or_404(PlantillaMensaje, pk=request.POST.get('plantilla_id'))
-        contexto = {'nombre': conv.get_display_name(), 'telefono': conv.telefono}
+        # Los valores de los {{1}}, {{2}}... se ingresan separados por "|".
+        valores_raw = request.POST.get('valores', '').strip()
+        valores = [v.strip() for v in valores_raw.split('|')] if valores_raw else []
         try:
-            services.enviar_mensaje(telefono=conv.telefono, mensaje=plantilla.render(contexto), usuario=request.user)
+            services.enviar_plantilla(telefono=conv.telefono, plantilla=plantilla, valores=valores, usuario=request.user)
         except services.EnvioError as exc:
             messages.error(request, f'No se pudo enviar: {exc}')
 

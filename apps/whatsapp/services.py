@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
@@ -110,6 +111,8 @@ def _guardar_mensaje_entrante(m: dict):
 
     conversacion.ultimo_mensaje_at = m['timestamp']
     conversacion.mensajes_no_leidos += 1
+    # Un mensaje entrante del cliente (re)abre la ventana de 24hs para responder por Meta.
+    conversacion.ventana_expira_at = m['timestamp'] + timedelta(hours=24)
     conversacion.save()
 
     from apps.configuracion.models import ConfiguracionNegocio
@@ -132,10 +135,20 @@ def enviar_mensaje(*, telefono, mensaje='', media_url='', media_type='', usuario
     """
     from utils.phone import normalize_ar_phone
 
+    from .models import ConfiguracionWhatsApp
+
     telefono = normalize_ar_phone(telefono)
     conversacion, _ = Conversacion.objects.get_or_create(telefono=telefono)
     contacto = conversacion.contacto or Contacto.objects.filter(telefono=telefono).first()
     tipo = (media_type or Mensaje.Tipo.DOCUMENTO) if media_url else Mensaje.Tipo.TEXTO
+
+    # Meta: fuera de la ventana de 24hs no se puede mandar texto/media libre; hay que usar
+    # una plantilla aprobada. Evolution no tiene esta restricción.
+    if ConfiguracionWhatsApp.get_proveedor() == ConfiguracionWhatsApp.Proveedor.META and not conversacion.ventana_abierta:
+        raise FueraDeVentanaError(
+            'Pasaron más de 24hs desde el último mensaje del cliente. Por Meta solo se puede '
+            'iniciar la conversación con una plantilla aprobada.'
+        )
 
     try:
         if media_url:
@@ -175,7 +188,49 @@ def enviar_mensaje(*, telefono, mensaje='', media_url='', media_type='', usuario
 
 
 class EnvioError(Exception):
-    """El mensaje no pudo enviarse (Evolution API no configurada, caída, etc.)."""
+    """El mensaje no pudo enviarse (proveedor no configurado, caído, etc.)."""
+
+
+class FueraDeVentanaError(EnvioError):
+    """Meta: pasó la ventana de 24hs; hay que mandar una plantilla aprobada en vez de texto libre."""
+
+
+def enviar_plantilla(*, telefono, plantilla, valores=None, usuario=None):
+    """Envía una plantilla. En Meta es una HSM aprobada (válida fuera de la ventana de 24hs);
+    en Evolution se manda como texto libre. Registra el mensaje en el inbox."""
+    from utils.phone import normalize_ar_phone
+
+    telefono = normalize_ar_phone(telefono)
+    conversacion, _ = Conversacion.objects.get_or_create(telefono=telefono)
+    contacto = conversacion.contacto or Contacto.objects.filter(telefono=telefono).first()
+    contenido = plantilla.render_valores(valores)
+
+    try:
+        resultado = sender.send_template_message(telefono, plantilla, valores)
+    except Exception as exc:
+        Mensaje.objects.create(
+            conversacion=conversacion, contacto=contacto, direccion=Mensaje.Direccion.SALIENTE,
+            tipo=Mensaje.Tipo.PLANTILLA, contenido=contenido, status=Mensaje.Status.FALLIDO,
+            enviado_por=usuario, timestamp=timezone.now(), error_detalle=str(exc),
+        )
+        raise EnvioError(str(exc)) from exc
+
+    msg = Mensaje.objects.create(
+        conversacion=conversacion, contacto=contacto,
+        whatsapp_message_id=resultado.get('id', ''),
+        direccion=Mensaje.Direccion.SALIENTE, tipo=Mensaje.Tipo.PLANTILLA,
+        contenido=contenido,
+        status=Mensaje.Status.ENVIADO if resultado.get('id') else Mensaje.Status.FALLIDO,
+        enviado_por=usuario, timestamp=timezone.now(),
+    )
+    conversacion.ultimo_mensaje_at = msg.timestamp
+    conversacion.save(update_fields=['ultimo_mensaje_at'])
+
+    return {
+        'ok': True, 'message_id': resultado.get('id', ''),
+        'mensaje_id': msg.id, 'conversacion_id': conversacion.id,
+        'plantilla': plantilla.get_meta_nombre(),
+    }
 
 
 class HandoffError(Exception):

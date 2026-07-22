@@ -516,10 +516,39 @@ Para multimedia:
 - `media_type`: `image` · `video` · `audio` · `document`.
 
 **200:** `{"ok": true, "message_id": "...", "mensaje_id": 340, "conversacion_id": 87, "contacto_id": 12}`
-**502:** `{"ok": false, "error": "evolution_api_error", "detalle": "..."}` (Evolution caída).
+**409:** `{"ok": false, "error": "fuera_de_ventana_24h", "detalle": "..."}` — **solo con proveedor Meta**
+(ver abajo): pasaron +24 hs desde el último mensaje del cliente → hay que usar una **plantilla**
+(`/api/enviar-plantilla/`).
+**502:** `{"ok": false, "error": "envio_error", "detalle": "..."}` (proveedor caído).
 
-> Mandá **siempre** por acá, nunca directo a Evolution: así el mensaje queda registrado en el
+> Mandá **siempre** por acá, nunca directo al proveedor: así el mensaje queda registrado en el
 > inbox y recepción ve toda la conversación.
+
+### 7.3.1 Ventana de 24 hs y plantillas (Meta)
+
+La regla depende del **proveedor** (Configuración → WhatsApp):
+
+- **Evolution:** no hay restricción, mandá texto libre siempre por `/api/enviar/`.
+- **Meta (oficial):** solo se puede mandar **texto/media libre dentro de las 24 hs** desde el
+  último mensaje del cliente. **Fuera de esa ventana**, `/api/enviar/` responde **409
+  `fuera_de_ventana_24h`** y hay que **iniciar con una plantilla aprobada**.
+
+**Enviar una plantilla** — `POST /whatsapp/api/enviar-plantilla/` (con `X-Api-Key`)
+```json
+{"telefono": "+5493815551234", "plantilla": "recordatorio_turno", "valores": ["Ana", "25/07 (mañana)"]}
+```
+- `plantilla`: el **id** o el **nombre de Meta** (`meta_nombre`) de la plantilla cargada en el CRM.
+- `valores`: los parámetros posicionales del cuerpo (`{{1}}`, `{{2}}`…) en orden.
+- Funciona **dentro y fuera** de la ventana. Con Evolution, manda el cuerpo como texto normal.
+
+**200:** `{"ok": true, "message_id": "...", "mensaje_id": 341, "conversacion_id": 87, "plantilla": "recordatorio_turno"}`
+**404:** `{"error": "plantilla_no_encontrada"}` · **502:** `{"ok": false, "error": "envio_error"}`.
+
+> **Recordatorios:** como suelen caer **fuera** de las 24 hs, por Meta van **sí o sí como
+> plantilla**. Flujo sugerido del bot: `GET /reservas/agenda/?fecha=` → por cada reserva
+> `POST /whatsapp/api/enviar-plantilla/`. La plantilla (ej. `recordatorio_turno`) tiene que estar
+> **creada y aprobada en Meta** y cargada en el CRM (Configuración → Plantillas, con su
+> `meta_nombre` e idioma). Con Evolution podés usar `/api/enviar/` común.
 
 ### 7.4 Derivar a un humano (handoff)
 `POST /whatsapp/api/handoff/` (con `X-Api-Key`)
@@ -659,7 +688,8 @@ a un asesor?". Todos los filtros son opcionales.
 | POST | `/api/v1/conversaciones/<telefono>/mensajes/` | X-Api-Key | Guardar mensaje con el bot bloqueado |
 | GET | `/api/v1/vouchers/<codigo>/` | X-Api-Key | Validar gift card |
 | POST | `/api/v1/vouchers/canjear/` | X-Api-Key | Canjear gift card |
-| POST | `/whatsapp/api/enviar/` | X-Api-Key | Enviar mensaje al cliente |
+| POST | `/whatsapp/api/enviar/` | X-Api-Key | Enviar mensaje al cliente (texto/media libre) |
+| POST | `/whatsapp/api/enviar-plantilla/` | X-Api-Key | Enviar plantilla (recordatorios / fuera de 24 hs en Meta) |
 | POST | `/whatsapp/api/handoff/` | X-Api-Key | Derivar a humano |
 | POST | `/whatsapp/webhook/evolution/` | webhook token | Entrada de mensajes (Evolution) |
 | GET/POST | `/whatsapp/webhook/meta/` | verify token + firma | Entrada de mensajes (Meta Cloud API) |
