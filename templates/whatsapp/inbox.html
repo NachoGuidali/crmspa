@@ -150,6 +150,7 @@
         <input type="hidden" name="accion" value="enviar_texto">
         <button type="button" class="btn btn-secondary" id="btnAdjuntar" title="Adjuntar foto, audio o documento" style="padding:6px 10px;">📎</button>
         <button type="button" class="btn btn-secondary" id="btnGrabar" title="Grabar nota de voz" style="padding:6px 10px;">🎤</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelarGrab" title="Cancelar grabación" style="padding:6px 10px; display:none; color:#a33; border-color:#a33;">✕</button>
         <input type="text" name="mensaje" id="waMensajeInput" placeholder="Escribí un mensaje..." autocomplete="off">
         <button type="submit" class="btn">Enviar</button>
       </form>
@@ -242,8 +243,9 @@ function appendBubble(chat, m) {
   }
 
   // ── Grabar nota de voz ──
-  let mediaRecorder = null, chunks = [], grabando = false;
+  let mediaRecorder = null, chunks = [], grabando = false, cancelado = false;
   const btnGrabar = document.getElementById('btnGrabar');
+  const btnCancelar = document.getElementById('btnCancelarGrab');
   btnGrabar.onclick = async () => {
     if (grabando) { mediaRecorder.stop(); return; }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -252,18 +254,22 @@ function appendBubble(chat, m) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
-      chunks = [];
+      chunks = []; cancelado = false;
       mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
+        btnGrabar.textContent = '🎤'; grabando = false; btnCancelar.style.display = 'none';
+        if (cancelado) { cancelado = false; estado.textContent = 'Grabación cancelada.'; return; }
         const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
         const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'mp4' : 'webm');
         subirArchivo(new File([blob], 'nota-voz.' + ext, { type: blob.type }), true);
-        btnGrabar.textContent = '🎤'; grabando = false;
       };
-      mediaRecorder.start(); grabando = true; btnGrabar.textContent = '⏹';
-      estado.textContent = 'Grabando… tocá ⏹ para enviar.';
+      mediaRecorder.start(); grabando = true; btnGrabar.textContent = '⏹'; btnCancelar.style.display = '';
+      estado.textContent = 'Grabando… ⏹ para enviar · ✕ para cancelar.';
     } catch (e) { estado.textContent = 'No se pudo acceder al micrófono.'; }
+  };
+  btnCancelar.onclick = () => {
+    if (grabando && mediaRecorder) { cancelado = true; mediaRecorder.stop(); }
   };
 
   // ── Polling de mensajes nuevos ──
