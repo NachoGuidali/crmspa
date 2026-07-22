@@ -152,9 +152,11 @@ def ensure_instance_exists() -> None:
 
 
 def setup_instance_webhook(webhook_url: str) -> bool:
-    """Registra en Evolution la URL a la que debe mandar los eventos entrantes."""
+    """Registra en Evolution la URL a la que debe mandar los eventos entrantes.
+    Si no hay webhook_token, usamos la propia API key de Evolution como token del
+    header (el CRM también la acepta), así el webhook no queda sin autenticar."""
     url = _evo_url(f'/webhook/set/{_instance()}')
-    webhook_token = _cfg('webhook_token') or ''
+    webhook_token = _cfg('webhook_token') or _cfg('evolution_api_key') or ''
     payload = {'webhook': {
         'enabled': True, 'url': webhook_url, 'webhook_by_events': False, 'webhook_base64': False,
         'events': ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED'],
