@@ -13,6 +13,9 @@ services:
       - "127.0.0.1:5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Crea la base 'evolution_api' en el primer arranque (volumen vacío).
+      # Si el volumen ya existe, hay que crearla a mano una vez (ver README/deploy).
+      - ./deploy/init-evolution-db.sql:/docker-entrypoint-initdb.d/10-evolution-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-crmspa}"]
       interval: 5s
@@ -97,7 +100,8 @@ services:
     environment:
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://crmspa:crmspa@db:5432/evolution_api
+      # Usa las MISMAS credenciales que el CRM (del .env), base propia 'evolution_api'.
+      DATABASE_CONNECTION_URI: postgresql://${DB_USER:-crmspa}:${DB_PASSWORD}@db:5432/evolution_api
       CACHE_REDIS_ENABLED: "true"
       CACHE_REDIS_URI: redis://redis:6379/7
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
