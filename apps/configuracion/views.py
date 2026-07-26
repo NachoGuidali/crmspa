@@ -1,6 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
@@ -267,6 +267,8 @@ class PlantillaList(BaseListView):
     editar_url = 'configuracion:plantilla_editar'
     borrar_url = 'configuracion:plantilla_borrar'
     acciones_header = [('configuracion:plantillas_sync_meta', 'Sincronizar con Meta')]
+    accion_extra_url = 'configuracion:plantilla_enviar_meta'
+    accion_extra_label = 'Enviar a Meta'
 
     def fila(self, obj):
         return (obj.pk, [
@@ -301,6 +303,35 @@ def sincronizar_plantillas_meta(request):
             pl.save(update_fields=['meta_estado', 'updated_at'])
             actualizadas += 1
     msgs.success(request, f'Sincronizado con Meta: {len(remotas)} plantillas en la WABA, {actualizadas} vinculadas.')
+    return redirect('configuracion:plantillas')
+
+
+@login_required
+def enviar_plantilla_meta(request, pk):
+    """Crea/envía a revisión una plantilla en Meta y guarda su estado (PENDING)."""
+    if not (request.user.is_superuser or getattr(request.user, 'rol', '') == 'dueno'):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+    from django.contrib import messages as msgs
+
+    from apps.whatsapp import sender
+    from apps.whatsapp.models import ConfiguracionWhatsApp, PlantillaMensaje as PM
+
+    pl = get_object_or_404(PM, pk=pk)
+    if ConfiguracionWhatsApp.get_proveedor() != ConfiguracionWhatsApp.Proveedor.META:
+        msgs.warning(request, 'El envío de plantillas a aprobación es solo para el proveedor Meta.')
+        return redirect('configuracion:plantillas')
+
+    resultado = sender.create_template_on_meta(pl)
+    if resultado.get('error'):
+        msgs.error(request, f'Meta rechazó la creación: {resultado["error"]}')
+    else:
+        if not pl.meta_nombre:
+            pl.meta_nombre = pl.get_meta_nombre()
+        pl.meta_estado = resultado.get('status', 'PENDING')
+        pl.save(update_fields=['meta_nombre', 'meta_estado', 'updated_at'])
+        msgs.success(request, f'Plantilla "{pl.get_meta_nombre()}" enviada a Meta. Estado: {pl.meta_estado}. '
+                              f'Usá "Sincronizar con Meta" para ver cuándo queda APPROVED.')
     return redirect('configuracion:plantillas')
 
 

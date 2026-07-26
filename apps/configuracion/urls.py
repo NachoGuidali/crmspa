@@ -34,6 +34,7 @@ urlpatterns += crud('plantillas', 'plantilla', {
     'list': views.PlantillaList, 'crear': views.PlantillaCrear, 'editar': views.PlantillaEditar, 'borrar': views.PlantillaBorrar})
 urlpatterns += [
     path('plantillas/sincronizar-meta/', views.sincronizar_plantillas_meta, name='plantillas_sync_meta'),
+    path('plantillas/<int:pk>/enviar-meta/', views.enviar_plantilla_meta, name='plantilla_enviar_meta'),
 ]
 urlpatterns += crud('respuestas-rapidas', 'respuesta', {
     'list': views.RespuestaRapidaList, 'crear': views.RespuestaRapidaCrear,

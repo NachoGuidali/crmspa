@@ -212,6 +212,36 @@ def send_template_message(to: str, plantilla, valores=None) -> dict:
     return _post_message(payload)
 
 
+def create_template_on_meta(plantilla) -> dict:
+    """Crea (envía a revisión) una plantilla nueva en la WABA. Devuelve la respuesta de Meta
+    (con id + status PENDING) o {'error': ...}. Meta exige un 'example' si el body tiene
+    variables posicionales {{1}}, {{2}}..."""
+    import re
+
+    url = _url(f'{_waba_id()}/message_templates')
+    body = {'type': 'BODY', 'text': plantilla.cuerpo}
+    nums = sorted({int(n) for n in re.findall(r'\{\{\s*(\d+)\s*\}\}', plantilla.cuerpo)})
+    if nums:
+        body['example'] = {'body_text': [[f'Ejemplo {n}' for n in nums]]}
+
+    payload = {
+        'name': plantilla.get_meta_nombre(),
+        'language': plantilla.meta_idioma or 'es_AR',
+        'category': (plantilla.meta_categoria or 'utility').upper(),
+        'components': [body],
+    }
+    try:
+        r = requests.post(url, json=payload, headers=_headers(), timeout=15)
+        data = r.json() if r.content else {}
+        if not r.ok:
+            err = data.get('error') or {}
+            return {'error': err.get('message') or f'{r.status_code} {r.reason}'}
+        return data  # {'id': ..., 'status': 'PENDING', 'category': ...}
+    except Exception as e:
+        logger.error('Error creando plantilla en Meta: %s', e)
+        return {'error': str(e)}
+
+
 def fetch_templates_from_meta() -> list:
     """Trae las plantillas registradas en la WABA con su estado de aprobación."""
     url = _url(f'{_waba_id()}/message_templates')

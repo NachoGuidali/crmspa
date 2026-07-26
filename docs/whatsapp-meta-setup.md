@@ -140,12 +140,14 @@ Con Meta, para **iniciar** conversación **fuera de las 24 hs** desde el último
   **plantilla** (`/api/enviar-plantilla/`, o desde el inbox el bloque "Enviar plantilla").
 - **Evolution** no tiene esta restricción (texto libre siempre).
 
-**Cómo dejar una plantilla lista:**
-1. Creá y hacé **aprobar** la plantilla en **Meta** (WhatsApp Manager → Plantillas de mensajes),
-   con cuerpo posicional (`{{1}}`, `{{2}}`…).
-2. En el CRM → **Configuración → Plantillas de mensaje** → cargá la plantilla con su
-   **`meta_nombre`** (exacto), **idioma** (ej. `es_AR`) y el mismo cuerpo con `{{1}}`, `{{2}}`.
-3. Botón **"Sincronizar con Meta"** en esa pantalla → trae el **estado de aprobación**
-   (`APPROVED` / `PENDING` / `REJECTED`).
-4. El bot manda la plantilla con `POST /whatsapp/api/enviar-plantilla/`
+**Cómo dejar una plantilla lista (todo desde el CRM):**
+1. En el CRM → **Configuración → Plantillas de mensaje** → **+ Nuevo**: cargá `nombre`, el
+   **cuerpo con posicionales** (`{{1}}`, `{{2}}`…), **idioma** (ej. `es_AR`) y **categoría**
+   (utility para recordatorios). El `meta_nombre` se puede dejar vacío (se arma del nombre).
+2. En la lista, botón **"Enviar a Meta"** (por fila) → **crea la plantilla y la manda a
+   revisión** en la WABA. Queda en estado **PENDING**.
+3. Botón **"Sincronizar con Meta"** (arriba) → trae el estado actualizado hasta que Meta la
+   deje **APPROVED** (suele tardar de minutos a unas horas). También podés crear/aprobar la
+   plantilla directo en WhatsApp Manager si preferís.
+4. Con la plantilla **APPROVED**, el bot la manda con `POST /whatsapp/api/enviar-plantilla/`
    `{"telefono": "...", "plantilla": "recordatorio_turno", "valores": ["Ana", "25/07"]}`.

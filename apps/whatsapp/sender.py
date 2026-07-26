@@ -63,6 +63,11 @@ def fetch_templates_from_meta():
     return sender_meta.fetch_templates_from_meta()
 
 
+def create_template_on_meta(plantilla):
+    """Solo Meta: crea/envía a revisión una plantilla en la WABA."""
+    return sender_meta.create_template_on_meta(plantilla)
+
+
 def get_connection_state() -> str:
     """Estado de conexión del proveedor activo (Evolution: instancia; Meta: token+número)."""
     return _backend().get_connection_state()
