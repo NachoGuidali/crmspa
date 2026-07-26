@@ -167,7 +167,7 @@
             <span style="flex:1;height:1px;background:{{ c.flyer.accent2 }};opacity:.5"></span>
           </div>
           <div style="width:100%;box-sizing:border-box">
-            <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.85;text-align:left">
+            <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.85;text-align:center">
               <sc-for list="{{ c.bullets }}" as="b" hint-placeholder-count="5">
                 <li>— {{ b }}</li>
               </sc-for>
@@ -196,7 +196,7 @@
                 <span>Vie, Sáb y Dom</span><span>{{ c.flyer.flatVieSabDom }} c/u</span>
               </div>
               <sc-if value="{{ c.flyer.opcionales }}" hint-placeholder-val="{{ false }}">
-                <div style="text-align:left;margin-top:14px">
+                <div style="text-align:center;margin-top:14px">
                   <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ c.flyer.accent2 }};margin-bottom:6px">Pueden adicionar</div>
                   <ul style="margin:0;padding:0;list-style:none;font-size:11px;line-height:1.8">
                     <sc-for list="{{ c.flyer.opcionales }}" as="op" hint-placeholder-count="3">
