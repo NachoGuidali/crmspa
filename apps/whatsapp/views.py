@@ -122,6 +122,12 @@ class EnviarMensajeView(ApiKeyLoggedView, APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        # Nada que mandar (n8n mandó message vacío y sin media): cortamos acá con un error
+        # claro en vez de que el proveedor rechace con un 400 confuso.
+        if not (data.get('message') or '').strip() and not data.get('media_url'):
+            return Response({'ok': False, 'error': 'mensaje_vacio',
+                             'detalle': 'No hay texto ni media para enviar.'}, status=400)
+
         try:
             resultado = services.enviar_mensaje(
                 telefono=data['phone'],
