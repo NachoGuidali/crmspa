@@ -87,13 +87,15 @@ def _post_message(payload: dict, timeout: int = 15) -> dict:
     response = None
     try:
         response = requests.post(url, json=payload, headers=_headers(), timeout=timeout)
+        data = response.json() if response.content else {}
         if not response.ok:
+            # Surface Meta's real reason (ej. "Recipient phone number not in allowed list")
+            err = data.get('error') or {}
+            msg = err.get('message') or f'{response.status_code} {response.reason}'
+            code = err.get('code')
             logger.error('Meta API error %s: %s', response.status_code, response.text[:500])
-        response.raise_for_status()
-        return {'id': _extract_message_id(response.json())}
-    except requests.RequestException:
-        logger.exception('Error enviando mensaje Meta a %s', payload.get('to'))
-        raise
+            raise RuntimeError(f'Meta: {msg}' + (f' (code {code})' if code else ''))
+        return {'id': _extract_message_id(data)}
     finally:
         _log_request(url, 'POST', payload, response, int((time.monotonic() - start) * 1000))
 
