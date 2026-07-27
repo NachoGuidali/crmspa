@@ -165,6 +165,27 @@ class AutomatizacionForm(forms.ModelForm):
 
 
 class UserForm(forms.ModelForm):
+    password = forms.CharField(
+        label='Contraseña', required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text='Obligatoria al crear. Al editar, dejala vacía para no cambiarla.',
+    )
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'rol', 'is_active', 'is_staff']
+
+    def clean_password(self):
+        pw = self.cleaned_data.get('password')
+        if not self.instance.pk and not pw:
+            raise forms.ValidationError('Poné una contraseña para el usuario nuevo.')
+        return pw
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        pw = self.cleaned_data.get('password')
+        if pw:
+            user.set_password(pw)
+        if commit:
+            user.save()
+        return user
