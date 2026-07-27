@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import timedelta
 
 from django.http import HttpResponse
 from django.utils import timezone
@@ -314,6 +315,22 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
         conv, _ = Conversacion.objects.get_or_create(telefono=telefono)
         direccion = Mensaje.Direccion.ENTRANTE if de == 'cliente' else Mensaje.Direccion.SALIENTE
         ahora = timezone.now()
+
+        # Anti-duplicado: el webhook del proveedor YA guarda todo mensaje entrante. Si n8n
+        # además llama a este endpoint con el mismo texto que entró hace segundos, no lo
+        # duplicamos (devolvemos el que ya está).
+        if direccion == Mensaje.Direccion.ENTRANTE and texto:
+            ya = (
+                Mensaje.objects.filter(
+                    conversacion=conv, direccion=Mensaje.Direccion.ENTRANTE, contenido=texto,
+                    timestamp__gte=ahora - timedelta(minutes=3),
+                )
+                .order_by('-id').first()
+            )
+            if ya is not None:
+                return Response({'ok': True, 'mensaje_id': ya.id, 'conversacion_id': conv.id,
+                                 'duplicado': True}, status=200)
+
         msg = Mensaje.objects.create(
             conversacion=conv,
             contacto=conv.contacto,
