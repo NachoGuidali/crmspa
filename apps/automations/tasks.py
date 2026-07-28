@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.reservas.models import Reserva
 from apps.reservas.services import liberar_reservas_vencidas
-from apps.whatsapp.services import enviar_mensaje
+from apps.whatsapp.services import enviar_automatico
 
 from .models import Automatizacion, AutomatizacionLog
 
@@ -77,7 +77,7 @@ def _enviar_a_reserva(automatizacion, reserva, contexto_extra=None):
              contacto=reserva.contacto, reserva=reserva)
         return
     try:
-        enviar_mensaje(telefono=reserva.contacto.telefono, mensaje=mensaje)
+        enviar_automatico(telefono=reserva.contacto.telefono, plantilla=plantilla, contexto=contexto)
         _log(automatizacion, AutomatizacionLog.Resultado.EXITOSO, mensaje,
              contacto=reserva.contacto, reserva=reserva)
     except Exception as exc:
@@ -172,12 +172,13 @@ def reactivacion_inactivos(automatizacion):
         if ya_reactivado:
             continue
         plantilla = automatizacion.plantilla
-        mensaje = plantilla.render({'nombre': contacto.nombre}) if plantilla else None
+        ctx = {'nombre': contacto.nombre}
+        mensaje = plantilla.render(ctx) if plantilla else None
         if not mensaje:
             _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO, 'Sin plantilla configurada', contacto=contacto)
             continue
         try:
-            enviar_mensaje(telefono=contacto.telefono, mensaje=mensaje)
+            enviar_automatico(telefono=contacto.telefono, plantilla=plantilla, contexto=ctx)
             _log(automatizacion, AutomatizacionLog.Resultado.EXITOSO, mensaje, contacto=contacto)
         except Exception as exc:
             logger.exception('Error en reactivacion_inactivos para contacto %s', contacto.id)
@@ -255,15 +256,16 @@ def lista_espera(automatizacion):
             continue
 
         plantilla = automatizacion.plantilla
-        mensaje = plantilla.render({
+        ctx = {
             'nombre': siguiente.contacto.nombre, 'circuito': siguiente.circuito.nombre,
             'fecha': siguiente.fecha_deseada.strftime('%d/%m/%Y'),
-        }) if plantilla else None
+        }
+        mensaje = plantilla.render(ctx) if plantilla else None
         if not mensaje:
             _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO, 'Sin plantilla configurada', contacto=siguiente.contacto)
             continue
         try:
-            enviar_mensaje(telefono=siguiente.contacto.telefono, mensaje=mensaje)
+            enviar_automatico(telefono=siguiente.contacto.telefono, plantilla=plantilla, contexto=ctx)
             siguiente.notificado = True
             siguiente.ofrecido_at = ahora
             siguiente.save(update_fields=['notificado', 'ofrecido_at'])
@@ -286,12 +288,13 @@ def cumpleanos(automatizacion):
         if _ya_enviado_a_contacto_este_anio(automatizacion, contacto):
             continue
         plantilla = automatizacion.plantilla
-        mensaje = plantilla.render({'nombre': contacto.nombre}) if plantilla else None
+        ctx = {'nombre': contacto.nombre}
+        mensaje = plantilla.render(ctx) if plantilla else None
         if not mensaje:
             _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO, 'Sin plantilla configurada', contacto=contacto)
             continue
         try:
-            enviar_mensaje(telefono=contacto.telefono, mensaje=mensaje)
+            enviar_automatico(telefono=contacto.telefono, plantilla=plantilla, contexto=ctx)
             _log(automatizacion, AutomatizacionLog.Resultado.EXITOSO, mensaje, contacto=contacto)
         except Exception as exc:
             logger.exception('Error enviando cumpleanos a contacto %s', contacto.id)

@@ -233,6 +233,32 @@ def enviar_plantilla(*, telefono, plantilla, valores=None, usuario=None):
     }
 
 
+def enviar_automatico(*, telefono, plantilla, contexto=None):
+    """Envío de automatizaciones (recordatorios, cumpleaños, reactivación, etc.) respetando el
+    proveedor y la ventana de 24hs:
+
+    - **Evolution**: siempre texto libre (renderiza la plantilla con variables nombradas).
+    - **Meta**: si la conversación está DENTRO de la ventana de 24hs → texto libre; si está
+      FUERA (lo normal en un mensaje que iniciamos nosotros, ej. un recordatorio) → manda la
+      **plantilla aprobada (HSM)** con los valores posicionales tomados de `plantilla.variables`
+      en orden. Sin esto, los recordatorios fallarían en Meta por la ventana de 24hs.
+    """
+    from utils.phone import normalize_ar_phone
+
+    from .models import ConfiguracionWhatsApp
+
+    contexto = contexto or {}
+    tel = normalize_ar_phone(telefono)
+
+    if ConfiguracionWhatsApp.get_proveedor() == ConfiguracionWhatsApp.Proveedor.META:
+        conv = Conversacion.objects.filter(telefono=tel).first()
+        if not (conv and conv.ventana_abierta):
+            valores = [str(contexto.get(v, '')) for v in (plantilla.variables or [])]
+            return enviar_plantilla(telefono=tel, plantilla=plantilla, valores=valores)
+
+    return enviar_mensaje(telefono=tel, mensaje=plantilla.render(contexto))
+
+
 class HandoffError(Exception):
     pass
 
