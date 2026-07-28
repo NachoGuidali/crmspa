@@ -25,6 +25,10 @@
     .hero-slide{object-position:center}
     .foto-zoom{transition:transform .55s ease;cursor:zoom-in;display:block;width:100%;height:auto}
     .foto-zoom:hover{transform:scale(1.07)}
+    .galeria-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+    .galeria-grid div{margin:0!important}
+    .galeria-grid .foto-zoom{aspect-ratio:1;object-fit:cover}
+    @media(max-width:600px){.galeria-grid{grid-template-columns:repeat(2,1fr);gap:8px}}
     #lightbox{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.93);display:none;align-items:center;justify-content:center;padding:20px}
     #lightbox img{max-width:90%;max-height:90%;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default}
     .lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(253,245,237,.12);color:#fdf5ed;border:none;width:52px;height:52px;border-radius:50%;font-size:30px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s ease}
@@ -279,7 +283,7 @@
       <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#844713;margin-bottom:14px">Galería</div>
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(26px,4vw,40px);color:#252c1a;margin:0">Un recorrido por el Spa de Campo.</h2>
     </div>
-    <div style="column-width:290px;column-gap:14px">
+    <div class="galeria-grid">
       <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="12">
         <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
           <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" class="foto-zoom" style="width:100%;height:auto;display:block">
@@ -308,7 +312,7 @@
 <!-- GALERIA BRUNCH -->
 <section data-screen-label="Galería Brunch" style="background:#fdf5ed;padding:clamp(40px,6vw,72px) clamp(20px,6vw,80px)">
   <div style="max-width:1240px;margin:0 auto">
-    <div style="column-width:290px;column-gap:14px">
+    <div class="galeria-grid">
       <sc-for list="{{ brunchGaleria }}" as="g" hint-placeholder-count="6">
         <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:2px;overflow:hidden;opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease">
           <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" class="foto-zoom" style="width:100%;height:auto;display:block">
@@ -326,7 +330,7 @@
       <h2 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(24px,3.5vw,36px);color:#252c1a;line-height:1.2;margin:0 0 16px">Brunch SIN TACC</h2>
       <p style="font-size:14px;line-height:1.75;color:#434330;margin:0">Sabemos lo importante que es sentirse tranquilo al momento de comer. Por eso preparamos todo por separado y con muchísimo cuidado. Nuestro brunch es artesanal, abundante y elaborado con ingredientes de primera calidad, para que disfruten la experiencia sin preocupaciones.</p>
     </div>
-    <div style="column-width:175px;column-gap:14px">
+    <div class="galeria-grid">
       <div data-reveal="true" style="break-inside:avoid;margin:0 0 14px;border-radius:4px;overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
         <img src="fotos/brunch-tacc1.jpg" alt="Brunch sin TACC artesanal" class="foto-zoom" style="width:100%;height:auto;display:block">
       </div>
