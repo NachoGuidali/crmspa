@@ -26,6 +26,8 @@
     .galeria-grid div{margin:0!important}
     .galeria-grid .foto-zoom{aspect-ratio:1;object-fit:cover}
     @media(max-width:600px){.galeria-grid{grid-template-columns:repeat(2,1fr);gap:8px}}
+    .galeria-grid.g3{grid-template-columns:repeat(3,1fr)}
+    @media(max-width:600px){.galeria-grid.g3{grid-template-columns:repeat(2,1fr)}}
     #lightbox{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.93);display:none;align-items:center;justify-content:center;padding:20px}
     #lightbox img{max-width:90%;max-height:90%;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default}
     .lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(253,245,237,.12);color:#fdf5ed;border:none;width:52px;height:52px;border-radius:50%;font-size:30px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s ease}
@@ -130,7 +132,7 @@
     <p style="font-size:14px;line-height:1.9;color:#434330;margin:0">Nuestro circuito está diseñado para que vivan una experiencia de forma <strong>PRIVADA</strong>.<br>Esto significa que durante su reserva, el lugar es exclusivamente para ustedes. ❤️<br>No compartirán las instalaciones ni el Spa con desconocidos, únicamente serán guiados por los circuitos del Spa por el personal del lugar.<br>Nos encargamos de atenderlos personalmente para cuidar cada detalle de su privacidad y confort.<br>Es un tiempo pensado solo para los dos. ❤️</p>
   </div>
 
-  <div class="galeria-grid" style="max-width:1100px;margin:0 auto">
+  <div class="galeria-grid g3" style="max-width:1100px;margin:0 auto">
     <sc-for list="{{ galeria }}" as="g" hint-placeholder-count="6">
       <div style="break-inside:avoid;margin:0 0 16px;border-radius:4px;overflow:hidden">
         <img src="fotos/{{ g.foto }}" alt="{{ g.caption }}" class="foto-zoom" style="width:100%;height:auto;display:block">
