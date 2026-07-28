@@ -736,6 +736,7 @@ class Component extends DCLogic {
       { p: '¿Puedo llevar niños?', r: 'Nuestros circuitos están pensados como una experiencia de relax exclusiva para adultos. Consultanos por WhatsApp si tu caso particular lo requiere.' },
       { p: '¿Qué métodos de pago aceptan?', r: 'Aceptamos efectivo y transferencia bancaria. La reserva se confirma con una seña y el resto se abona el día de la experiencia.' },
       { p: '¿Tienen opciones para alergias o intolerancias alimentarias?', r: 'Sí, contamos con opciones vegetarianas y sin TACC en nuestro brunch y picadas. Contanos tu caso al reservar para prepararlo especialmente.' },
+      { p: '¿Dónde estamos ubicados?', r: 'Estamos ubicados en Virrey del Pino, en el km 44, Zona Oeste, Buenos Aires.' },
     ];
     const faqsAll = faqsData.map((f, i) => ({
       pregunta: f.p, respuesta: f.r,
@@ -744,7 +745,7 @@ class Component extends DCLogic {
       toggle: () => this.toggleFaq(i),
     }));
     const faqsLeft = faqsAll.slice(0, 3);
-    const faqsRight = faqsAll.slice(3, 5);
+    const faqsRight = faqsAll.slice(3);
 
     const testimonios = [
       { quote: 'Reseña próximamente — espacio reservado para comentarios reales de Clientes.', autor: 'Nombre Apellido' },
