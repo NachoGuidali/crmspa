@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Términos y Condiciones — Voucher de Regalo | Estancia Cuatro Estaciones</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&family=Dancing+Script:wght@500;600;700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#fdf5ed;font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#eb5f11;text-decoration:none}
+  a:hover{color:#ef8627}
+  html{scroll-behavior:smooth}
+  ::selection{background:#eb5f11;color:#fdf5ed}
+
+  .nav-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:16px clamp(18px,2.4vw,34px);flex:1 1 auto}
+  .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:10px;margin-left:auto}
+  .nav-toggle span{display:block;width:24px;height:2px;background:#fdf5ed;border-radius:2px;transition:transform .3s ease,opacity .3s ease}
+  .nav-toggle span+span{margin-top:6px}
+  .nav-toggle.mobile-open span:nth-child(1){transform:translateY(8px) rotate(45deg)}
+  .nav-toggle.mobile-open span:nth-child(2){opacity:0}
+  .nav-toggle.mobile-open span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+  .nav-drop{position:relative;display:flex;align-items:center}
+  .nav-drop-trigger{display:inline-flex;align-items:center;background:none;border:none;padding:0;margin:0;font-family:'Montserrat',sans-serif;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap;transition:color .2s ease}
+  .nav-drop-trigger:hover{color:#ef8627}
+  .nav-drop-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(8px);min-width:236px;background:#434230;border:1px solid rgba(253,245,237,.14);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:2px;opacity:0;visibility:hidden;transition:opacity .2s ease,transform .2s ease,visibility .2s ease;box-shadow:0 20px 44px rgba(0,0,0,.5);z-index:300}
+  .nav-drop.open .nav-drop-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  .nav-drop-menu a{padding:12px 16px;border-radius:8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap;transition:background .2s ease,color .2s ease;display:block}
+  .nav-drop-menu a:hover{background:rgba(253,245,237,.08);color:#ef8627}
+  .nav-drop-caret{display:inline-block;margin-left:5px;font-size:9px;transition:transform .25s ease}
+  .nav-drop.open .nav-drop-caret{transform:rotate(180deg)}
+  .navlink{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#fdf5ed;white-space:nowrap}
+  .navlink:hover{color:#ef8627}
+  @media (max-width:900px){
+    .nav-toggle{display:block}
+    .nav-wrap{display:none;flex-basis:100%;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:8px 0 4px}
+    .nav-wrap.mobile-open{display:flex}
+    .nav-wrap nav{flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;gap:0}
+    .nav-wrap nav>a{padding:14px 2px;border-bottom:1px solid rgba(253,245,237,.1)}
+    .nav-drop{flex-direction:column;align-items:stretch;width:100%;border-bottom:1px solid rgba(253,245,237,.1)}
+    .nav-drop-trigger{width:100%;justify-content:space-between;padding:14px 2px}
+    .nav-drop-menu{position:static;transform:none;opacity:1;visibility:visible;display:none;box-shadow:none;border:none;background:transparent;min-width:0;padding:0 0 6px 14px}
+    .nav-drop.open .nav-drop-menu{display:flex;transform:none}
+    .nav-drop-menu a{padding:11px 8px}
+    .reservar-btn{align-self:flex-start;margin-top:12px}
+  }
+
+  .legal-section h2{display:flex;align-items:center;gap:10px;font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(20px,2.6vw,26px);color:#252c1a;margin:0 0 14px;padding-top:6px}
+  .legal-section h3{font-family:'Montserrat',sans-serif;font-weight:600;font-size:13.5px;letter-spacing:.02em;color:#844713;margin:20px 0 10px}
+  .legal-section p{font-size:13.5px;line-height:1.8;color:#434330;margin:0 0 14px}
+  .legal-section ul{margin:0 0 22px;padding:0;list-style:none}
+  .legal-section ul li{position:relative;padding-left:20px;font-size:13.5px;line-height:1.8;color:#434330;margin-bottom:10px}
+  .legal-section ul li::before{content:'—';position:absolute;left:0;color:#ef8627;font-weight:600}
+  .legal-section ul.emoji-list li{padding-left:0}
+  .legal-section ul.emoji-list li::before{content:''}
+  .legal-block{border-bottom:1px solid #e6ddd2;padding:34px 0}
+  .legal-block:first-of-type{padding-top:0}
+  .legal-block:last-of-type{border-bottom:none}
+  .callout{background:#f4efed;border-left:3px solid #ef8627;border-radius:2px;padding:22px 24px;margin-top:8px}
+  .callout p{margin:0 0 10px;color:#434330}
+  .callout p:last-child{margin-bottom:0}
+</style>
+</head>
+<body>
+
+<div style="width:100%;overflow-x:hidden">
+
+<!-- HEADER -->
+<header id="site-header" style="position:sticky;top:0;z-index:100;background:#434230;transition:box-shadow .35s ease,padding .3s ease">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:9px clamp(20px,4vw,56px);border-bottom:1px solid rgba(253,245,237,.08)">
+    <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
+      <svg width="11" height="14" viewBox="0 0 24 32" fill="none"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="#8d9f97"></path><circle cx="12" cy="12" r="5" fill="#252c1a"></circle></svg>
+      Virrey del Pino, La Matanza, Buenos Aires
+    </span>
+    <span style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#dcdcdc">
+      <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><path d="M16 0a16 16 0 00-13.86 24L0 32l8.2-2.15A16 16 0 1016 0z" fill="#8d9f97"></path></svg>
+      +54 11 5156 7091
+    </span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(20px,4vw,56px)">
+    <a href="index.html" style="display:flex;align-items:center;gap:16px">
+      <img src="logo.png" alt="Estancia Cuatro Estaciones" style="height:60px;width:auto;display:block;flex:none;filter:brightness(0) invert(1)">
+      <span style="width:1px;height:34px;background:rgba(253,245,237,.25)"></span>
+      <span style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
+        <span style="font-family:'Montserrat',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:.32em;color:#ef8627;white-space:nowrap">Spa de Campo</span>
+      </span>
+    </a>
+    <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Menú"><span></span><span></span><span></span></button>
+    <div class="nav-wrap" id="nav-wrap">
+      <nav style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:14px clamp(14px,2vw,28px)">
+        <a href="index.html#inicio" class="navlink">Inicio</a>
+        <a href="index.html#nosotros" class="navlink">Nosotros</a>
+        <div class="nav-drop" id="nav-drop">
+          <button type="button" class="nav-drop-trigger" id="nav-drop-trigger">Circuitos<span class="nav-drop-caret">▾</span></button>
+          <div class="nav-drop-menu">
+            <a href="spa-de-parejas.html">Spa de Parejas</a>
+            <a href="spa-grupal.html">Spa Grupal</a>
+            <a href="despedida-de-soltera.html">Despedida de Soltera</a>
+          </div>
+        </div>
+        <a href="index.html#galeria" class="navlink">Galería</a>
+        <a href="index.html#contacto" class="navlink">Contacto</a>
+      </nav>
+      <a href="https://wa.me/5491100000000?text=Hola!%20Quiero%20consultar%20por%20una%20experiencia%20en%20Cuatro%20Estaciones" target="_blank" class="reservar-btn" style="display:inline-flex;align-items:center;justify-content:center;padding:11px 34px;border-radius:26px;background:#eb5f11;color:#fdf5ed;font-family:'Dancing Script',cursive;font-weight:600;font-size:24px;line-height:1;transition:background .3s ease;white-space:nowrap;flex:none">Reservar</a>
+    </div>
+  </div>
+</header>
+
+<!-- ENCABEZADO DE PÁGINA -->
+<section style="position:relative;padding:clamp(64px,10vw,96px) clamp(20px,6vw,80px) clamp(48px,7vw,72px);background:#3c3e22;text-align:center">
+  <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:18px">
+    <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
+    <span style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#ef8627">Voucher de Regalo</span>
+    <span style="width:34px;height:1px;background:rgba(253,245,237,.3)"></span>
+  </div>
+  <h1 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:clamp(30px,5vw,50px);color:#fdf5ed;margin:0 0 16px;line-height:1.15">Términos y Condiciones</h1>
+  <p style="font-size:13.5px;line-height:1.7;color:#dcdcdc;max-width:620px;margin:0 auto">Condiciones de uso, vigencia y reprogramación aplicables a los vouchers de regalo de Estancia Cuatro Estaciones.</p>
+</section>
+
+<!-- CONTENIDO -->
+<section class="legal-section" style="background:#fdf5ed;padding:clamp(48px,7vw,72px) clamp(20px,6vw,80px) clamp(64px,10vw,120px)">
+  <div style="max-width:820px;margin:0 auto">
+
+    <div class="legal-block">
+      <h2><span>📅</span> Reservas</h2>
+      <ul>
+        <li>El voucher requiere reserva previa, sujeta a disponibilidad.</li>
+        <li>Puede utilizarse para días de semana o fines de semana, según la experiencia adquirida y la disponibilidad del Spa.</li>
+        <li>Recomendamos realizar la reserva con la mayor anticipación posible, especialmente para fines de semana y feriados.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>📌</span> Vigencia</h2>
+      <ul>
+        <li>El voucher es válido hasta la fecha indicada en el mismo.</li>
+        <li>Una vez vencido, perderá automáticamente su validez y no podrá ser utilizado.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>💳</span> Política de cancelación del Voucher</h2>
+      <ul>
+        <li>El voucher no es reembolsable.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>🔁</span> Reprogramaciones</h2>
+      <ul>
+        <li>El voucher podrá reprogramarse una única vez.</li>
+        <li>La solicitud deberá realizarse con un mínimo de 7 días corridos de anticipación y estará sujeta a disponibilidad.</li>
+        <li>Luego de una reprogramación, no podrán solicitarse nuevos cambios de fecha.</li>
+      </ul>
+      <p>La reprogramación sin pérdida del voucher únicamente procederá cuando el Spa deba suspender la experiencia por:</p>
+      <ul class="emoji-list">
+        <li>🌧️ Pronóstico de lluvias intensas.</li>
+        <li>⚡ Corte del suministro eléctrico.</li>
+        <li>🚨 Alerta meteorológica oficial.</li>
+        <li>Cualquier otra causa de fuerza mayor que impida brindar el servicio de forma segura.</li>
+      </ul>
+      <div class="callout">
+        <p>No se realizarán reprogramaciones por motivos ajenos al Spa.</p>
+        <p>Valoramos y respetamos el compromiso asumido por ambas partes.</p>
+      </div>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>🎒</span> ¿Qué traer?</h2>
+      <ul class="emoji-list">
+        <li>✅ Traje de baño.</li>
+        <li>✅ Ojotas o chinelas.</li>
+        <li>✅ Ropa de abrigo en días frescos.</li>
+      </ul>
+      <p>El Spa proporciona sin cargo:</p>
+      <ul>
+        <li>Bata.</li>
+        <li>Toalla.</li>
+        <li>Toallón.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>🕒</span> Política de Puntualidad</h2>
+      <p>Valoramos tu tiempo y el de nuestros profesionales.</p>
+      <h3>Llegada</h3>
+      <p>Se recomienda presentarse 10 minutos antes del horario reservado. Si es tu primera visita, sugerimos llegar 15 minutos antes para completar la ficha personal y conocer las instalaciones.</p>
+      <h3>Llegadas tardías</h3>
+      <ul>
+        <li>Hasta 40 minutos de demora, la experiencia podrá realizarse reduciendo su duración para respetar el siguiente turno.</li>
+        <li>Con más de 50 minutos de retraso, la reserva se considerará cancelada y el voucher se dará por utilizado, sin posibilidad de reprogramación.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>👥</span> Modificaciones en reservas grupales</h2>
+      <ul>
+        <li>Los cambios en la cantidad de asistentes deberán informarse con un mínimo de 72 horas de anticipación.</li>
+        <li>Si un integrante cancela con más de 48 horas de anticipación, perderá la seña correspondiente, pero no deberá abonarse el saldo restante de esa persona.</li>
+        <li>Si la cancelación se produce con menos de 48 horas, el mismo día o la persona no asiste, se perderá la seña y deberá abonarse igualmente el saldo pendiente correspondiente a ese lugar, debido a que el Spa ya habrá reservado instalaciones, contratado personal y preparado alimentos e insumos para la totalidad de la reserva.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>📋</span> Condiciones Generales</h2>
+      <ul>
+        <li>Las reservas y reprogramaciones estarán siempre sujetas a disponibilidad.</li>
+        <li>El cliente deberá informar previamente cualquier embarazo, lesión, condición médica o contraindicación relevante para la prestación de los servicios.</li>
+        <li>El Spa no será responsable por la pérdida, extravío o deterioro de objetos personales.</li>
+        <li>Los clientes responderán por cualquier daño ocasionado por el uso indebido de las instalaciones o de la blanquería del Spa (batas, toallas o toallones quemados, rotos o teñidos).</li>
+        <li>Las promociones y tarifas podrán modificarse para futuras contrataciones. Las reservas ya confirmadas conservarán el valor vigente al momento de su compra, salvo modificaciones solicitadas por el propio cliente.</li>
+      </ul>
+    </div>
+
+    <div class="legal-block">
+      <h2><span>❗</span> Aclaración importante</h2>
+      <div class="callout">
+        <p>El voucher representa una reserva exclusiva de instalaciones, personal y servicios.</p>
+        <p>Si la persona beneficiaria del voucher no se presenta el día de la reserva ("No Show"), el voucher se considerará utilizado, perdiendo automáticamente su validez, sin derecho a reprogramación ni devolución de dinero.</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:12px">
+      <a href="https://wa.me/5491100000000?text=Hola!%20Tengo%20una%20consulta%20sobre%20mi%20voucher" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:14px 40px;border-radius:999px;background:#eb5f11;color:#fdf5ed;font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">¿Tenés dudas? Escribinos</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER / CONTACTO -->
+<footer style="background:#252c1a;padding:clamp(56px,8vw,88px) clamp(20px,6vw,80px) 32px">
+  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:44px;padding-bottom:44px;border-bottom:1px solid rgba(253,245,237,.1)">
+    <div>
+      <div style="margin-bottom:18px">
+        <img src="logo-frase.png" alt="Estancia Cuatro Estaciones — Spa de Campo" style="height:66px;width:auto;max-width:100%;display:block">
+      </div>
+      <p style="font-size:12.5px;line-height:1.8;color:#dcdcdc;margin:0;max-width:280px">Spa de campo familiar en el corazón de Virrey del Pino, Zona Oeste — naturaleza, relajación y gastronomía en un mismo lugar.</p>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Visitanos</div>
+      <div style="font-size:13px;line-height:1.9;color:#fdf5ed">Virrey del Pino, La Matanza<br>Buenos Aires, Argentina</div>
+      <div style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#8d9f97;margin-top:10px">MAPA — próximamente</div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Reservas</div>
+      <a href="https://wa.me/5491100000000?text=Hola!%20Quiero%20consultar%20por%20una%20experiencia%20en%20Cuatro%20Estaciones" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:13px 22px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;background:#eb5f11;color:#fdf5ed;margin-bottom:14px">Escribinos por WhatsApp</a>
+      <div style="font-size:12.5px;color:#dcdcdc">Consultá días y horarios disponibles</div>
+    </div>
+    <div>
+      <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#ae8d71;margin-bottom:16px">Seguinos</div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <a href="https://www.instagram.com/_.spacuatroestaciones._/" target="_blank" style="display:inline-flex;align-items:center;gap:10px;font-size:13px;color:#fdf5ed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 01-1.38-.9 3.7 3.7 0 01-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.38A5.85 5.85 0 00.63 4.14c-.3.76-.5 1.64-.56 2.9C.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.12.66.66 1.33 1.08 2.12 1.38.76.3 1.64.5 2.91.56C8.33 24 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.85 5.85 0 002.12-1.38 5.85 5.85 0 001.38-2.12c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.85 5.85 0 00-1.38-2.12A5.85 5.85 0 0019.86.63c-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0z"/><path d="M12 5.84A6.16 6.16 0 1018.16 12 6.16 6.16 0 0012 5.84M12 16a4 4 0 114-4 4 4 0 01-4 4M18.41 4.15a1.44 1.44 0 101.44 1.44 1.44 1.44 0 00-1.44-1.44z"/></svg>
+          @_.spacuatroestaciones._
+        </a>
+        <a href="#" target="_blank" style="display:inline-flex;align-items:center;gap:10px;font-size:13px;color:#fdf5ed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+          Facebook
+        </a>
+        <a href="#" target="_blank" style="display:inline-flex;align-items:center;gap:10px;font-size:13px;color:#fdf5ed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex:none"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.08-.14 1.62.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+          TikTok
+        </a>
+      </div>
+    </div>
+  </div>
+  <div style="max-width:1240px;margin:0 auto;padding-top:24px;font-size:11px;color:#8d9f97;text-align:center">© <span id="anio"></span> Estancia Cuatro Estaciones — Spa de Campo · <a href="privacidad.html" style="color:#b7c2ba">Política de Privacidad</a> · <a href="politicas-de-cancelacion.html" style="color:#b7c2ba">Políticas de Cancelación</a> · <a href="terminos-y-condiciones.html" style="color:#b7c2ba">Términos y Condiciones</a></div>
+</footer>
+
+</div>
+
+<script>
+  document.getElementById('anio').textContent = new Date().getFullYear();
+
+  var header = document.getElementById('site-header');
+  window.addEventListener('scroll', function () {
+    var y = window.scrollY;
+    header.style.boxShadow = y > 40 ? '0 8px 24px rgba(0,0,0,.28)' : 'none';
+  }, { passive: true });
+
+  var toggleBtn = document.getElementById('nav-toggle');
+  var navWrap = document.getElementById('nav-wrap');
+  toggleBtn.addEventListener('click', function () {
+    toggleBtn.classList.toggle('mobile-open');
+    navWrap.classList.toggle('mobile-open');
+  });
+
+  var navDrop = document.getElementById('nav-drop');
+  var navDropTrigger = document.getElementById('nav-drop-trigger');
+  navDropTrigger.addEventListener('click', function (e) {
+    e.stopPropagation();
+    navDrop.classList.toggle('open');
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.nav-drop') && navDrop.classList.contains('open')) {
+      navDrop.classList.remove('open');
+    }
+    if (e.target.closest('.nav-wrap a')) {
+      navWrap.classList.remove('mobile-open');
+      toggleBtn.classList.remove('mobile-open');
+    }
+  });
+</script>
+
+</body>
+</html>
