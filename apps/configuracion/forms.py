@@ -150,6 +150,7 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'horario_atencion_desde', 'horario_atencion_hasta',
             'reserva_exclusiva_por_turno',
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_cancelacion_con_reembolso',
+            'email_notificaciones',
         ]
         widgets = {
             'horario_atencion_desde': forms.TimeInput(attrs={'type': 'time'}),

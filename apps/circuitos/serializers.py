@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from .models import Circuito, TarifaCircuito
+from .models import Circuito, Extra, TarifaCircuito
+
+
+class ExtraSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Extra
+        fields = ['id', 'nombre', 'descripcion', 'precio', 'por_persona', 'circuito_id']
 
 
 class TarifaCircuitoSerializer(serializers.ModelSerializer):

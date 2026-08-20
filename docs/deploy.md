@@ -40,6 +40,7 @@ Copiá `.env.example` a `.env` y completá. Las más importantes:
 | `N8N_WEBHOOK_URL` | Webhook de n8n | A dónde el CRM reenvía los mensajes |
 | `CSRF_TRUSTED_ORIGINS` | HTTPS/CSRF | Ej. `https://crm.tuspa.com` |
 | `THROTTLE_*` | Rate limits | Opcionales, tienen default |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Credenciales SMTP | Para las notificaciones por email al dueño (reserva del bot, confirmación, cancelación, handoff). Los destinatarios se cargan en el CRM: *Configuración → Configuración del negocio → Email de notificaciones*, no acá. |
 
 > Las credenciales de Evolution también se pueden cargar/editar desde la UI en
 > *Configuración WhatsApp* (tienen prioridad sobre las variables de entorno).
@@ -175,5 +176,7 @@ CORS_ALLOWED_ORIGINS=https://spacuatroestaciones.com,https://www.spacuatroestaci
 - [ ] Webhook token de Evolution configurado.
 - [ ] API Key creada para n8n.
 - [ ] Usuario dueño creado; recepcionistas con `rol=recepcion`.
+- [ ] SMTP configurado (`EMAIL_*`) y email(s) del dueño cargados en *Configuración del negocio*
+      si querés notificaciones por email (reserva del bot, confirmación, cancelación, handoff).
 - [ ] Backups del volumen `postgres_data`.
 - [ ] Backups del volumen `postgres_data`.

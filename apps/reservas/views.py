@@ -87,6 +87,9 @@ class ReservaBotCrearView(ApiKeyLoggedView, APIView):
     transferencia → pendiente_aprobacion (con comprobante); mercado_pago → pendiente_pago (con link).
     Manda fecha+turno+personas estructurados (valida cupo)."""
 
+    # Mismo límite que enviar_media (16 MB), pero en base64 (~33% más grande que el binario).
+    COMPROBANTE_MAX_BYTES = 8 * 1024 * 1024
+
     def post(self, request):
         data = request.data
         # El comprobante viene en base64 (transferencia)
@@ -97,6 +100,10 @@ class ReservaBotCrearView(ApiKeyLoggedView, APIView):
                 raw = base64.b64decode(b64)
             except (binascii.Error, ValueError):
                 return Response({'error': 'comprobante_base64_invalido'}, status=400)
+            if len(raw) > self.COMPROBANTE_MAX_BYTES:
+                return Response({'error': 'comprobante_demasiado_grande',
+                                 'detalle': f'Máximo {self.COMPROBANTE_MAX_BYTES // (1024 * 1024)} MB.'},
+                                status=400)
             mime = data.get('comprobante_mimetype', 'image/jpeg')
             ext = (mime.split('/')[-1] or 'jpg').split(';')[0]
             comprobante = ContentFile(raw, name=f'comprobante.{ext}')
@@ -113,6 +120,7 @@ class ReservaBotCrearView(ApiKeyLoggedView, APIView):
                 resumen=data.get('resumen', ''),
                 comprobante=comprobante,
                 link_pago=data.get('link_pago', ''),
+                extras=data.get('extras'),
             )
         except services.ReservaError as e:
             return Response({'error': str(e)}, status=422)

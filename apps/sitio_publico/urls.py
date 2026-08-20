@@ -6,5 +6,6 @@ app_name = 'sitio_publico'
 
 urlpatterns = [
     path('', views.vidriera, name='vidriera'),
-    path('reservar/<int:circuito_id>/', views.reservar, name='reservar'),
+    # 'reservar/<id>/' deshabilitada: creaba reservas reales sin auth/throttle/captcha, y no
+    # la usa nada (la web real es estática + el bot de WhatsApp). Ver docs/qa-informe.md (A2).
 ]

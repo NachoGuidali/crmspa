@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import F
 from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -26,7 +27,7 @@ class ApiKeyAuthentication(BaseAuthentication):
             raise AuthenticationFailed('API key inválida o inactiva.')
 
         ApiKey.objects.filter(pk=api_key.pk).update(
-            ultimo_uso_at=timezone.now(), total_usos=api_key.total_usos + 1
+            ultimo_uso_at=timezone.now(), total_usos=F('total_usos') + 1
         )
         return (AnonymousUser(), api_key)
 

@@ -15,7 +15,7 @@
       <p class="desc">{{ c.descripcion|default:"" }}</p>
       <div class="precio">${{ c.precio_hoy|floatformat:0 }}</div>
       <div class="sena">Seña: ${{ c.sena_hoy|floatformat:0 }} · hasta {{ c.capacidad_maxima }} personas · {{ c.duracion_minutos }} min</div>
-      <a href="{% url 'sitio_publico:reservar' c.id %}" class="btn" style="text-align:center;">Reservar</a>
+      <a href="https://wa.me/5491151567091?text={{ c.nombre|urlencode }}" target="_blank" class="btn" style="text-align:center;">Reservar por WhatsApp</a>
     </div>
   </div>
   {% empty %}

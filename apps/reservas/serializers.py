@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Pago, Reserva
+from .models import Pago, Reserva, ReservaExtra
 
 
 class ReservaCrearSerializer(serializers.Serializer):
@@ -20,8 +20,19 @@ class PagoSerializer(serializers.ModelSerializer):
         fields = ['id', 'monto', 'medio_pago', 'tipo', 'fecha']
 
 
+class ReservaExtraSerializer(serializers.ModelSerializer):
+    subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = ReservaExtra
+        fields = ['id', 'nombre', 'precio_unitario', 'cantidad', 'subtotal']
+
+
 class ReservaSerializer(serializers.ModelSerializer):
     pagos = PagoSerializer(many=True, read_only=True)
+    extras = ReservaExtraSerializer(many=True, read_only=True)
+    extras_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     contacto_nombre = serializers.CharField(source='contacto.nombre', read_only=True)
     contacto_telefono = serializers.CharField(source='contacto.telefono', read_only=True)
     circuito_nombre = serializers.CharField(source='circuito.nombre', read_only=True)
@@ -32,7 +43,8 @@ class ReservaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'contacto_nombre', 'contacto_telefono', 'circuito_nombre', 'turno_nombre',
             'fecha', 'cantidad_personas', 'acompanantes', 'estado',
-            'precio_total', 'monto_sena', 'monto_pagado', 'medio_pago', 'vencimiento_sena',
+            'precio_total', 'extras', 'extras_total', 'total',
+            'monto_sena', 'monto_pagado', 'medio_pago', 'vencimiento_sena',
             'origen', 'resumen', 'link_pago', 'comprobante', 'notas', 'pagos',
         ]
 

@@ -49,6 +49,13 @@ def _derivar_a_humano_por_falla_n8n(payload: dict):
     conv.bot_activo = False
     conv.save(update_fields=['estado', 'bot_activo'])
 
+    from apps.configuracion.tasks import notificar_evento
+    notificar_evento.delay(
+        'Conversación requiere atención humana (bot caído)',
+        f'{conv.get_display_name()} ({conv.telefono}) quedó sin respuesta: n8n no contestó '
+        f'tras varios reintentos. Revisar que el bot esté funcionando.',
+    )
+
 
 @shared_task(bind=True, max_retries=5, retry_backoff=10, retry_backoff_max=600, retry_jitter=True)
 def notificar_reserva_aprobada(self, reserva_id):

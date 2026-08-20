@@ -108,8 +108,10 @@ class Circuito(models.Model):
             personas = self.personas_referencia()
         return self.precio_para(fecha, personas)
 
-    def monto_sena_para(self, fecha, personas=None):
-        precio = self.precio_para_fecha(fecha, personas)
+    def monto_sena_para(self, fecha, personas=None, monto_adicional=Decimal('0')):
+        """Seña sobre el precio del circuito + `monto_adicional` (ej. extras/opcionales
+        pedidos). Si la seña es un monto fijo, los extras no la modifican."""
+        precio = self.precio_para_fecha(fecha, personas) + (monto_adicional or Decimal('0'))
         if self.sena_tipo == self.SenaTipo.MONTO:
             return self.sena_valor
         return (precio * self.sena_valor / Decimal('100')).quantize(Decimal('0.01'))

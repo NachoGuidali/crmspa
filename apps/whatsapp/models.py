@@ -148,6 +148,11 @@ class Conversacion(models.Model):
     CAMPOS_FLUJO = [
         'estado_flujo', 'personas', 'tipo_propuesta', 'fecha_solicitada', 'intentos_fecha',
         'horario_confirmado', 'datos_contacto', 'override_regla', 'reserva_creada',
+        # Campos del flujo del bot (nivel de conversación, menú especial, extras pedidos,
+        # fallos consecutivos de NLU, si ya se mandó el catálogo, e historial resumido).
+        # Todos nulleables salvo catalogo_enviado (default False).
+        'nivel', 'menu_especial_cantidad', 'extras_pedidos', 'fallos_consecutivos',
+        'catalogo_enviado', 'historial',
     ]
 
     class Meta:
@@ -181,6 +186,7 @@ class Conversacion(models.Model):
         data.setdefault('estado_flujo', 'nuevo')
         data['reserva_creada'] = self.reserva_creada
         data['override_regla'] = bool(self.estado_bot.get('override_regla'))
+        data['catalogo_enviado'] = bool(self.estado_bot.get('catalogo_enviado'))
         data.update({
             'telefono': self.telefono,
             'nombre': self.nombre_contacto,

@@ -283,6 +283,13 @@ def handoff(*, telefono, agente_id=None):
     conversacion.agente = agente
     conversacion.save()
 
+    from apps.configuracion.tasks import notificar_evento
+    notificar_evento.delay(
+        'Conversación requiere atención humana',
+        f'{conversacion.get_display_name()} ({conversacion.telefono}) necesita que alguien '
+        f'tome la charla desde el inbox.',
+    )
+
     return {
         'ok': True,
         'conversacion_id': conversacion.id,

@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
 from django.shortcuts import render
+from django.utils import timezone
 
 from apps.circuitos.models import Circuito
 from apps.reservas.models import Reserva
@@ -26,7 +27,7 @@ def _resumen_dia(dia, turnos_activos, reservas_por_dia):
 
 @login_required
 def calendario(request):
-    hoy = date.today()
+    hoy = timezone.localdate()
     try:
         anio = int(request.GET.get('anio', hoy.year))
         mes = int(request.GET.get('mes', hoy.month))
@@ -91,7 +92,7 @@ def hoy(request):
     """Agenda del día: lo primero que mira recepción. Turnos de hoy con quién viene,
     estado, saldo a cobrar y acciones rápidas."""
     fecha_str = request.GET.get('fecha')
-    fecha = date.fromisoformat(fecha_str) if fecha_str else date.today()
+    fecha = date.fromisoformat(fecha_str) if fecha_str else timezone.localdate()
 
     reservas = list(
         Reserva.objects.filter(fecha=fecha)
@@ -111,7 +112,7 @@ def hoy(request):
 
     return render(request, 'turnero/hoy.html', {
         'fecha': fecha,
-        'es_hoy': fecha == date.today(),
+        'es_hoy': fecha == timezone.localdate(),
         'fecha_anterior': fecha - timedelta(days=1),
         'fecha_siguiente': fecha + timedelta(days=1),
         'bloques': bloques,

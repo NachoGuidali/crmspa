@@ -301,9 +301,39 @@ class ConversacionDetalleView(ApiKeyLoggedView, APIView):
 
 class ConversacionMensajeView(ApiKeyLoggedView, APIView):
     """
+    GET  /api/v1/conversaciones/<telefono>/mensajes/?limit=100 — historial de mensajes de la
+    conversación (más viejo primero), para que el bot pueda releer el contexto de la charla.
     POST /api/v1/conversaciones/<telefono>/mensajes/ — guarda un mensaje entrante aunque el bot
     esté bloqueado, para que el staff lo vea en el inbox. Body: {"texto": "...", "de": "cliente"}.
     """
+
+    def get(self, request, telefono):
+        from utils.phone import normalize_ar_phone
+
+        conv = Conversacion.objects.filter(telefono=normalize_ar_phone(telefono)).first()
+        if conv is None:
+            return Response({'error': 'conversacion_no_encontrada'}, status=404)
+
+        try:
+            limit = min(int(request.query_params.get('limit', 100)), 200)
+        except (TypeError, ValueError):
+            limit = 100
+
+        mensajes = list(conv.mensajes.order_by('-timestamp')[:limit])
+        mensajes.reverse()
+        data = [
+            {
+                'id': m.id,
+                'de': 'cliente' if m.direccion == Mensaje.Direccion.ENTRANTE else 'nosotros',
+                'texto': m.contenido,
+                'tipo': m.tipo,
+                'media_url': m.media_url,
+                'timestamp': m.timestamp,
+            }
+            for m in mensajes
+        ]
+        self._contacto_relacionado = conv.contacto
+        return Response(data)
 
     def post(self, request, telefono):
         from utils.phone import normalize_ar_phone

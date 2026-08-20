@@ -20,6 +20,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path, re_path
 from django.views.static import serve
 
+from apps.circuitos.views import ExtraListView
 from apps.sitio_publico.api import CircuitosPublicosView
 from apps.turnero.views import TurneroCrudoView
 from apps.whatsapp.views import (
@@ -33,6 +34,7 @@ urlpatterns = [
 
     path('api/v1/contactos/', include(('apps.contactos.urls', 'contactos'), namespace='contactos_api')),
     path('api/v1/circuitos/', include('apps.circuitos.urls')),
+    path('api/v1/extras/', ExtraListView.as_view(), name='extras'),
     path('api/v1/disponibilidad/', include(('apps.turnero.urls', 'turnero'), namespace='turnero_api')),
     path('api/v1/turnero/', TurneroCrudoView.as_view(), name='turnero_crudo'),
     path('api/v1/conversaciones/', ConversacionesView.as_view(), name='conversaciones'),

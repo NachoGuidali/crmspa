@@ -1,16 +1,18 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
 from django.utils import timezone
 
-from apps.circuitos.models import Circuito
+from apps.circuitos.models import Circuito, Extra
 from apps.configuracion.models import ConfiguracionNegocio
+from apps.configuracion.tasks import notificar_evento
 from apps.contactos.models import Contacto
 from apps.turnero.models import Turno
 from utils.phone import normalize_ar_phone
 
-from .models import Pago, Reserva
+from .models import Pago, Reserva, ReservaExtra
 
 
 class ReservaError(Exception):
@@ -40,10 +42,35 @@ def _validar_fecha_futura(fecha):
         raise ReservaError('fecha_en_el_pasado')
 
 
+def _resolver_extras(circuito, extras_data):
+    """Valida una lista de extras pedidos (`[{"extra_id": 3, "cantidad": 2}, ...]`) contra el
+    catálogo: tienen que existir, estar activos, y aplicar a este circuito (globales o propios
+    de él). Devuelve una lista de (Extra, cantidad)."""
+    resueltos = []
+    for item in extras_data or []:
+        if not isinstance(item, dict):
+            raise ReservaError(f'extra_invalido: {item}')
+        extra_id = item.get('extra_id') or item.get('id')
+        try:
+            cantidad = int(item.get('cantidad') or 1)
+        except (TypeError, ValueError):
+            raise ReservaError(f'extra_cantidad_invalida: {extra_id}')
+        if cantidad < 1:
+            raise ReservaError(f'extra_cantidad_invalida: {extra_id}')
+        try:
+            extra = Extra.objects.get(pk=extra_id, activo=True)
+        except (Extra.DoesNotExist, TypeError, ValueError):
+            raise ReservaError(f'extra_not_found: {extra_id}')
+        if extra.circuito_id and extra.circuito_id != circuito.id:
+            raise ReservaError(f'extra_no_aplica_al_circuito: {extra_id}')
+        resueltos.append((extra, cantidad))
+    return resueltos
+
+
 @transaction.atomic
 def crear_reserva(
     *, telefono, nombre_contacto, circuito_id, turno_id, fecha,
-    cantidad_personas=1, acompanantes=None, notas='',
+    cantidad_personas=1, acompanantes=None, notas='', extras=None,
 ):
     from apps.turnero.services import dia_habilitado, turnos_bloqueados
 
@@ -69,6 +96,9 @@ def crear_reserva(
     if dia_completo or turno.id in bloqueados_ids:
         raise ReservaError('turno_bloqueado')
 
+    extras_resueltos = _resolver_extras(circuito, extras)
+    extras_total = sum((e.precio * cant for e, cant in extras_resueltos), Decimal('0'))
+
     # Serializa la validación de cupo de este slot puntual (anti-sobreventa).
     _lock_slot(circuito.id, turno.id, fecha)
 
@@ -81,7 +111,9 @@ def crear_reserva(
 
     config = ConfiguracionNegocio.get_solo()
     precio_total = circuito.precio_para(fecha, cantidad_personas)
-    monto_sena = circuito.monto_sena_para(fecha, cantidad_personas)
+    # La seña se calcula sobre circuito + extras (si el cliente pidió "menú sin TACC" u otro
+    # opcional, se cubre con la misma seña, no queda afuera).
+    monto_sena = circuito.monto_sena_para(fecha, cantidad_personas, monto_adicional=extras_total)
 
     reserva = Reserva(
         contacto=contacto,
@@ -102,22 +134,50 @@ def crear_reserva(
         raise ReservaError('sin_cupo: ' + '; '.join(e.messages))
 
     reserva.save()
+
+    for extra, cantidad in extras_resueltos:
+        ReservaExtra.objects.create(
+            reserva=reserva, extra=extra, nombre=extra.nombre,
+            precio_unitario=extra.precio, cantidad=cantidad,
+        )
+
     return reserva
+
+
+def _reserva_bot_duplicada(telefono, circuito_id, turno_id, fecha):
+    """Idempotencia: si n8n reintenta POST /reservas/bot/ (timeout, retry) para el mismo
+    contacto+circuito+turno+fecha en una ventana corta, devolvemos la reserva ya creada en vez
+    de duplicarla. Necesario sobre todo en modo por-circuito, donde el lock de cupo no evita el
+    duplicado (dos reservas del mismo bot sí caben en el mismo slot)."""
+    ventana = timezone.now() - timedelta(minutes=5)
+    return (
+        Reserva.objects.filter(
+            contacto__telefono=telefono, circuito_id=circuito_id, turno_id=turno_id, fecha=fecha,
+            origen=Reserva.Origen.WHATSAPP_BOT, estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO,
+            created_at__gte=ventana,
+        )
+        .order_by('-created_at').first()
+    )
 
 
 @transaction.atomic
 def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha,
                       cantidad_personas=1, medio_pago='', resumen='',
-                      comprobante=None, link_pago=''):
+                      comprobante=None, link_pago='', extras=None):
     """Crea una reserva desde el bot de WhatsApp: valida cupo (estructurado) y setea el estado
     según el medio de pago.
       - transferencia → pendiente_aprobacion (el staff verifica el comprobante)
       - mercado_pago  → pendiente_pago (se confirma solo cuando MP avisa)
     """
+    telefono_norm = normalize_ar_phone(telefono)
+    existente = _reserva_bot_duplicada(telefono_norm, circuito_id, turno_id, fecha)
+    if existente is not None:
+        return existente
+
     reserva = crear_reserva(
         telefono=telefono, nombre_contacto=nombre_contacto,
         circuito_id=circuito_id, turno_id=turno_id, fecha=fecha,
-        cantidad_personas=cantidad_personas,
+        cantidad_personas=cantidad_personas, extras=extras,
     )
     reserva.origen = Reserva.Origen.WHATSAPP_BOT
     reserva.resumen = resumen or ''
@@ -133,6 +193,14 @@ def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha
     # otros medios quedan como pendiente_sena (el que puso crear_reserva)
 
     reserva.save()
+
+    notificar_evento.delay(
+        'Nueva reserva del bot',
+        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
+        f'{reserva.fecha} ({reserva.turno.nombre}) — {reserva.cantidad_personas} persona(s) — '
+        f'medio de pago: {reserva.get_medio_pago_display() or "sin especificar"} — '
+        f'estado: {reserva.get_estado_display()}.',
+    )
     return reserva
 
 
@@ -143,6 +211,11 @@ def confirmar_reserva(reserva):
     reserva.save(update_fields=['estado', 'updated_at'])
     from apps.whatsapp.tasks import notificar_reserva_aprobada
     notificar_reserva_aprobada.delay(reserva.id)
+    notificar_evento.delay(
+        'Reserva confirmada',
+        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
+        f'{reserva.fecha} ({reserva.turno.nombre}).',
+    )
     return reserva
 
 
@@ -244,6 +317,11 @@ def cancelar_reserva(reserva, motivo=''):
     reserva.notas = '\n'.join(p for p in partes if p).strip()
     reserva.sena_reembolsable = reembolsa
     reserva.save()
+    notificar_evento.delay(
+        'Reserva cancelada',
+        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
+        f'{reserva.fecha} ({reserva.turno.nombre}). Motivo: {motivo or "no especificado"}.',
+    )
     return reserva
 
 

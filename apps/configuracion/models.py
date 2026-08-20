@@ -41,6 +41,13 @@ class ConfiguracionNegocio(models.Model):
         default=24, help_text='Horas de anticipación para cancelar con reembolso de seña.'
     )
 
+    email_notificaciones = models.CharField(
+        max_length=500, blank=True, verbose_name='Email de notificaciones',
+        help_text='Uno o varios emails separados por coma. Reciben un aviso cuando: el bot crea '
+                  'una reserva, se confirma una reserva, se cancela una reserva, o una '
+                  'conversación pasa a requerir atención humana. Vacío = no se manda nada.',
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -4,6 +4,7 @@ from datetime import date
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 
 from . import services
 
@@ -38,13 +39,13 @@ def caja(request):
     if not request.user.es_dueno:
         return redirect('turnero:hoy')
     fecha_str = request.GET.get('fecha')
-    fecha = date.fromisoformat(fecha_str) if fecha_str else date.today()
+    fecha = date.fromisoformat(fecha_str) if fecha_str else timezone.localdate()
     from datetime import timedelta
     return render(request, 'dashboard/caja.html', {
         'fecha': fecha,
         'fecha_anterior': fecha - timedelta(days=1),
         'fecha_siguiente': fecha + timedelta(days=1),
-        'es_hoy': fecha == date.today(),
+        'es_hoy': fecha == timezone.localdate(),
         'caja': services.caja_del_dia(fecha),
         'saldos': services.saldos_por_cobrar(),
     })
@@ -56,7 +57,7 @@ def export_pagos(request):
         return redirect('turnero:hoy')
     from apps.reservas.models import Pago
     fecha_str = request.GET.get('fecha')
-    fecha = date.fromisoformat(fecha_str) if fecha_str else date.today()
+    fecha = date.fromisoformat(fecha_str) if fecha_str else timezone.localdate()
 
     resp = HttpResponse(content_type='text/csv; charset=utf-8')
     resp['Content-Disposition'] = f'attachment; filename="caja_{fecha.isoformat()}.csv"'

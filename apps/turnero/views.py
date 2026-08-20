@@ -37,9 +37,11 @@ class TurneroCrudoView(ApiKeyLoggedView, APIView):
     def get(self, request):
         from datetime import date
 
+        from django.utils import timezone
+
         desde_raw = request.query_params.get('desde')
         try:
-            desde = date.fromisoformat(desde_raw) if desde_raw else date.today()
+            desde = date.fromisoformat(desde_raw) if desde_raw else timezone.localdate()
         except ValueError:
             return Response({'error': 'desde_invalido', 'detalle': 'formato YYYY-MM-DD'}, status=400)
 

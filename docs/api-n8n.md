@@ -172,6 +172,27 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
 > recalcules. Si no mandaste `personas`, `precio` se calcula con una cantidad de referencia
 > (el mínimo del tramo más bajo), útil para mostrar un "desde $…".
 
+### Catálogo de extras/opcionales
+`GET /api/v1/extras/?circuito_id=1`
+
+Adicionales que se pueden sumar a una reserva (ej. "Menú sin TACC", tina finlandesa). Sin
+`circuito_id`, devuelve **todos** los activos (globales + de cada circuito). Con `circuito_id`,
+devuelve los **globales** (aplican a cualquier circuito) más los **propios** de ese circuito.
+
+**200:**
+```json
+{
+  "extras": [
+    {"id": 5, "nombre": "Menú sin TACC", "descripcion": "Opción apta celíacos", "precio": "5000.00", "por_persona": true, "circuito_id": null},
+    {"id": 8, "nombre": "Tina finlandesa", "descripcion": "", "precio": "15000.00", "por_persona": false, "circuito_id": 2}
+  ]
+}
+```
+- `circuito_id: null` → extra global (disponible en cualquier circuito).
+- `por_persona` es informativo (para armar la conversación); el precio final que se suma es
+  `precio × cantidad` que mandes en `extras` al crear la reserva (ver §5).
+- **400** `{"error": "circuito_id_invalido"}` si `circuito_id` no es numérico.
+
 ### Consultar disponibilidad de un circuito en una fecha
 `GET /api/v1/disponibilidad/?circuito_id=1&fecha=2026-07-11`
 
@@ -319,22 +340,32 @@ estructurados (que **siguen validando cupo**) lleva el **medio de pago elegido**
   "medio_pago": "transferencia",
   "resumen": "2 personas · Circuito Relax · sábado 11/07 · turno mañana",
   "comprobante_base64": "<imagen del comprobante en base64>",
-  "comprobante_mimetype": "image/jpeg"
+  "comprobante_mimetype": "image/jpeg",
+  "extras": [{"extra_id": 5, "cantidad": 2}]
 }
 ```
 
 - **`medio_pago: "transferencia"`** → la reserva nace en **`pendiente_aprobacion`**. Mandá el
-  comprobante en `comprobante_base64` (+ `comprobante_mimetype`, default `image/jpeg`). Una
-  persona del spa lo revisa y **aprueba manualmente** desde el CRM; recién ahí se confirma y
-  el CRM te avisa por el webhook `reserva-aprobada` (ver §7.5).
+  comprobante en `comprobante_base64` (+ `comprobante_mimetype`, default `image/jpeg`, máximo
+  **8 MB** decodificado). Una persona del spa lo revisa y **aprueba manualmente** desde el CRM;
+  recién ahí se confirma y el CRM te avisa por el webhook `reserva-aprobada` (ver §7.5).
 - **`medio_pago: "mercado_pago"`** → la reserva nace en **`pendiente_pago`**. Pasá el
   `link_pago`. Cuando MP acredita, confirmás con **`confirmar-pago`** (abajo).
 - `resumen` es texto libre para que el staff vea de un vistazo lo que armó el bot.
 - `cantidad_personas`, `circuito_id`, `turno_id` y `fecha` son obligatorios y **se validan
   igual que en la reserva normal** (cupo atómico, mínimos/máximos, modo exclusivo).
+- `extras` es opcional: lista de `{"extra_id": <id de GET /extras/>, "cantidad": N}`. Cada uno
+  se valida contra el catálogo (existe, activo, aplica a ese circuito). **La seña se calcula
+  sobre circuito + extras** (si sumás "Menú sin TACC", queda cubierto por la misma seña). La
+  respuesta trae el detalle en `extras` y el total en `total` (= `precio_total` + extras).
+- **Idempotente por 5 minutos**: si reintentás este POST para el mismo teléfono + circuito +
+  turno + fecha (ej. por timeout), el CRM devuelve la reserva ya creada en vez de duplicarla.
 
-**201** → ReservaSerializer (incluye `origen: "whatsapp_bot"`, `estado`, `resumen`, `link_pago`).
-**422** `{"error": "sin_cupo: ..."}` · **400** `{"error": "datos_invalidos"}` o `comprobante_base64_invalido`.
+**201** → ReservaSerializer (incluye `origen: "whatsapp_bot"`, `estado`, `resumen`, `link_pago`,
+`extras`, `extras_total`, `total`).
+**422** `{"error": "sin_cupo: ..."}` (o `extra_not_found: <id>` / `extra_no_aplica_al_circuito: <id>`
+si el extra no corresponde) · **400** `{"error": "datos_invalidos"}`, `comprobante_base64_invalido`
+o `comprobante_demasiado_grande`.
 
 ### Confirmar pago de Mercado Pago (por teléfono)
 `POST /api/v1/reservas/confirmar-pago/`
@@ -604,6 +635,8 @@ Crea la conversación la primera vez que escribe un número (si ya existe, no pi
   "estado_flujo": "turno_fecha", "personas": 4, "tipo_propuesta": "Spa de Parejas",
   "fecha_solicitada": "2026-07-25", "intentos_fecha": 1, "horario_confirmado": null,
   "datos_contacto": null, "reserva_creada": false, "override_regla": false,
+  "nivel": null, "menu_especial_cantidad": null, "extras_pedidos": null,
+  "fallos_consecutivos": null, "catalogo_enviado": false, "historial": null,
   "bot_bloqueado": false, "last_message_ts": "2026-07-20T14:32:00Z"
 }
 ```
@@ -613,10 +646,24 @@ Crea la conversación la primera vez que escribe un número (si ya existe, no pi
 Mandá **solo** los campos que cambian (nunca todos juntos). Campos aceptados:
 `estado_flujo`, `personas`, `tipo_propuesta`, `fecha_solicitada` (puede ir `null` para
 limpiarla), `intentos_fecha`, `horario_confirmado`, `datos_contacto`, `reserva_creada`,
-`override_regla`, `bot_bloqueado`. `estado_flujo` posibles: `nuevo`, `menu`, `turno_personas`,
-`turno_fecha`, `turno_datos_contacto`, `turno_pago`, `derivado`.
+`override_regla`, `bot_bloqueado`, `nivel`, `menu_especial_cantidad`, `extras_pedidos`,
+`fallos_consecutivos`, `catalogo_enviado`, `historial`. `estado_flujo` posibles: `nuevo`, `menu`,
+`turno_personas`, `turno_fecha`, `turno_datos_contacto`, `turno_pago`, `derivado`.
+
+Los seis últimos son de uso libre del bot (todos aceptan `null` para limpiarlos, salvo
+`catalogo_enviado` que es booleano y arranca en `false`):
+
+| Campo | Tipo | Para qué |
+|---|---|---|
+| `nivel` | texto | libre (ej. nivel de la conversación / segmento del cliente) |
+| `menu_especial_cantidad` | entero | cuántas personas pidieron menú especial |
+| `extras_pedidos` | texto/JSON | lo que el bot fue armando antes de mandarlo en `extras` a `/reservas/bot/` |
+| `fallos_consecutivos` | entero | contador de respuestas que el bot no entendió (para decidir handoff) |
+| `catalogo_enviado` | booleano | si ya se mandó el catálogo/menú, para no repetirlo |
+| `historial` | texto largo | resumen de la charla que arma el bot |
+
 ```json
-{"estado_flujo": "turno_datos_contacto", "horario_confirmado": "2026-07-25 (mañana)", "intentos_fecha": 0, "fecha_solicitada": null}
+{"estado_flujo": "turno_datos_contacto", "horario_confirmado": "2026-07-25 (mañana)", "intentos_fecha": 0, "fecha_solicitada": null, "fallos_consecutivos": 0, "catalogo_enviado": true}
 ```
 **200** → el objeto de estado actualizado.
 
@@ -631,6 +678,17 @@ limpiarla), `intentos_fecha`, `horario_confirmado`, `datos_contacto`, `reserva_c
 ```
 Con el bot bloqueado, igual guardá el mensaje entrante para que el staff lo vea en el inbox.
 `de`: `cliente` (entrante) u otro valor (saliente). **201** `{"ok": true, "mensaje_id": ..., "conversacion_id": ...}`.
+
+**Leer el historial de mensajes** — `GET /api/v1/conversaciones/<telefono>/mensajes/?limit=100`
+Para que el bot pueda releer el contexto de la charla. `limit` es opcional (default 100, máximo
+200). Devuelve los mensajes ordenados del más viejo al más nuevo.
+```json
+[
+  {"id": 120, "de": "cliente", "texto": "hola, quiero reservar", "tipo": "text", "media_url": "", "timestamp": "2026-07-20T14:30:00Z"},
+  {"id": 121, "de": "nosotros", "texto": "¡Hola! ¿Para cuántas personas?", "tipo": "text", "media_url": "", "timestamp": "2026-07-20T14:30:05Z"}
+]
+```
+**404** `{"error": "conversacion_no_encontrada"}` si el número no existe todavía.
 
 **Conversaciones para seguimiento** — `GET /api/v1/conversaciones/?inactiva_desde_horas=72&reserva_creada=false&estado_flujo_distinto_de=derivado`
 1 vez por día: "¿qué conversaciones llevan 72hs sin respuesta, sin reserva y sin haber pasado
@@ -649,6 +707,8 @@ a un asesor?". Todos los filtros son opcionales.
 2. Interpretar la intención (NLU / prompt). Guardá el avance con `PATCH /conversaciones/<telefono>/`.
 3. Ofrecer circuitos: `GET /circuitos/?fecha=...` → mostrar `precio` y `monto_sena`.
 4. Ver horarios: `GET /disponibilidad/?circuito_id=&fecha=` → ofrecer turnos con cupo.
+   - Si querés ofrecer opcionales (ej. "menú sin TACC"): `GET /extras/?circuito_id=` y sumalos
+     al pedido con `extras: [{"extra_id": ..., "cantidad": ...}]` al crear la reserva.
 5. Crear reserva con el medio de pago: `POST /reservas/bot/`.
    - **Transferencia** → mandá `comprobante_base64`; queda `pendiente_aprobacion`. El staff la
      aprueba en el CRM y te llega el webhook `reserva-aprobada` (§7.5) → confirmás al cliente.
@@ -669,6 +729,7 @@ a un asesor?". Todos los filtros son opcionales.
 | GET | `/api/v1/contactos/buscar/` | X-Api-Key | Buscar cliente por teléfono |
 | POST | `/api/v1/contactos/` | X-Api-Key | Crear/completar cliente |
 | GET | `/api/v1/circuitos/` | X-Api-Key | Circuitos con precio+seña por fecha |
+| GET | `/api/v1/extras/` | X-Api-Key | Catálogo de extras/opcionales (ej. menú sin TACC) |
 | GET | `/api/v1/disponibilidad/` | X-Api-Key | Cupo por turno de un circuito/fecha |
 | GET | `/api/v1/disponibilidad/rango/` | X-Api-Key | Días con lugar en un rango (mes / alternativas) |
 | GET | `/api/v1/turnero/` | X-Api-Key | Ocupación cruda por (fecha, turno), sin reglas |
@@ -685,6 +746,7 @@ a un asesor?". Todos los filtros son opcionales.
 | GET | `/api/v1/conversaciones/` | X-Api-Key | Conversaciones para seguimiento |
 | GET | `/api/v1/conversaciones/<telefono>/` | X-Api-Key | Leer estado del flujo del bot |
 | PATCH | `/api/v1/conversaciones/<telefono>/` | X-Api-Key | Actualizar estado del flujo (parcial) |
+| GET | `/api/v1/conversaciones/<telefono>/mensajes/` | X-Api-Key | Historial de mensajes de la conversación |
 | POST | `/api/v1/conversaciones/<telefono>/mensajes/` | X-Api-Key | Guardar mensaje con el bot bloqueado |
 | GET | `/api/v1/vouchers/<codigo>/` | X-Api-Key | Validar gift card |
 | POST | `/api/v1/vouchers/canjear/` | X-Api-Key | Canjear gift card |
