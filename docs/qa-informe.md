@@ -51,6 +51,11 @@ cuando no hay token — Meta quedó asimétrico.
 - **Repro:** con `meta_app_secret` vacío, `POST /whatsapp/webhook/meta/` con un payload de mensaje válido → se guarda.
 - **Fix propuesto:** rechazar (403) si `app_secret` no está configurado y `DEBUG=False` (igual que
   `webhook.verify_webhook_token`). Nunca procesar Meta sin firma en producción.
+- ✅ **RESUELTO (2026-08-21):** `webhook_meta.verify_post_signature()` es ahora la única puerta del
+  POST y decide con la misma regla que Evolution: sin `meta_app_secret` configurado, rechaza salvo
+  en `DEBUG` (donde loguea el warning). La vista ya no tiene el `if app_secret and ...`. Ojo en el
+  deploy: **el webhook de Meta puede figurar verde y aun así rechazar los POST** si falta el App
+  Secret, porque el handshake `GET` valida con el *Verify Token*, no con la firma.
 
 **A2 — Endpoint público de reservas sin auth, throttle ni captcha**
 `apps/sitio_publico/views.py` · `reservar()` (POST) → `services.crear_reserva(...)`
@@ -88,6 +93,19 @@ Si n8n reintenta `POST /reservas/bot/` (timeout, retry), se crea una **reserva d
 exclusivo el lock evita la segunda (1 por turno), pero en modo por-circuito no. No hay clave idempotente.
 - **Fix propuesto:** aceptar un header/campo `idempotency_key` (o `external_id` del bot) y hacer
   `get_or_create`; o dedup por (contacto, fecha, turno, circuito) en una ventana corta.
+- ✅ **RESUELTO en dos etapas:**
+  - *2026-08-20* — `_reserva_bot_duplicada()`: dedup por (contacto, circuito, turno, fecha) en una
+    ventana de 5 minutos.
+  - *2026-08-21* — dos agujeros que quedaban en esa primera versión:
+    1. **Carrera.** El chequeo de duplicado corría **antes** del `_lock_slot()` de `crear_reserva`.
+       Con READ COMMITTED, dos POST simultáneos leían los dos "no hay duplicado" y recién después
+       se serializaban para el cupo → **creaban dos reservas** (verificado: 2 POST → 2 reservas,
+       5 POST → 4). Ahora `crear_reserva_bot` toma el lock del slot **antes** de buscar duplicados
+       (el advisory lock es reentrante, `crear_reserva` lo vuelve a pedir sin bloquearse).
+    2. **La ventana caduca.** Un reintento a los 6 minutos duplicaba igual. Se agregó
+       `Reserva.idempotency_key` (unique en la DB), que n8n manda por body o por el header
+       `Idempotency-Key` y **no caduca**. La vista captura el `IntegrityError` como último cinturón
+       y devuelve la reserva original.
 
 **M3 — `reservar()` público no maneja inputs faltantes → 500**
 `apps/sitio_publico/views.py` · usa `request.POST['telefono']`, `['turno_id']`, `['fecha']` dentro de un
@@ -171,16 +189,20 @@ del handshake GET de Meta, y CSRF no aplica a los APIView (sin SessionAuth) — 
 ## 6. Checklist para "apto para producción"
 
 **Bloqueantes (Alto):**
-- [ ] A1 — Webhook Meta: exigir firma en producción (rechazar si falta `app_secret`).
-- [ ] A2 — Reservas públicas: proteger (throttle+captcha) o deshabilitar la ruta si no se usa.
+- [x] A1 — Webhook Meta: exigir firma en producción (rechazar si falta `app_secret`). *(2026-08-21:
+      `webhook_meta.verify_post_signature`, simétrico a `webhook.verify_webhook_token` — sin
+      secreto configurado, rechaza salvo en `DEBUG`.)*
+- [x] A2 — Reservas públicas: la ruta pública `POST /sitio/reservar/` se eliminó. *(2026-08-20)*
 - [ ] A3 — Suite de tests mínima (cupo, webhooks, reservas, plantillas, endpoints n8n).
 
 **Importantes (Medio):**
-- [ ] M1 — `date.today()` → `timezone.localdate()` (+ `TZ` en el contenedor).
-- [ ] M2 — Idempotencia en `/reservas/bot/`.
-- [ ] M3 — Manejo de inputs faltantes en `reservar()` público (evitar 500).
-- [ ] M4 — Límite de tamaño en `comprobante_base64`.
-- [ ] M5 — `F('total_usos') + 1`.
+- [x] M1 — `date.today()` → `timezone.localdate()` (+ `TZ` en el contenedor). *(2026-08-20)*
+- [x] M2 — Idempotencia en `/reservas/bot/`. *(2026-08-20 el dedup heurístico de 5 min;
+      2026-08-21 la clave `idempotency_key` con unique en la DB + el lock del slot adelantado
+      antes del chequeo de duplicado, que es lo que cierra la carrera entre POST simultáneos.)*
+- [x] M3 — Manejo de inputs faltantes en `reservar()` público. *(Sin efecto: la vista se eliminó.)*
+- [x] M4 — Límite de tamaño en `comprobante_base64` (8 MB). *(2026-08-20)*
+- [x] M5 — `F('total_usos') + 1`. *(2026-08-20)*
 
 **Infra / operación:**
 - [ ] HTTPS con certificado válido en nginx (certbot) para `crm.spacuatroestaciones.com`.
@@ -189,11 +211,14 @@ del handshake GET de Meta, y CSRF no aplica a los APIView (sin SessionAuth) — 
 - [ ] Monitoreo/alertas (Celery vivo, errores de Meta, reintentos agotados).
 - [ ] Confirmar `DEBUG=False`, `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` reales en el `.env` de prod (ok en código).
 
-**Ya resuelto en esta ronda:**
+**Ya resuelto en la ronda del informe (2026-07-27):**
 - [x] Contraseña al crear usuarios (para dar acceso a revisores).
 - [x] Error real de Meta expuesto (en vez de "400 Bad Request").
 - [x] Dedup de mensajes entrantes en `/conversaciones/<tel>/mensajes/`.
 - [x] Rechazo de envío sin texto ni media (`mensaje_vacio`).
+
+> **Estado al 2026-08-21:** de los hallazgos del informe queda abierto solo **A3 (tests)**. Los
+> ítems de infra/operación siguen sin tocar.
 
 ---
 

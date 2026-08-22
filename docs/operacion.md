@@ -81,6 +81,39 @@ de la fila** por WhatsApp y le da unas horas para confirmar antes de pasar al si
   momento o programarla.
 - **Vouchers / Gift cards** (`Vouchers`): vendé un circuito para regalar. Genera un código
   `SPA-XXXX-XXXX`. Cuando lo canjean (por el bot o a mano), crea una reserva ya confirmada.
+- **Popups de la web** (`Configuración → Popups de la web`): el cartel que aparece sobre
+  spacuatroestaciones.com para anunciar una promo o una fecha especial. Ver abajo.
+
+### Popups de la web (promos y fechas especiales)
+
+Sirve para avisar algo en la web sin depender de nadie: *"Promo Día de la Madre"*,
+*"Cerrado del 24 al 26"*, *"Últimos lugares para San Valentín"*.
+
+**Cómo se carga:** `Configuración → Popups de la web → Nuevo`.
+
+| Campo | Para qué |
+|---|---|
+| **Título** | El renglón grande del cartel. |
+| **Mensaje** | El texto de abajo. Podés dejarlo vacío si la foto ya lo dice todo. |
+| **Imagen** | El flyer o la foto de la promo. Va arriba de todo. Opcional. |
+| **Texto / Link del botón** | El botón naranja. Ej. "Reservar por WhatsApp" + el link de WhatsApp del spa. Van los dos o ninguno. |
+| **Activo** | La llave maestra. Apagado, no se muestra aunque esté en fecha. |
+| **Mostrar desde / hasta** | Dejalo vacío para que se muestre ya y sin fecha de fin. Si las cargás, el cartel **arranca y termina solo**: podés dejar la promo del Día de la Madre lista en septiembre. |
+| **Repetir cada (horas)** | Si alguien lo cierra, cuánto esperar antes de volver a mostrárselo. 24 está bien. `0` = en cada visita (molesto). |
+| **Orden** | Solo importa si tenés varios prendidos a la vez: se muestra el de **menor** orden. |
+
+**Cosas para tener en cuenta:**
+
+- Los cambios se ven **al instante**: no hay que avisarle a nadie ni volver a publicar la web.
+- La columna **Estado** de la lista te dice qué está pasando con cada cartel: `EN VIVO`,
+  `Apagado`, `Programado (12/10 09:00)` o `Vencido (20/10 23:59)`.
+- Si **editás** un cartel que ya estaba dando vueltas, les vuelve a aparecer también a quienes
+  ya lo habían cerrado (es una novedad nueva).
+- Para **bajarlo ya**, destildá *Activo*. No hace falta borrarlo: te queda guardado para el
+  año que viene.
+- La **imagen es pública**: la ve cualquiera que entre a la web. No subas nada privado ahí.
+- Aparece en la home y en las tres páginas de circuitos. **No** aparece en las páginas de
+  políticas, términos y privacidad, a propósito: quien está leyendo eso no quiere una promo.
 
 ---
 

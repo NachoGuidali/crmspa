@@ -46,6 +46,10 @@ urlpatterns += crud('extras', 'extra', {
     'list': views.ExtraList, 'crear': views.ExtraCrear,
     'editar': views.ExtraEditar, 'borrar': views.ExtraBorrar})
 
+urlpatterns += crud('popups', 'popup', {
+    'list': views.PopupWebList, 'crear': views.PopupWebCrear,
+    'editar': views.PopupWebEditar, 'borrar': views.PopupWebBorrar})
+
 urlpatterns += [
     path('usuarios/', views.UsuarioList.as_view(), name='usuarios'),
     path('usuarios/nuevo/', views.UsuarioCrear.as_view(), name='usuario_crear'),

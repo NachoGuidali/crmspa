@@ -21,7 +21,7 @@ from django.urls import include, path, re_path
 from django.views.static import serve
 
 from apps.circuitos.views import ExtraListView
-from apps.sitio_publico.api import CircuitosPublicosView
+from apps.sitio_publico.api import CircuitosPublicosView, PopupPublicoView
 from apps.turnero.views import TurneroCrudoView
 from apps.whatsapp.views import (
     ConversacionDetalleView,
@@ -43,6 +43,7 @@ urlpatterns = [
     path('api/v1/reservas/', include(('apps.reservas.urls', 'reservas'), namespace='reservas_api')),
     path('api/v1/vouchers/', include('apps.vouchers.urls_api')),
     path('api/v1/publico/circuitos/', CircuitosPublicosView.as_view(), name='publico_circuitos'),
+    path('api/v1/publico/popup/', PopupPublicoView.as_view(), name='publico_popup'),
 
     path('whatsapp/', include(('apps.whatsapp.urls', 'whatsapp'), namespace='whatsapp_api')),
 
@@ -58,6 +59,15 @@ urlpatterns = [
     path('tareas/', include('apps.tareas.urls')),
     path('', include('apps.dashboard.urls')),
 
+    # Media PÚBLICO: lo que la web de spacuatroestaciones.com tiene que poder mostrar sin
+    # login (hoy, las fotos de los popups). Va ANTES de la regla protegida para ganarle el
+    # match. Todo lo que se suba acá es visible para cualquiera: nada sensible.
+    re_path(
+        r'^media/publico/(?P<path>.*)$',
+        serve,
+        {'document_root': settings.MEDIA_ROOT / 'publico'},
+        name='media_publico',
+    ),
     # Media protegido: los comprobantes de pago son sensibles, sólo staff autenticado.
     re_path(
         r'^media/(?P<path>.*)$',

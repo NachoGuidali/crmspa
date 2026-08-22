@@ -17,6 +17,21 @@ def verify_webhook_get(mode: str, token: str, configured_token: str) -> bool:
     return mode == 'subscribe' and token == configured_token
 
 
+def verify_post_signature(raw_body: bytes, signature_header: str, app_secret: str) -> bool:
+    """Puerta de entrada del POST de Meta. Simétrico a `webhook.verify_webhook_token`:
+    sin `meta_app_secret` configurado no hay forma de validar el origen, y cualquiera que
+    conozca la URL podría inyectar mensajes entrantes falsos. Solo se permite en DEBUG."""
+    from django.conf import settings
+
+    if not app_secret:
+        if settings.DEBUG:
+            logger.warning('No hay meta_app_secret configurado — se omite la verificación de firma (DEBUG)')
+            return True
+        logger.error('Webhook Meta rechazado: no hay meta_app_secret configurado en producción')
+        return False
+    return verify_signature(raw_body, signature_header, app_secret)
+
+
 def verify_signature(raw_body: bytes, signature_header: str, app_secret: str) -> bool:
     """Verifica la firma X-Hub-Signature-256 que Meta manda en cada POST."""
     if not app_secret or not signature_header:

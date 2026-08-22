@@ -133,9 +133,8 @@ def reclamo_sena(automatizacion):
         if not _ya_enviado_a_reserva(automatizacion, reserva):
             _enviar_a_reserva(automatizacion, reserva)
 
-    for reserva in liberar_reservas_vencidas():
-        _log(automatizacion, AutomatizacionLog.Resultado.EXITOSO,
-             'Cupo liberado por vencimiento de seña', contacto=reserva.contacto, reserva=reserva)
+    # La liberación del cupo NO se hace acá: es integridad de datos, no un mensaje.
+    # Corre siempre en `ejecutar_automatizaciones`, esté esta automatización activa o no.
 
 
 def encuesta_satisfaccion(automatizacion):
@@ -190,9 +189,8 @@ def alerta_cupo(automatizacion):
     (Sin canal de notificación interna todavía — se agrega junto con la UI del inbox/kanban.)"""
     hoy = timezone.localdate()
     reservas = (
-        Reserva.objects.filter(
-            estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO, fecha__gte=hoy, fecha__lte=hoy + timedelta(days=7),
-        )
+        Reserva.objects.ocupando_cupo()
+        .filter(fecha__gte=hoy, fecha__lte=hoy + timedelta(days=7))
         .values('circuito', 'fecha', 'turno')
         .annotate(ocupacion=Sum('cantidad_personas'))
         .select_related()
@@ -315,6 +313,17 @@ HANDLERS = {
 
 @shared_task
 def ejecutar_automatizaciones():
+    # Primero la limpieza de holds vencidos. Va afuera del loop de automatizaciones a
+    # propósito: liberar el cupo es integridad de datos, no una campaña. Antes vivía dentro
+    # del handler `reclamo_sena`, así que apagar esa automatización (algo razonable si no
+    # querés mandar el mensaje de reclamo) dejaba de liberar turnos sin que nadie se entere.
+    try:
+        for reserva in liberar_reservas_vencidas():
+            logger.info('Cupo liberado por vencimiento de seña — reserva %s (%s %s, %s)',
+                        reserva.id, reserva.fecha, reserva.turno.nombre, reserva.contacto.telefono)
+    except Exception:
+        logger.exception('Error liberando reservas vencidas')
+
     for automatizacion in Automatizacion.objects.filter(activa=True):
         handler = HANDLERS.get(automatizacion.tipo)
         if not handler:

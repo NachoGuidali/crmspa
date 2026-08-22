@@ -124,8 +124,12 @@ def registrar_pago(request, reserva_id):
         tipo = request.POST.get('tipo')
         if monto and medio and tipo:
             from decimal import Decimal
+            from django.contrib import messages
             if tipo == Pago.Tipo.SENA:
-                reservas_services.confirmar_sena(reserva, Decimal(monto), medio)
+                try:
+                    reservas_services.confirmar_sena(reserva, Decimal(monto), medio)
+                except reservas_services.ReservaError as e:
+                    messages.error(request, f'No se pudo registrar la seña: {e}')
             else:
                 reservas_services.registrar_pago_saldo(reserva, Decimal(monto), medio)
     return redirect('contactos:detalle', pk=reserva.contacto_id)

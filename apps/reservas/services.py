@@ -19,6 +19,10 @@ class ReservaError(Exception):
     """Error de negocio al crear/modificar una reserva (cupo, día no habilitado, etc.)."""
 
 
+# Ventana del dedup heurístico de reservas del bot (cuando n8n no manda idempotency_key).
+VENTANA_DEDUP_BOT_MINUTOS = 5
+
+
 def _lock_slot(circuito_id, turno_id, fecha):
     """
     Toma un advisory lock de transacción para serializar la validación de cupo. Sin esto,
@@ -145,16 +149,22 @@ def crear_reserva(
 
 
 def _reserva_bot_duplicada(telefono, circuito_id, turno_id, fecha):
-    """Idempotencia: si n8n reintenta POST /reservas/bot/ (timeout, retry) para el mismo
-    contacto+circuito+turno+fecha en una ventana corta, devolvemos la reserva ya creada en vez
-    de duplicarla. Necesario sobre todo en modo por-circuito, donde el lock de cupo no evita el
-    duplicado (dos reservas del mismo bot sí caben en el mismo slot)."""
-    ventana = timezone.now() - timedelta(minutes=5)
+    """Red de contención para cuando n8n reintenta POST /reservas/bot/ (timeout, retry) sin
+    mandar `idempotency_key`: si ya hay una reserva del bot para el mismo
+    contacto+circuito+turno+fecha en una ventana corta, devolvemos esa en vez de duplicarla.
+    Necesario sobre todo en modo por-circuito, donde el lock de cupo no evita el duplicado
+    (dos reservas del mismo bot sí caben en el mismo slot).
+
+    Es una heurística: solo cubre reintentos dentro de la ventana. La garantía real la da
+    `idempotency_key` (unique en la DB), que no caduca."""
+    ventana = timezone.now() - timedelta(minutes=VENTANA_DEDUP_BOT_MINUTOS)
     return (
-        Reserva.objects.filter(
+        # `ocupando_cupo()` y no `estado__in=...`: si el hold anterior ya venció, el cliente
+        # que reintenta necesita una reserva nueva, no que le devolvamos una muerta.
+        Reserva.objects.ocupando_cupo()
+        .filter(
             contacto__telefono=telefono, circuito_id=circuito_id, turno_id=turno_id, fecha=fecha,
-            origen=Reserva.Origen.WHATSAPP_BOT, estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO,
-            created_at__gte=ventana,
+            origen=Reserva.Origen.WHATSAPP_BOT, created_at__gte=ventana,
         )
         .order_by('-created_at').first()
     )
@@ -163,13 +173,37 @@ def _reserva_bot_duplicada(telefono, circuito_id, turno_id, fecha):
 @transaction.atomic
 def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha,
                       cantidad_personas=1, medio_pago='', resumen='',
-                      comprobante=None, link_pago='', extras=None):
+                      comprobante=None, link_pago='', extras=None, idempotency_key=''):
     """Crea una reserva desde el bot de WhatsApp: valida cupo (estructurado) y setea el estado
     según el medio de pago.
       - transferencia → pendiente_aprobacion (el staff verifica el comprobante)
       - mercado_pago  → pendiente_pago (se confirma solo cuando MP avisa)
+
+    Idempotente: si n8n manda `idempotency_key` y ya existe una reserva con esa clave,
+    devuelve la que ya está creada sin tocar nada.
     """
     telefono_norm = normalize_ar_phone(telefono)
+    key = (idempotency_key or '').strip() or None
+
+    if key:
+        existente = Reserva.objects.filter(idempotency_key=key).first()
+        if existente is not None:
+            return existente
+
+    # El lock del slot se toma ACÁ, antes de buscar duplicados, y no solo dentro de
+    # crear_reserva: si no, dos POST idénticos concurrentes leen los dos "no hay duplicado"
+    # (READ COMMITTED, ninguno ve la fila del otro todavía) y recién después se serializan
+    # para el cupo → terminan creando dos reservas. Con el lock adelantado, el segundo entra
+    # cuando el primero ya commiteó y lo encuentra. Es reentrante: crear_reserva vuelve a
+    # pedir el mismo lock dentro de la misma transacción sin bloquearse.
+    _lock_slot(circuito_id, turno_id, fecha)
+
+    if key:
+        # Relectura con el lock tomado: el POST gemelo pudo crear la reserva mientras esperábamos.
+        existente = Reserva.objects.filter(idempotency_key=key).first()
+        if existente is not None:
+            return existente
+
     existente = _reserva_bot_duplicada(telefono_norm, circuito_id, turno_id, fecha)
     if existente is not None:
         return existente
@@ -181,6 +215,7 @@ def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha
     )
     reserva.origen = Reserva.Origen.WHATSAPP_BOT
     reserva.resumen = resumen or ''
+    reserva.idempotency_key = key
     reserva.medio_pago = medio_pago or ''
 
     if medio_pago == Reserva.MedioPago.TRANSFERENCIA:
@@ -204,11 +239,42 @@ def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha
     return reserva
 
 
+def _revalidar_cupo_si_el_hold_vencio(reserva):
+    """Antes de confirmar un hold vencido, chequea que el turno siga libre.
+
+    Como el cupo se libera en el instante del vencimiento, entre que el hold venció y llega el
+    pago alguien pudo haber tomado el turno. Confirmar a ciegas sería sobreventa: dos reservas
+    activas en un slot exclusivo. Si el hold sigue vigente no hay nada que revisar."""
+    vencido = (
+        reserva.estado in Reserva.ESTADOS_HOLD_TEMPORAL
+        and reserva.vencimiento_sena is not None
+        and reserva.vencimiento_sena < timezone.now()
+    )
+    if not vencido:
+        return
+    try:
+        reserva.full_clean(exclude=['idempotency_key'])
+    except ValidationError as e:
+        raise ReservaError(
+            'hold_vencido_y_turno_tomado: venció el plazo de pago y el turno ya no está '
+            'disponible. ' + '; '.join(e.messages)
+        )
+
+
+@transaction.atomic
 def confirmar_reserva(reserva):
     """Confirma la reserva (Mercado Pago acreditó, o el staff aprobó el comprobante de
-    transferencia) y le avisa al bot para que mande la confirmación final al cliente."""
+    transferencia) y le avisa al bot para que mande la confirmación final al cliente.
+
+    Acá se acredita la seña, así que es el momento en que arranca la ventana de reembolso."""
+    _lock_slot(reserva.circuito_id, reserva.turno_id, reserva.fecha)
+    _revalidar_cupo_si_el_hold_vencio(reserva)
     reserva.estado = Reserva.Estado.CONFIRMADO
-    reserva.save(update_fields=['estado', 'updated_at'])
+    campos = ['estado', 'updated_at']
+    if reserva.sena_pagada_at is None:
+        reserva.sena_pagada_at = timezone.now()
+        campos.append('sena_pagada_at')
+    reserva.save(update_fields=campos)
     from apps.whatsapp.tasks import notificar_reserva_aprobada
     notificar_reserva_aprobada.delay(reserva.id)
     notificar_evento.delay(
@@ -221,8 +287,16 @@ def confirmar_reserva(reserva):
 
 @transaction.atomic
 def confirmar_sena(reserva, monto, medio_pago):
-    Pago.objects.create(reserva=reserva, monto=monto, medio_pago=medio_pago, tipo=Pago.Tipo.SENA)
+    _lock_slot(reserva.circuito_id, reserva.turno_id, reserva.fecha)
+    _revalidar_cupo_si_el_hold_vencio(reserva)
+    pago = Pago.objects.create(
+        reserva=reserva, monto=monto, medio_pago=medio_pago, tipo=Pago.Tipo.SENA,
+    )
     reserva.monto_pagado += monto
+    # La ventana de reembolso se cuenta desde el pago de la seña. Si ya había una seña
+    # registrada, mandan la primera: un segundo pago no reabre el plazo.
+    if reserva.sena_pagada_at is None:
+        reserva.sena_pagada_at = pago.fecha
     if reserva.estado == Reserva.Estado.PENDIENTE_SENA:
         reserva.estado = Reserva.Estado.CONFIRMADO
     reserva.save()
@@ -286,51 +360,92 @@ def marcar_no_show(reserva):
 
 def evaluar_reembolso_sena(reserva, cuando=None):
     """
-    Según la política del negocio, indica si al cancelar corresponde reembolsar la seña.
-    Reembolsa si se cancela con al menos `horas_cancelacion_con_reembolso` de anticipación
-    respecto del inicio del turno.
+    Política de reembolso del negocio: **la seña se reembolsa solo si la reserva se cancela
+    dentro de las N horas posteriores al pago de la seña** (config
+    `horas_reembolso_desde_pago`, default 24). Pasado ese plazo la seña queda retenida.
+
+    Ojo: el plazo se cuenta desde el PAGO, no desde la fecha del turno. Una reserva pagada hace
+    tres meses para un turno de mañana está fuera de plazo, y una pagada hace dos horas está en
+    plazo aunque el turno sea pasado mañana.
+
+    Sin seña acreditada (`sena_pagada_at` nulo) no hay nada que reembolsar → False.
     """
-    from datetime import datetime
+    if reserva.sena_pagada_at is None:
+        return False
 
     cuando = cuando or timezone.now()
     config = ConfiguracionNegocio.get_solo()
-    inicio_turno = timezone.make_aware(datetime.combine(reserva.fecha, reserva.turno.hora_inicio))
-    horas_hasta_turno = (inicio_turno - cuando).total_seconds() / 3600
-    return horas_hasta_turno >= config.horas_cancelacion_con_reembolso
+    horas_desde_pago = (cuando - reserva.sena_pagada_at).total_seconds() / 3600
+    return 0 <= horas_desde_pago <= config.horas_reembolso_desde_pago
 
 
 def cancelar_reserva(reserva, motivo=''):
     """
-    Cancela la reserva, libera el cupo y aplica la política de seña:
-    si la cancelación es tardía, la seña queda retenida.
+    Cancela la reserva, libera el cupo y deja asentada la política de seña:
+    reembolsable solo si se cancela dentro de la ventana posterior al pago.
     """
-    reembolsa = reserva.monto_pagado > 0 and evaluar_reembolso_sena(reserva)
+    config = ConfiguracionNegocio.get_solo()
+    reembolsa = evaluar_reembolso_sena(reserva)
     reserva.estado = Reserva.Estado.CANCELADO
     partes = [reserva.notas]
     if motivo:
         partes.append(f'Cancelado: {motivo}')
-    if reserva.monto_pagado > 0:
+    if reserva.sena_pagada_at is not None:
+        pagada = timezone.localtime(reserva.sena_pagada_at).strftime('%d/%m/%Y %H:%M')
         if reembolsa:
-            partes.append('Cancelación en término: corresponde reembolsar la seña.')
+            partes.append(
+                f'Cancelación dentro de las {config.horas_reembolso_desde_pago} hs del pago '
+                f'(seña pagada el {pagada}): corresponde reembolsar la seña.'
+            )
         else:
-            partes.append('Cancelación tardía: la seña queda retenida.')
+            horas = (timezone.now() - reserva.sena_pagada_at).total_seconds() / 3600
+            partes.append(
+                f'Cancelación fuera de plazo: pasaron {horas:.0f} hs desde el pago de la seña '
+                f'({pagada}) y la política son {config.horas_reembolso_desde_pago} hs. '
+                f'La seña queda retenida.'
+            )
+    else:
+        partes.append('Sin seña acreditada al momento de cancelar: no hay reembolso que hacer.')
     reserva.notas = '\n'.join(p for p in partes if p).strip()
     reserva.sena_reembolsable = reembolsa
     reserva.save()
+    if reserva.sena_pagada_at is None:
+        destino_sena = 'No había seña acreditada.'
+    elif reembolsa:
+        destino_sena = 'CORRESPONDE REEMBOLSAR la seña (canceló dentro del plazo).'
+    else:
+        destino_sena = 'La seña queda RETENIDA (canceló fuera del plazo).'
     notificar_evento.delay(
         'Reserva cancelada',
         f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
-        f'{reserva.fecha} ({reserva.turno.nombre}). Motivo: {motivo or "no especificado"}.',
+        f'{reserva.fecha} ({reserva.turno.nombre}). Motivo: {motivo or "no especificado"}. '
+        f'{destino_sena}',
     )
     return reserva
 
 
 def liberar_reservas_vencidas():
-    """Cancela reservas pendientes de seña cuyo plazo de pago venció. Devuelve la lista liberada."""
-    vencidas = Reserva.objects.filter(
-        estado=Reserva.Estado.PENDIENTE_SENA,
-        vencimiento_sena__lt=timezone.now(),
-    )
-    liberadas = list(vencidas)
-    vencidas.update(estado=Reserva.Estado.CANCELADO)
+    """Cancela los holds temporales cuyo plazo de pago venció. Devuelve la lista liberada.
+
+    Cubre `pendiente_sena` **y `pendiente_pago`**: los dos son holds que retienen el cupo
+    mientras el cliente paga. La versión anterior miraba solo `pendiente_sena`, así que una
+    reserva del bot con link de Mercado Pago que nunca se pagaba **bloqueaba el turno para
+    siempre**.
+
+    `pendiente_aprobacion` queda afuera a propósito: ahí el cliente ya transfirió y subió el
+    comprobante; cancelarle la reserva por un plazo automático sería quedarse con la plata y
+    el turno. Eso lo resuelve una persona.
+
+    Ojo: el cupo ya se considera libre desde el instante del vencimiento
+    (`Reserva.objects.ocupando_cupo()`), corra o no esta tarea. Esto es la limpieza que deja
+    el estado prolijo, no lo que destraba el turno.
+    """
+    vencidas = Reserva.objects.holds_vencidos()
+    liberadas = list(vencidas.select_related('contacto', 'circuito', 'turno'))
+    for reserva in liberadas:
+        nota = (f'Cupo liberado automáticamente: venció el plazo para pagar la seña '
+                f'({timezone.localtime(reserva.vencimiento_sena):%d/%m/%Y %H:%M}).')
+        reserva.notas = f'{reserva.notas}\n{nota}'.strip()
+        reserva.estado = Reserva.Estado.CANCELADO
+        reserva.save(update_fields=['estado', 'notas', 'updated_at'])
     return liberadas

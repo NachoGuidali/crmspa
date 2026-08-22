@@ -9,6 +9,8 @@
   <a href="{% url 'contactos:editar' contacto.pk %}" class="btn btn-secondary">Editar datos</a>
 </div>
 
+{% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
+
 <div class="grid grid-3" style="align-items:start;">
   <div class="card">
     <h3>Datos</h3>

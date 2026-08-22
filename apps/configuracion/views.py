@@ -7,6 +7,7 @@ from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 from apps.automations.models import Automatizacion
 from apps.circuitos.models import Circuito, Extra
 from apps.contactos.models import CampoPersonalizado
+from apps.sitio_publico.models import PopupWeb
 from apps.turnero.models import DIAS_SEMANA, BloqueoManual, Feriado, Turno
 from apps.usuarios.models import User
 from apps.whatsapp.models import PlantillaMensaje, RespuestaRapida
@@ -36,6 +37,7 @@ def hub(request):
         ('Campos personalizados', 'configuracion:campos', 'Campos extra de contacto (ej. aniversario) para filtrar y segmentar.'),
         ('Extras / opcionales', 'configuracion:extras', 'Adicionales con precio para sumar a las reservas (upsell).'),
         ('Automatizaciones', 'configuracion:automatizaciones', 'Activar/desactivar y configurar automatizaciones.'),
+        ('Popups de la web', 'configuracion:popups', 'Carteles de promos y fechas especiales en spacuatroestaciones.com. Prender, apagar y programar.'),
         ('Negocio', 'configuracion:negocio', 'Plazo de seña, política de cancelación, días laborables.'),
         ('Usuarios y roles', 'configuracion:usuarios', 'Cuentas de acceso (dueño / recepción).'),
     ]
@@ -517,3 +519,42 @@ class NegocioEditar(BaseFormView, UpdateView):
 
     def get_object(self, queryset=None):
         return ConfiguracionNegocio.get_solo()
+
+
+# ── Popups de la web pública ─────────────────────────────────────────────────
+
+class PopupWebList(BaseListView):
+    model = PopupWeb
+    titulo = 'Popups de la web'
+    columnas = ['Título', 'Estado', 'Desde', 'Hasta', 'Foto', 'Orden']
+    crear_url = 'configuracion:popup_crear'
+    editar_url = 'configuracion:popup_editar'
+    borrar_url = 'configuracion:popup_borrar'
+
+    def fila(self, obj):
+        from django.utils import timezone as _tz
+        fmt = lambda d: _tz.localtime(d).strftime('%d/%m/%Y %H:%M') if d else '—'
+        return (obj.pk, [
+            obj.titulo, obj.estado_legible, fmt(obj.desde), fmt(obj.hasta),
+            'Sí' if obj.imagen else 'No', obj.orden,
+        ])
+
+
+class PopupWebCrear(BaseFormView, CreateView):
+    model = PopupWeb
+    form_class = forms.PopupWebForm
+    titulo = 'Nuevo popup de la web'
+    success_url = reverse_lazy('configuracion:popups')
+
+
+class PopupWebEditar(BaseFormView, UpdateView):
+    model = PopupWeb
+    form_class = forms.PopupWebForm
+    titulo = 'Editar popup de la web'
+    success_url = reverse_lazy('configuracion:popups')
+
+
+class PopupWebBorrar(DuenoRequiredMixin, DeleteView):
+    model = PopupWeb
+    template_name = 'configuracion/borrar.html'
+    success_url = reverse_lazy('configuracion:popups')

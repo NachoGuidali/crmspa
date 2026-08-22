@@ -43,7 +43,7 @@ def calendario(request):
     turnos_activos = list(Turno.objects.filter(activo=True))
 
     reservas_qs = (
-        Reserva.objects.filter(fecha__gte=primero, fecha__lte=ultimo, estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO)
+        Reserva.objects.ocupando_cupo().filter(fecha__gte=primero, fecha__lte=ultimo)
         .values('fecha').annotate(count=Count('id'), personas=Sum('cantidad_personas'))
     )
     reservas_por_dia = {r['fecha']: {'count': r['count'], 'personas': r['personas'] or 0} for r in reservas_qs}

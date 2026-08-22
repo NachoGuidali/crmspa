@@ -35,10 +35,15 @@ class ConfiguracionNegocio(models.Model):
         default=2, help_text='Horas para pagar la seña antes de liberar el cupo automáticamente.'
     )
     politica_cancelacion = models.TextField(
-        blank=True, help_text='Ej. "Reembolso de seña hasta 24h antes del turno."'
+        blank=True,
+        help_text='Texto de la política que se le muestra al cliente. Ej. "La seña se reembolsa '
+                  'solo si cancelás dentro de las 24 hs posteriores al pago."',
     )
-    horas_cancelacion_con_reembolso = models.PositiveIntegerField(
-        default=24, help_text='Horas de anticipación para cancelar con reembolso de seña.'
+    horas_reembolso_desde_pago = models.PositiveIntegerField(
+        default=24, verbose_name='Horas de reembolso desde el pago',
+        help_text='La seña se reembolsa SOLO si la reserva se cancela dentro de esta cantidad de '
+                  'horas contadas DESDE EL PAGO de la seña (no desde la fecha del turno). '
+                  'Pasado ese plazo, la seña queda retenida. Default: 24.',
     )
 
     email_notificaciones = models.CharField(

@@ -83,9 +83,8 @@ def disponibilidad_circuito(circuito, fecha):
             if exclusivo:
                 # El turno se comparte en todo el spa: cualquier reserva lo ocupa por completo.
                 reserva_del_slot = (
-                    Reserva.objects.filter(
-                        fecha=fecha, turno=turno, estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO,
-                    )
+                    Reserva.objects.ocupando_cupo()
+                    .filter(fecha=fecha, turno=turno)
                     .select_related('circuito')
                     .first()
                 )
@@ -93,9 +92,8 @@ def disponibilidad_circuito(circuito, fecha):
                     cupo_ocupado = circuito.capacidad_maxima  # tomado: sin lugar
                     ocupado_por_otro_circuito = reserva_del_slot.circuito_id != circuito.id
             else:
-                cupo_ocupado = Reserva.objects.filter(
+                cupo_ocupado = Reserva.objects.ocupando_cupo().filter(
                     circuito=circuito, fecha=fecha, turno=turno,
-                    estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO,
                 ).aggregate(total=Sum('cantidad_personas'))['total'] or 0
 
         cupo_disponible = max(circuito.capacidad_maxima - cupo_ocupado, 0) if not bloqueado else 0
@@ -130,10 +128,8 @@ def turnero_crudo(desde, dias=14):
 
     ocupacion = {}
     reservas = (
-        Reserva.objects.filter(
-            fecha__gte=desde, fecha__lte=hasta,
-            estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO,
-        )
+        Reserva.objects.ocupando_cupo()
+        .filter(fecha__gte=desde, fecha__lte=hasta)
         .values('fecha', 'turno_id')
         .annotate(personas=Sum('cantidad_personas'), reservas=Count('id'))
     )

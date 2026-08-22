@@ -1,5 +1,38 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
+
+
+class ReservaQuerySet(models.QuerySet):
+    def ocupando_cupo(self, ahora=None):
+        """Reservas que **en este momento** bloquean el slot.
+
+        Mirar solo el estado no alcanza. Una reserva en espera de pago (`pendiente_sena` o
+        `pendiente_pago`) es un **hold temporal**: deja de ocupar el cupo apenas pasa
+        `vencimiento_sena`, aunque la tarea de Celery que la cancela todavía no haya corrido.
+        Si no la excluyéramos acá, el turno quedaría trabado hasta la próxima pasada (hasta
+        15 minutos de más sobre un hold de 2 horas) y, si esa automatización estuviera
+        apagada, para siempre.
+
+        `pendiente_aprobacion` NO es un hold temporal: ahí el cliente ya pagó y subió el
+        comprobante, y lo que falta es que alguien del spa lo mire. Ese cupo se mantiene.
+
+        Un hold sin `vencimiento_sena` tampoco se libera solo (NULL no matchea el `<`): ante la
+        duda, el cupo se conserva.
+        """
+        ahora = ahora or timezone.now()
+        return self.filter(estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO).exclude(
+            estado__in=Reserva.ESTADOS_HOLD_TEMPORAL,
+            vencimiento_sena__lt=ahora,
+        )
+
+    def holds_vencidos(self, ahora=None):
+        """Holds temporales cuyo plazo de pago ya pasó: hay que cancelarlos y liberar el cupo."""
+        ahora = ahora or timezone.now()
+        return self.filter(
+            estado__in=Reserva.ESTADOS_HOLD_TEMPORAL,
+            vencimiento_sena__lt=ahora,
+        )
 
 
 class Reserva(models.Model):
@@ -17,6 +50,13 @@ class Reserva(models.Model):
         Estado.PENDIENTE_PAGO, Estado.PENDIENTE_APROBACION, Estado.PENDIENTE_SENA,
         Estado.CONFIRMADO, Estado.COMPLETADO,
     ]
+
+    # Holds temporales: el cupo está retenido mientras el cliente paga, y se libera solo al
+    # vencer `vencimiento_sena`. `pendiente_aprobacion` queda afuera a propósito (ahí ya pagó
+    # y espera revisión del staff, no hay nada que expirar).
+    ESTADOS_HOLD_TEMPORAL = [Estado.PENDIENTE_SENA, Estado.PENDIENTE_PAGO]
+
+    objects = ReservaQuerySet.as_manager()
 
     class MedioPago(models.TextChoices):
         EFECTIVO = 'efectivo', 'Efectivo'
@@ -57,6 +97,11 @@ class Reserva(models.Model):
         null=True, blank=True,
         help_text='Si vence sin pagar la seña, el cupo se libera automáticamente.',
     )
+    sena_pagada_at = models.DateTimeField(
+        null=True, blank=True, verbose_name='Seña pagada el',
+        help_text='Cuándo se acreditó la seña. Es el punto de partida de la ventana de reembolso '
+                  '(config: "Horas de reembolso desde el pago"). Nulo = la seña todavía no se pagó.',
+    )
     sena_reembolsable = models.BooleanField(
         null=True, blank=True,
         help_text='Al cancelar: True si corresponde reembolsar la seña, False si queda retenida.',
@@ -78,6 +123,12 @@ class Reserva(models.Model):
     )
 
     notas = models.TextField(blank=True)
+
+    idempotency_key = models.CharField(
+        max_length=100, null=True, blank=True, unique=True,
+        help_text='Clave que manda el bot para que un reintento del mismo POST no cree una '
+                  'reserva duplicada. Nulo en las reservas cargadas a mano.',
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -107,6 +158,27 @@ class Reserva(models.Model):
     def saldo(self):
         """Lo que falta cobrar: total (con extras) menos lo ya pagado."""
         return self.total - (self.monto_pagado or 0)
+
+    @property
+    def reembolso_vence_at(self):
+        """Hasta cuándo se puede cancelar con reembolso de la seña. `None` si todavía no se pagó
+        (sin pago no arranca el reloj)."""
+        from datetime import timedelta
+
+        from apps.configuracion.models import ConfiguracionNegocio
+
+        if not self.sena_pagada_at:
+            return None
+        horas = ConfiguracionNegocio.get_solo().horas_reembolso_desde_pago
+        return self.sena_pagada_at + timedelta(hours=horas)
+
+    @property
+    def en_ventana_de_reembolso(self):
+        """True si en este momento la cancelación todavía daría derecho a reembolso."""
+        from django.utils import timezone as _tz
+
+        vence = self.reembolso_vence_at
+        return bool(vence and _tz.now() <= vence)
 
     def clean(self):
         if not (self.circuito_id and self.fecha and self.turno_id):
@@ -145,17 +217,14 @@ class Reserva(models.Model):
 
     def _slot_ocupado_por_otra_reserva(self):
         """Modo exclusivo: ¿hay OTRA reserva activa en este (fecha, turno), sin importar el circuito?"""
-        qs = Reserva.objects.filter(
-            fecha=self.fecha, turno=self.turno, estado__in=self.ESTADOS_QUE_OCUPAN_CUPO,
-        )
+        qs = Reserva.objects.ocupando_cupo().filter(fecha=self.fecha, turno=self.turno)
         if self.pk:
             qs = qs.exclude(pk=self.pk)
         return qs.exists()
 
     def _cupo_ocupado(self):
-        qs = Reserva.objects.filter(
+        qs = Reserva.objects.ocupando_cupo().filter(
             circuito=self.circuito, fecha=self.fecha, turno=self.turno,
-            estado__in=self.ESTADOS_QUE_OCUPAN_CUPO,
         )
         if self.pk:
             qs = qs.exclude(pk=self.pk)

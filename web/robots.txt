@@ -1,0 +1,9 @@
+# Estancia Cuatro Estaciones — spacuatroestaciones.com
+
+User-agent: *
+Allow: /
+
+# Las páginas legales están marcadas noindex en su propio <head>; no se bloquean acá
+# a propósito: si Google no las puede leer, no se entera del noindex.
+
+Sitemap: https://spacuatroestaciones.com/sitemap.xml

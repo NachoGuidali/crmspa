@@ -102,8 +102,7 @@ class MetaWebhookView(View):
     def post(self, request):
         app_secret = ConfiguracionWhatsApp.get_setting('meta_app_secret')
         signature = request.headers.get('X-Hub-Signature-256', '')
-        if app_secret and not webhook_meta.verify_signature(request.body, signature, app_secret):
-            logger.warning('Webhook Meta rechazado — firma inválida')
+        if not webhook_meta.verify_post_signature(request.body, signature, app_secret):
             return HttpResponse('Forbidden', status=403)
         try:
             payload = json.loads(request.body or '{}')

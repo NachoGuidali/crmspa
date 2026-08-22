@@ -341,7 +341,8 @@ estructurados (que **siguen validando cupo**) lleva el **medio de pago elegido**
   "resumen": "2 personas · Circuito Relax · sábado 11/07 · turno mañana",
   "comprobante_base64": "<imagen del comprobante en base64>",
   "comprobante_mimetype": "image/jpeg",
-  "extras": [{"extra_id": 5, "cantidad": 2}]
+  "extras": [{"extra_id": 5, "cantidad": 2}],
+  "idempotency_key": "wamid.HBgNNTQ5MzgxNTU1MTIzNBUCABIYE..."
 }
 ```
 
@@ -358,11 +359,19 @@ estructurados (que **siguen validando cupo**) lleva el **medio de pago elegido**
   se valida contra el catálogo (existe, activo, aplica a ese circuito). **La seña se calcula
   sobre circuito + extras** (si sumás "Menú sin TACC", queda cubierto por la misma seña). La
   respuesta trae el detalle en `extras` y el total en `total` (= `precio_total` + extras).
-- **Idempotente por 5 minutos**: si reintentás este POST para el mismo teléfono + circuito +
-  turno + fecha (ej. por timeout), el CRM devuelve la reserva ya creada en vez de duplicarla.
+- **Idempotencia (recomendado):** mandá una clave única por intento de reserva, en el body como
+  `idempotency_key` o en el header `Idempotency-Key`. Si reintentás el POST con la misma clave
+  (timeout, retry de n8n, doble disparo del flujo), el CRM devuelve **la reserva original** en vez
+  de crear otra. La clave no caduca y está garantizada por un *unique* en la base, así que es la
+  forma segura de reintentar. Usá algo estable por intento, ej. el `message_id` de WhatsApp o un
+  UUID que generes al arrancar el flujo — **no** uno nuevo en cada reintento.
+- **Sin clave**, queda una red de contención heurística: si ya hay una reserva del bot para el
+  mismo teléfono + circuito + turno + fecha creada hace **menos de 5 minutos**, se devuelve esa.
+  Fuera de esa ventana el reintento **sí** duplica, por eso conviene mandar `idempotency_key`.
 
 **201** → ReservaSerializer (incluye `origen: "whatsapp_bot"`, `estado`, `resumen`, `link_pago`,
-`extras`, `extras_total`, `total`).
+`extras`, `extras_total`, `total`). Un reintento deduplicado también responde **201** con la
+reserva original: mirá el `id` para saber si es la misma.
 **422** `{"error": "sin_cupo: ..."}` (o `extra_not_found: <id>` / `extra_no_aplica_al_circuito: <id>`
 si el extra no corresponde) · **400** `{"error": "datos_invalidos"}`, `comprobante_base64_invalido`
 o `comprobante_demasiado_grande`.
@@ -377,7 +386,14 @@ o `comprobante_demasiado_grande`.
   **`confirmado`**, disparando el webhook `reserva-aprobada` (§7.5).
 
 **200** → ReservaSerializer con `estado: "confirmado"` ·
-**404** `{"error": "reserva_pendiente_pago_no_encontrada"}` · **400** `{"error": "telefono_requerido"}`.
+**404** `{"error": "reserva_pendiente_pago_no_encontrada"}` · **400** `{"error": "telefono_requerido"}` ·
+**422** `{"error": "hold_vencido_y_turno_tomado: ...", "reserva_id": 42}`.
+
+> **El 422 hay que derivarlo a una persona.** Significa que el cliente pagó **después** de que se
+> venciera la reserva temporal del turno (2 hs por defecto) y que en el medio otro cliente tomó
+> ese lugar. Confirmar igual sería sobreventa, así que el CRM lo frena. Como hay plata del cliente
+> en el medio, el bot no debería resolverlo solo: mandá handoff (`/whatsapp/api/handoff/`) para
+> que el spa reprograme o devuelva.
 
 ### Ver una reserva
 `GET /api/v1/reservas/<id>/` → **200** ReservaSerializer · **404** `{"error": "reserva_not_found"}`
@@ -407,12 +423,19 @@ o `comprobante_demasiado_grande`.
 ```json
 {"motivo": "El cliente no puede asistir"}
 ```
-- Libera el cupo y aplica la **política de seña**: si se cancela con menos anticipación que
-  la configurada (`horas_cancelacion_con_reembolso`, default 24h), la seña queda **retenida**;
-  si se cancela en término, queda **reembolsable**. El resultado se refleja en el campo
-  `sena_reembolsable` de la reserva y en `notas`.
+- Libera el cupo y aplica la **política de seña**: la seña se reembolsa **solo si se cancela
+  dentro de las 24 hs posteriores al pago** (config `horas_reembolso_desde_pago`). Pasado ese
+  plazo queda **retenida**. El plazo se cuenta **desde el pago, no desde la fecha del turno**.
+- El resultado queda en `sena_reembolsable` (`true`/`false`) y en `notas`, con el detalle de por qué.
 
 **200** → ReservaSerializer con `estado: "cancelado"`.
+
+> **Para que el bot lo responda sin hacer cuentas**, el ReservaSerializer trae:
+> - `sena_pagada_at` — cuándo se acreditó la seña (`null` si todavía no se pagó).
+> - `reembolso_vence_at` — hasta cuándo se puede cancelar con reembolso (`null` sin pago).
+> - `en_ventana_de_reembolso` — `true`/`false` a este momento.
+>
+> Sirven para contestar "¿si cancelo me devuelven la seña?" **antes** de cancelar.
 
 ### Historial de un contacto
 `GET /api/v1/reservas/por-telefono/?telefono=3815551234`

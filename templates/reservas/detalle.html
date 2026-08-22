@@ -46,6 +46,9 @@
     <p style="font-size:.88rem;"><strong>Contacto:</strong> <a href="{% url 'contactos:detalle' reserva.contacto_id %}">{{ reserva.contacto.telefono }}</a></p>
     <p style="font-size:.88rem;"><strong>Circuito:</strong> ${{ reserva.precio_total|floatformat:0 }}{% if reserva.extras_total %} · <strong>Extras:</strong> ${{ reserva.extras_total|floatformat:0 }}{% endif %} · <strong>Total:</strong> ${{ reserva.total|floatformat:0 }}</p>
     <p style="font-size:.88rem;"><strong>Seña:</strong> ${{ reserva.monto_sena|floatformat:0 }} · <strong>Pagado:</strong> ${{ reserva.monto_pagado|floatformat:0 }} · <strong>Saldo:</strong> ${{ reserva.saldo|floatformat:0 }}</p>
+    {% if reserva.sena_pagada_at %}
+      <p style="font-size:.88rem;"><strong>Seña pagada:</strong> {{ reserva.sena_pagada_at|date:"d/m/Y H:i" }}</p>
+    {% endif %}
     {% if reserva.notas %}<p style="font-size:.84rem; color:var(--text-muted);">{{ reserva.notas }}</p>{% endif %}
   </div>
 
@@ -67,6 +70,27 @@
   <div class="card">
     <h3>Cancelar</h3>
     <p style="font-size:.82rem; color:var(--text-muted);">Cancela la reserva y libera el cupo.</p>
+
+    {# La política manda: la seña se reembolsa solo si se cancela dentro de las N horas
+       posteriores al pago. Se lo mostramos al staff ANTES de que apriete el botón. #}
+    {% if not reserva.sena_pagada_at %}
+      <p style="font-size:.82rem; padding:8px 10px; border-radius:6px; background:rgba(120,120,120,.12);">
+        <strong>Sin seña acreditada.</strong> No hay reembolso que evaluar.
+      </p>
+    {% elif reserva.en_ventana_de_reembolso %}
+      <p style="font-size:.82rem; padding:8px 10px; border-radius:6px; background:rgba(40,140,70,.14);">
+        <strong>Corresponde reembolsar la seña.</strong><br>
+        Está dentro de las {{ horas_reembolso }} hs posteriores al pago.
+        El plazo vence el <strong>{{ reserva.reembolso_vence_at|date:"d/m/Y H:i" }}</strong>.
+      </p>
+    {% else %}
+      <p style="font-size:.82rem; padding:8px 10px; border-radius:6px; background:rgba(180,60,60,.14);">
+        <strong>La seña queda retenida.</strong><br>
+        El plazo de {{ horas_reembolso }} hs desde el pago venció el
+        <strong>{{ reserva.reembolso_vence_at|date:"d/m/Y H:i" }}</strong>.
+      </p>
+    {% endif %}
+
     <form method="post" action="{% url 'reservas:cancelar' reserva.pk %}">
       {% csrf_token %}
       <div class="form-row"><label>Motivo (opcional)</label><input type="text" name="motivo"></div>

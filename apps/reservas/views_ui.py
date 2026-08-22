@@ -102,11 +102,13 @@ def detalle(request, pk):
     extras_disponibles = Extra.objects.filter(activo=True).filter(
         Q(circuito__isnull=True) | Q(circuito=reserva.circuito)
     )
+    from apps.configuracion.models import ConfiguracionNegocio
     return render(request, 'reservas/detalle.html', {
         'reserva': reserva,
         'turnos': Turno.objects.filter(activo=True),
         'extras_disponibles': extras_disponibles,
         'extras_reserva': reserva.extras.all(),
+        'horas_reembolso': ConfiguracionNegocio.get_solo().horas_reembolso_desde_pago,
     })
 
 
@@ -181,8 +183,15 @@ def aprobar(request, pk):
     from django.contrib import messages
     reserva = get_object_or_404(Reserva, pk=pk)
     if reserva.estado in (Reserva.Estado.PENDIENTE_APROBACION, Reserva.Estado.PENDIENTE_PAGO):
-        services.confirmar_reserva(reserva)
-        messages.success(request, 'Reserva confirmada. Se le avisó al bot para notificar al cliente.')
+        try:
+            services.confirmar_reserva(reserva)
+            messages.success(request, 'Reserva confirmada. Se le avisó al bot para notificar al cliente.')
+        except services.ReservaError as e:
+            messages.error(
+                request,
+                f'No se pudo confirmar: {e} Revisá con el cliente: hay que reprogramar o '
+                f'devolverle la seña.'
+            )
     else:
         messages.error(request, 'Esta reserva no está pendiente de aprobación.')
     return redirect('reservas:detalle', pk=pk)

@@ -3,6 +3,7 @@ import binascii
 from datetime import date
 
 from django.core.files.base import ContentFile
+from django.db import IntegrityError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -59,7 +60,11 @@ class ReservaConfirmarSenaView(ApiKeyLoggedView, APIView):
 
         serializer = ConfirmarSenaSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        reserva = services.confirmar_sena(reserva, **serializer.validated_data)
+        try:
+            reserva = services.confirmar_sena(reserva, **serializer.validated_data)
+        except services.ReservaError as e:
+            # El hold venció y el turno ya se lo llevó otro: no se puede cobrar esta seña.
+            return Response({'error': str(e)}, status=422)
 
         self._contacto_relacionado = reserva.contacto
         return Response(ReservaSerializer(reserva).data)
@@ -92,6 +97,9 @@ class ReservaBotCrearView(ApiKeyLoggedView, APIView):
 
     def post(self, request):
         data = request.data
+        # Clave de idempotencia: por body o por el header estándar. Si n8n reintenta el POST
+        # con la misma clave, devolvemos la reserva original en vez de crear un duplicado.
+        idem = (data.get('idempotency_key') or request.headers.get('Idempotency-Key') or '').strip()
         # El comprobante viene en base64 (transferencia)
         comprobante = None
         b64 = data.get('comprobante_base64')
@@ -121,11 +129,20 @@ class ReservaBotCrearView(ApiKeyLoggedView, APIView):
                 comprobante=comprobante,
                 link_pago=data.get('link_pago', ''),
                 extras=data.get('extras'),
+                idempotency_key=idem,
             )
         except services.ReservaError as e:
             return Response({'error': str(e)}, status=422)
         except (KeyError, ValueError) as e:
             return Response({'error': 'datos_invalidos', 'detalle': str(e)}, status=400)
+        except IntegrityError:
+            # Dos POST con la misma clave entraron a la vez y el unique de la DB frenó al
+            # segundo (el lock del slot debería evitarlo, esto es el último cinturón).
+            # La transacción del service ya quedó revertida: devolvemos la que sí se guardó.
+            existente = Reserva.objects.filter(idempotency_key=idem).first() if idem else None
+            if existente is None:
+                raise
+            return Response(ReservaSerializer(existente).data, status=201)
 
         self._contacto_relacionado = reserva.contacto
         return Response(ReservaSerializer(reserva).data, status=201)
@@ -152,7 +169,13 @@ class ReservaConfirmarPagoView(ApiKeyLoggedView, APIView):
         if not reserva:
             return Response({'error': 'reserva_pendiente_pago_no_encontrada'}, status=404)
 
-        services.confirmar_reserva(reserva)
+        try:
+            services.confirmar_reserva(reserva)
+        except services.ReservaError as e:
+            # Se acreditó el pago pero el hold ya había vencido y el turno está tomado.
+            # Devolvemos 422 para que n8n lo derive a una persona (hay plata del cliente).
+            self._contacto_relacionado = reserva.contacto
+            return Response({'error': str(e), 'reserva_id': reserva.id}, status=422)
         self._contacto_relacionado = reserva.contacto
         return Response(ReservaSerializer(reserva).data)
 

@@ -39,11 +39,12 @@ def canjear(codigo, *, telefono, nombre_contacto, turno_id, fecha, cantidad_pers
         cantidad_personas=cantidad_personas,
         notas=f'Canje de voucher {voucher.codigo}',
     )
-    # El voucher cubre la seña: la reserva queda confirmada.
+    # El voucher cubre la seña: la reserva queda confirmada y arranca la ventana de reembolso.
     from apps.reservas.models import Reserva
     reserva.estado = Reserva.Estado.CONFIRMADO
     reserva.monto_pagado = voucher.monto
-    reserva.save(update_fields=['estado', 'monto_pagado'])
+    reserva.sena_pagada_at = timezone.now()
+    reserva.save(update_fields=['estado', 'monto_pagado', 'sena_pagada_at'])
 
     voucher.estado = Voucher.Estado.CANJEADO
     voucher.reserva_canje = reserva

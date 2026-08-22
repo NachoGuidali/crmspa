@@ -37,6 +37,10 @@ class ReservaSerializer(serializers.ModelSerializer):
     contacto_telefono = serializers.CharField(source='contacto.telefono', read_only=True)
     circuito_nombre = serializers.CharField(source='circuito.nombre', read_only=True)
     turno_nombre = serializers.CharField(source='turno.nombre', read_only=True)
+    # Política de reembolso: hasta cuándo se puede cancelar recuperando la seña, y si a hoy
+    # todavía está en plazo. Así el bot puede contestarlo sin recalcular nada.
+    reembolso_vence_at = serializers.DateTimeField(read_only=True)
+    en_ventana_de_reembolso = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Reserva
@@ -45,6 +49,7 @@ class ReservaSerializer(serializers.ModelSerializer):
             'fecha', 'cantidad_personas', 'acompanantes', 'estado',
             'precio_total', 'extras', 'extras_total', 'total',
             'monto_sena', 'monto_pagado', 'medio_pago', 'vencimiento_sena',
+            'sena_pagada_at', 'sena_reembolsable', 'reembolso_vence_at', 'en_ventana_de_reembolso',
             'origen', 'resumen', 'link_pago', 'comprobante', 'notas', 'pagos',
         ]
 

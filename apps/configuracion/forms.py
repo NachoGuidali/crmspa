@@ -3,6 +3,7 @@ from django import forms
 from apps.automations.models import Automatizacion
 from apps.circuitos.models import Circuito, Extra, TarifaCircuito
 from apps.contactos.models import CampoPersonalizado
+from apps.sitio_publico.models import PopupWeb
 from apps.turnero.models import DIAS_SEMANA, BloqueoManual, Feriado, Turno
 from apps.usuarios.models import User
 from apps.whatsapp.models import PlantillaMensaje, RespuestaRapida
@@ -149,7 +150,7 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'nombre_negocio', 'dias_laborables', 'dias_tarifa_finde',
             'horario_atencion_desde', 'horario_atencion_hasta',
             'reserva_exclusiva_por_turno',
-            'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_cancelacion_con_reembolso',
+            'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_reembolso_desde_pago',
             'email_notificaciones',
         ]
         widgets = {
@@ -190,3 +191,39 @@ class UserForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class PopupWebForm(forms.ModelForm):
+    """Cartel emergente de la web pública. Editable por el dueño sin tocar HTML."""
+
+    class Meta:
+        model = PopupWeb
+        fields = [
+            'titulo', 'mensaje', 'imagen', 'cta_texto', 'cta_url',
+            'activo', 'desde', 'hasta', 'repetir_horas', 'orden',
+        ]
+        widgets = {
+            'mensaje': forms.Textarea(attrs={'rows': 4}),
+            'desde': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'hasta': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El input datetime-local no entiende el formato por defecto de Django y aparecería
+        # vacío al editar, borrando la fecha sin querer al guardar.
+        for campo in ('desde', 'hasta'):
+            self.fields[campo].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
+
+    def clean(self):
+        datos = super().clean()
+        desde, hasta = datos.get('desde'), datos.get('hasta')
+        if desde and hasta and hasta <= desde:
+            raise forms.ValidationError('La fecha de fin tiene que ser posterior a la de inicio.')
+        if datos.get('cta_texto') and not datos.get('cta_url'):
+            raise forms.ValidationError('Pusiste texto de botón pero no el link al que lleva.')
+        if datos.get('cta_url') and not datos.get('cta_texto'):
+            raise forms.ValidationError('Pusiste un link pero el botón no tiene texto.')
+        if not datos.get('mensaje') and not datos.get('imagen') and not self.instance.imagen:
+            raise forms.ValidationError('El cartel necesita al menos un mensaje o una imagen.')
+        return datos

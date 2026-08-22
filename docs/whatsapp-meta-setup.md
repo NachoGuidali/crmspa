@@ -15,7 +15,7 @@ aparecen y cómo resolverlos. Al final, el paso de **número de prueba → núme
 | **Phone Number ID** | Meta → WhatsApp → API Setup (o Paso 1). Es el ID del número, **no** el número. |
 | **WhatsApp Business Account ID (WABA)** | Misma pantalla de API Setup. |
 | **Access Token** | Token del número. **Usar el permanente** (System User, ver §3), no el temporal. |
-| **App Secret** | Meta → tu app → **Configuración → Básica** → "Clave secreta de la app" (Mostrar). Valida la firma de los webhooks. |
+| **App Secret** | Meta → tu app → **Configuración → Básica** → "Clave secreta de la app" (Mostrar). Valida la firma de los webhooks. **Obligatorio en producción:** sin él, el CRM rechaza todos los POST de Meta con `403` (ver §2). |
 | **Verify Token** | **Lo inventás vos** (cualquier string). El mismo valor va en el CRM y en Meta al configurar el webhook. |
 | **Versión de la Graph API** | `v21.0` (default). |
 
@@ -33,6 +33,12 @@ aparecen y cómo resolverlos. Al final, el paso de **número de prueba → núme
 
 > **Chequear que llega:** `docker compose logs web -f` mientras verificás → tenés que ver un
 > `GET`/`POST` a `/whatsapp/webhook/meta/` respondiendo `200`.
+
+> **Si ves `403` en todos los POST:** falta cargar el **App Secret** en el CRM. Cada POST de Meta
+> viene firmado con `X-Hub-Signature-256`; sin el secreto no hay forma de validar que el mensaje
+> venga realmente de Meta, así que en producción el webhook rechaza todo (en `DEBUG=True` lo deja
+> pasar, para desarrollo local). El handshake `GET` no usa el secreto sino el *Verify Token*, así
+> que el webhook puede figurar **verde en Meta** y aun así rechazar los mensajes.
 
 ---
 
@@ -90,7 +96,7 @@ enviar (`54 + área + número`). El CRM ya lo saca solo al enviar por Meta
 
 ## 5. Checklist de conexión (número de prueba)
 
-- [ ] Credenciales cargadas en el CRM (Phone Number ID, WABA, Access **permanente**, App Secret, Verify Token).
+- [ ] Credenciales cargadas en el CRM (Phone Number ID, WABA, Access **permanente**, App Secret ← **sin esto los POST dan 403**, Verify Token).
 - [ ] Webhook en Meta: Callback URL + Verify Token → **verde**.
 - [ ] Campo **`messages`** suscripto.
 - [ ] **Tu app** suscripta a la WABA (`subscribed_apps` → `{"success":true}`).

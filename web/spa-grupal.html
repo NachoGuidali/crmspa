@@ -1,11 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spa Grupal — Estancia Cuatro Estaciones</title>
 <script src="./support.js"></script>
 <script src="./crm-precios.js"></script>
+<script src="./crm-popup.js"></script>
+<!-- ── SEO ──────────────────────────────────────────────────────────────
+     Va en el <head> estático a propósito: los crawlers y los previsualizadores
+     de links (WhatsApp, Facebook) leen el HTML crudo, sin ejecutar el JS del
+     framework. Si cambiás el título o la descripción, cambialos también en el
+     <title> de arriba. -->
+<meta name="description" content="Día de spa privado para grupos de 3 a 8 personas en Virrey del Pino: 5 horas con jacuzzi, sauna, masajes y brunch de campo, con el lugar en exclusiva para tu grupo.">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<link rel="canonical" href="https://spacuatroestaciones.com/spa-grupal.html">
+<link rel="icon" href="./logo.png" type="image/png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Estancia Cuatro Estaciones">
+<meta property="og:locale" content="es_AR">
+<meta property="og:title" content="Spa Grupal para Amigas (3 a 8 personas) — Estancia Cuatro Estaciones">
+<meta property="og:description" content="Día de spa privado para grupos de 3 a 8 personas en Virrey del Pino: 5 horas con jacuzzi, sauna, masajes y brunch de campo, con el lugar en exclusiva para tu grupo.">
+<meta property="og:url" content="https://spacuatroestaciones.com/spa-grupal.html">
+<meta property="og:image" content="https://spacuatroestaciones.com/fotos/circuito-grupal-premium.jpg">
+<meta property="og:image:alt" content="Estancia Cuatro Estaciones — Spa de Campo">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Spa Grupal para Amigas (3 a 8 personas) — Estancia Cuatro Estaciones">
+<meta name="twitter:description" content="Día de spa privado para grupos de 3 a 8 personas en Virrey del Pino: 5 horas con jacuzzi, sauna, masajes y brunch de campo, con el lugar en exclusiva para tu grupo.">
+<meta name="twitter:image" content="https://spacuatroestaciones.com/fotos/circuito-grupal-premium.jpg">
+
+<meta name="geo.region" content="AR-B">
+<meta name="geo.placename" content="Virrey del Pino, La Matanza, Buenos Aires">
+<meta name="geo.position" content="-34.8559305;-58.720166">
+<meta name="ICBM" content="-34.8559305, -58.720166">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "Spa Grupal",
+  "description": "Día de spa privado de 5 horas para grupos de 3 a 8 personas, con las instalaciones en exclusiva.",
+  "url": "https://spacuatroestaciones.com/spa-grupal.html",
+  "serviceType": "Spa",
+  "areaServed": {"@type": "Place", "name": "La Matanza, Buenos Aires"},
+  "provider": {
+    "@type": "HealthAndBeautyBusiness",
+    "@id": "https://spacuatroestaciones.com/#negocio",
+    "name": "Estancia Cuatro Estaciones",
+    "telephone": "+541151567091",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Virrey del Pino",
+      "addressRegion": "Buenos Aires",
+      "addressCountry": "AR"
+    }
+  }
+}
+</script>
 </head>
 <body>
 <x-dc>
