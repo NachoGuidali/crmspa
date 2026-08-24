@@ -1,0 +1,14 @@
+Fotos de las personas que dejaron reseñas.
+
+Nombrá cada archivo con el nombre de la persona en minúscula y sin acentos:
+  cecilia-falcon.jpg
+  jesica-taira.jpg
+
+Y referencialas en el array TESTIMONIOS de index.html:
+  { quote: '...', autor: 'Cecilia Falcon', foto: 'fotos/resenas/cecilia-falcon.jpg' },
+
+Recomendado: cuadradas, 160x160 px, JPG. Se muestran en un círculo de 38 px,
+así que no hace falta más resolución que eso (el doble, por pantallas retina).
+
+Si una reseña no tiene foto, dejá foto: '' y la web dibuja sola un círculo con
+la inicial del nombre. No hace falta que todas tengan foto.

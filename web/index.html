@@ -506,8 +506,22 @@
         <div data-reveal="true" style="background:rgba(253,245,237,.06);border:1px solid rgba(253,245,237,.12);border-radius:2px;padding:28px 24px;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease">
           <div style="color:#ef8627;font-size:13px;letter-spacing:.2em;margin-bottom:14px">★★★★★</div>
           <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:14.5px;line-height:1.7;color:#fee8ca;margin:0 0 18px">{{ t.quote }}</p>
-          <div style="font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#8d9f97">{{ t.autor }}</div>
+          <div style="display:flex;align-items:center;gap:11px">
+            <sc-if value="{{ t.tieneFoto }}" hint-placeholder-val="{{ true }}">
+              <img src="{{ t.foto }}" alt="{{ t.autor }}" loading="lazy" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;border:1px solid rgba(253,245,237,.2)">
+            </sc-if>
+            <sc-if value="{{ t.sinFoto }}" hint-placeholder-val="{{ false }}">
+              <div aria-hidden="true" style="width:38px;height:38px;border-radius:50%;flex:none;background:rgba(239,134,39,.16);border:1px solid rgba(239,134,39,.35);color:#ef8627;display:flex;align-items:center;justify-content:center;font-family:'Bodoni Moda',serif;font-size:16px">{{ t.inicial }}</div>
+            </sc-if>
+            <div style="font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#8d9f97">{{ t.autor }}</div>
+          </div>
         </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;justify-content:center;gap:9px;margin-top:30px">
+      <sc-for list="{{ testimonioDots }}" as="d" hint-placeholder-count="2">
+        <button type="button" onclick="{{ d.ir }}" aria-label="{{ d.label }}" style="width:9px;height:9px;padding:0;border:0;border-radius:50%;cursor:pointer;background:{{ d.color }};transition:background .3s ease"></button>
       </sc-for>
     </div>
   </div>
@@ -573,6 +587,36 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 
+// ── Reseñas ─────────────────────────────────────────────────────────────────
+// Se muestran de a 3 y van rotando. La cantidad de páginas sale sola de acá:
+// 6 reseñas = 2 páginas, 12 reseñas = 4 páginas. No hay que tocar nada más.
+//
+// Cada reseña:
+//   quote  el texto, tal cual lo escribió la persona
+//   autor  el nombre real de quien la dejó
+//   foto   'fotos/resenas/loquesea.jpg' — opcional. Si está vacío se dibuja un
+//          círculo con la inicial, que queda prolijo y no rompe si falta la imagen.
+const TESTIMONIOS = [
+  // ── Trío 1 ──
+  { quote: 'Las mejores 5 horas que he pasado en un spa!!! Se los recomiendo. Lo mejor que podes hacer por vos, es venir a este lugar. Lo vas a amar y será tu lugar favorito. Un mimo al alma. Súper agradecida con sus dueños quienes nos brindaron una experiencia única.', autor: 'Andrea Wolert', foto: '' },
+  { quote: 'Un día soñado, experiencia única que no vi en otro lugar. 5 horas de desconectar del tiempo, de los quehaceres para disfrutar de los lujos de un spa de primera en medio de la naturaleza. Los anfitriones son tan cálidos que nos hicieron sentir como en casa. Sin duda volveremos ❤️', autor: 'Agostinacakes', foto: '' },
+  { quote: 'Fuimos con mi hija, un regalo de cumpleaños. Una experiencia maravillosa, todos los detalles pensados para agasajar, nada librado al azar, desde la comida hasta las instalaciones, la limpieza un 10. La decoración y la belleza natural del lugar hacen que sea un lugar único.', autor: 'Sonia Fernandez', foto: '' },
+  // ── Trío 2 ──
+  { quote: 'Fui con 2 amigas y la pasamos de 20!! El lugar es precioso, cálido y abrazador, el brunch es exquisito y Fiore y su mamá unas divinas que hicieron de nuestra estadía un momento único y REPETIBLE, porque sin duda volveremos!!!', autor: 'Estetica MBE', foto: '' },
+  { quote: 'Maravillosa experiencia super recomendable. Si queres pasar una experiencia distinta y placentera es acá. Atención destacada de sus dueños. Te hacen sentir de maravilla. Sin duda volveremos, gracias.', autor: 'Monica Kujarechen', foto: '' },
+  { quote: 'Nos encantó! Pasamos la tarde de spa premium con mi marido, salimos renovados. Las chicas son un amor, la comida riquísima, una experiencia hermosa! Recomendadisimos!', autor: 'Lucila Campanari', foto: '' },
+  // ── Trío 3 ──
+  { quote: 'Fuimos con mis amigas y pasamos unas horas hermosas. La comida riquísima y las instalaciones súper cómodas. Gracias a todo el equipo, súper amorosas y cálidas. Volveremos.', autor: 'Ayelén González Vitto', foto: '' },
+  { quote: 'Hoy pasamos un hermoso día entre amigas!!! Un lugar soñado, la atención mas que excelente, realmente una experiencia maravillosa!! Super recomendable! Volveremos!!!', autor: 'Alejandra Fernandez', foto: '' },
+  { quote: 'Excelente lugar para ir a relajar, promete ser una experiencia personalizada y así lo fue. Súper recomendable por la calidez y sus servicios varios de spa.', autor: 'Veronica Tejo', foto: '' },
+  // ── Trío 4 ──
+  { quote: 'Excelente lugar, muy hermoso y la atención es inmejorable, totalmente recomendable, pasamos un hermoso momento allí. Volveremos.', autor: 'Javier Gonzalez', foto: '' },
+  { quote: 'Excelente experiencia!! El lugar espectacular, el brunch más que abundante y riquísimo. El trato de las chicas súper cálido.', autor: 'Valeria', foto: '' },
+  { quote: 'Un espacio para conectar los sentidos, sabores, aromas, sonidos. Excelente el servicio. Sin duda volveremos!!', autor: 'Sandra Bobadilla', foto: '' },
+];
+const TESTIMONIOS_POR_PAGINA = 3;
+const TESTIMONIOS_PAGINAS = Math.max(1, Math.ceil(TESTIMONIOS.length / TESTIMONIOS_POR_PAGINA));
+
 class Component extends DCLogic {
   waLink(text) {
     return 'https://wa.me/5491151567091?text=' + encodeURIComponent(text);
@@ -580,6 +624,11 @@ class Component extends DCLogic {
 
   state = { openFaq: 0, navOpen: false, mobileOpen: false, precios: null, testimonioPage: 0 };
   toggleNav = () => this.setState((s) => ({ navOpen: !s.navOpen }));
+  irATestimonio = (i) => {
+    // Si el visitante elige un trío, cortamos la rotación automática: ya está mirando algo.
+    if (this._testimonioTimer) { clearInterval(this._testimonioTimer); this._testimonioTimer = null; }
+    this.setState({ testimonioPage: i });
+  };
   closeNav = () => this.setState({ navOpen: false });
   toggleMobile = () => this.setState((s) => ({ mobileOpen: !s.mobileOpen }));
   toggleFaq(i) {
@@ -641,10 +690,14 @@ class Component extends DCLogic {
     var self = this;
     window.CRM.fetchPrecios(function (p) { self.setState({ precios: p }); });
 
-    // Rotación de reseñas: cambia el trío visible cada 7s (2 páginas de 3, sobre 6 reseñas).
-    this._testimonioTimer = setInterval(function () {
-      self.setState({ testimonioPage: (self.state.testimonioPage + 1) % 2 });
-    }, 7000);
+    // Rotación de reseñas: cambia el trío visible cada 7s. La cantidad de páginas sale de
+    // TESTIMONIOS_PAGINAS, así que agregar reseñas al array alcanza. Con una sola página
+    // no arranca el timer: no hay nada que rotar.
+    if (TESTIMONIOS_PAGINAS > 1) {
+      this._testimonioTimer = setInterval(function () {
+        self.setState({ testimonioPage: (self.state.testimonioPage + 1) % TESTIMONIOS_PAGINAS });
+      }, 7000);
+    }
 
     // Hero siempre entero: que ocupe exactamente el alto visible menos el header,
     // en cualquier dispositivo (usa innerHeight real, así descuenta las barras del navegador).
@@ -858,15 +911,27 @@ class Component extends DCLogic {
     const faqsLeft = faqsAll.slice(0, 3);
     const faqsRight = faqsAll.slice(3);
 
-    const testimoniosPool = [
-      { quote: 'Excelente la atención de la dueña, un lugar cálido e ideal para relajarse. Un mimo al cuerpo y el alma. Todo muy rico.', autor: 'Cecilia Falcon — Google' },
-      { quote: 'Hermosa experiencia, la pasamos de 10! Todo riquísimo! La verdad que están en todos los detalles. Los masajes estuvieron excelentes, el lugar es muy bonito, relajante y la atención impecable.', autor: 'Jesica Taira — Google' },
-      { quote: 'Amé la experiencia! Todo fue muy lindo: la comida, el lugar, la gente y Greta (la perrita). Fuimos al turno de la tarde-noche y la pasamos genial, todo el staff fue muy atento.', autor: 'Victoria — Google' },
-      { quote: 'Pasamos la tarde de spa premium con mi marido, salimos renovados.', autor: 'Cliente de Google' },
-      { quote: 'Súper agradecida con sus dueños, quienes nos brindaron una experiencia única.', autor: 'Cliente de Google' },
-      { quote: 'Excelente atención, muy cordiales y un servicio cinco estrellas.', autor: 'Cliente de Google' },
-    ];
-    const testimonios = testimoniosPool.slice(this.state.testimonioPage * 3, this.state.testimonioPage * 3 + 3);
+    const desdeT = this.state.testimonioPage * TESTIMONIOS_POR_PAGINA;
+    const testimonios = TESTIMONIOS.slice(desdeT, desdeT + TESTIMONIOS_POR_PAGINA).map((t) => {
+      const nombre = (t.autor || '').trim();
+      return {
+        quote: t.quote,
+        // Sin nombre real no inventamos uno: queda como reseña anónima de Google.
+        autor: nombre ? nombre + ' — Google' : 'Cliente de Google',
+        foto: t.foto || '',
+        tieneFoto: !!t.foto,
+        sinFoto: !t.foto,
+        // Fallback cuando no hay foto: círculo con la inicial del nombre.
+        inicial: nombre ? nombre.charAt(0).toUpperCase() : '★',
+      };
+    });
+    // Puntitos para saber en qué trío estamos y poder saltar a otro a mano.
+    const testimonioDots = Array.from({ length: TESTIMONIOS_PAGINAS }, (_, i) => ({
+      activo: i === this.state.testimonioPage,
+      color: i === this.state.testimonioPage ? '#ef8627' : 'rgba(253,245,237,.28)',
+      ir: () => this.irATestimonio(i),
+      label: 'Ver reseñas ' + (i + 1) + ' de ' + TESTIMONIOS_PAGINAS,
+    }));
 
     return {
       anio,
@@ -875,7 +940,7 @@ class Component extends DCLogic {
       mobileClass: this.state.mobileOpen ? 'mobile-open' : '',
       toggleMobile: this.toggleMobile,
       waLinkGeneral: this.waLink('Hola! Quiero consultar por una experiencia en Cuatro Estaciones'),
-      valores, galeria, brunchGaleria, productos, testimonios, faqsLeft, faqsRight,
+      valores, galeria, brunchGaleria, productos, testimonios, testimonioDots, faqsLeft, faqsRight,
       circuitos: window.CRM.aplicar(circuitos, this.state.precios),
       setRootRef: this.setRootRef,
       setHeaderRef: this.setHeaderRef,
