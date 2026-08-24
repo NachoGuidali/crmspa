@@ -17,8 +17,28 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.urls import include, path, re_path
 from django.views.static import serve
+
+
+def robots_txt(_request):
+    """robots.txt del CRM.
+
+    A propósito NO lleva `Disallow: /`. Lo que mantiene al CRM fuera de Google es el header
+    `X-Robots-Tag: noindex` que pone `utils.middleware.NoIndexMiddleware`, y para verlo Google
+    necesita poder leer las páginas. Un `Disallow` le taparía los ojos: no vería el noindex y
+    podría listar la URL igual, sin descripción, si alguien la enlaza.
+    """
+    contenido = (
+        '# CRM interno de Estancia Cuatro Estaciones — nada de acá va a los buscadores.\n'
+        '# El noindex real lo pone el header X-Robots-Tag en cada respuesta; acá no se\n'
+        '# bloquea el rastreo para que Google pueda leerlo. La web pública está en\n'
+        '# https://spacuatroestaciones.com/robots.txt\n'
+        'User-agent: *\n'
+        'Allow: /\n'
+    )
+    return HttpResponse(contenido, content_type='text/plain; charset=utf-8')
 
 from apps.circuitos.views import ExtraListView
 from apps.sitio_publico.api import CircuitosPublicosView, PopupPublicoView
@@ -30,6 +50,7 @@ from apps.whatsapp.views import (
 )
 
 urlpatterns = [
+    path('robots.txt', robots_txt, name='robots_txt'),
     path('admin/', admin.site.urls),
 
     path('api/v1/contactos/', include(('apps.contactos.urls', 'contactos'), namespace='contactos_api')),

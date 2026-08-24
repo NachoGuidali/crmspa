@@ -44,6 +44,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Primero de todo: que ninguna respuesta del CRM sea indexable, ni siquiera las que
+    # cortan temprano (redirect al login, 403 del throttle, error).
+    'utils.middleware.NoIndexMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
