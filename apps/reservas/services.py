@@ -261,7 +261,6 @@ def _revalidar_cupo_si_el_hold_vencio(reserva):
         )
 
 
-@transaction.atomic
 def _avisar_reserva_confirmada(reserva):
     """Todo lo que pasa cuando una reserva queda confirmada, venga del camino que venga.
 
@@ -292,24 +291,58 @@ def _avisar_reserva_confirmada(reserva):
     transaction.on_commit(_disparar)
 
 
-def confirmar_reserva(reserva):
+def _registrar_sena_acreditada(reserva, monto=None):
+    """Deja asentado el `Pago` de la seña que se acaba de acreditar.
+
+    Sin esto, confirmar por transferencia o Mercado Pago dejaba la reserva en `monto_pagado=0`
+    y sin ningún `Pago`. Consecuencias: al cliente le figuraba el total como saldo pendiente, y
+    la caja del día y los ingresos del dashboard —que suman `Pago`— no contaban esas señas.
+
+    El monto es `monto_sena`, que es lo que el CRM le pidió al cliente. El medio sale del que
+    eligió al reservar.
+
+    Idempotente: si ya hay una seña registrada no crea otra, así un reintento no duplica plata.
+    """
+    if reserva.pagos.filter(tipo=Pago.Tipo.SENA).exists():
+        return None
+
+    monto = monto if monto is not None else (reserva.monto_sena or Decimal('0'))
+    if monto <= 0:
+        return None
+
+    pago = Pago.objects.create(
+        reserva=reserva,
+        monto=monto,
+        medio_pago=reserva.medio_pago or Reserva.MedioPago.OTRO,
+        tipo=Pago.Tipo.SENA,
+    )
+    reserva.monto_pagado = (reserva.monto_pagado or Decimal('0')) + monto
+    return pago
+
+
+@transaction.atomic
+def confirmar_reserva(reserva, monto_sena=None):
     """Confirma la reserva: Mercado Pago acreditó, o el staff aprobó el comprobante de
     transferencia.
 
-    Acá se acredita la seña, así que es el momento en que arranca la ventana de reembolso.
+    Acá se acredita la seña: se registra el pago y arranca la ventana de reembolso.
+    `monto_sena` permite pasar el monto real si difiere del esperado; por defecto usa el que
+    la reserva tiene calculado.
     """
     if reserva.estado == Reserva.Estado.CONFIRMADO:
         # Ya estaba confirmada (doble clic en el botón, reintento de Mercado Pago): no la
-        # volvemos a confirmar ni le mandamos al cliente un segundo "reserva confirmada".
+        # volvemos a confirmar, ni registramos la seña dos veces, ni le mandamos al cliente
+        # un segundo "reserva confirmada".
         return reserva
 
     _lock_slot(reserva.circuito_id, reserva.turno_id, reserva.fecha)
     _revalidar_cupo_si_el_hold_vencio(reserva)
     reserva.estado = Reserva.Estado.CONFIRMADO
-    campos = ['estado', 'updated_at']
+    campos = ['estado', 'monto_pagado', 'updated_at']
     if reserva.sena_pagada_at is None:
         reserva.sena_pagada_at = timezone.now()
         campos.append('sena_pagada_at')
+    _registrar_sena_acreditada(reserva, monto_sena)
     reserva.save(update_fields=campos)
     _avisar_reserva_confirmada(reserva)
     return reserva

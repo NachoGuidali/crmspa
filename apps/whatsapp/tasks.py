@@ -102,8 +102,15 @@ def _contexto_confirmacion(reserva):
     DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
     fecha = f'{DIAS[reserva.fecha.weekday()]} {reserva.fecha.strftime("%d/%m/%Y")}'
 
+    def plata(monto):
+        # Formato argentino: $132.000, sin centavos. Los precios del spa son montos redondos.
+        return f'${monto or 0:,.0f}'.replace(',', '.')
+
     return {
         'nombre': reserva.contacto.nombre or '',
+        'total': plata(reserva.total),
+        'sena_pagada': plata(reserva.monto_pagado),
+        'saldo': plata(reserva.saldo),
         'circuito': reserva.circuito.nombre,
         'fecha': fecha,
         'turno': reserva.turno.nombre,

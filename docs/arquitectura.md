@@ -217,6 +217,27 @@ corresponde reembolso y hasta cuándo (`reembolso_vence_at`). Sin seña acredita
 El plazo se configura en *Configuración del negocio* → **Horas de reembolso desde el pago**
 (`horas_reembolso_desde_pago`, default 24).
 
+### Registro de la seña al confirmar
+
+`confirmar_reserva()` crea el `Pago` de tipo `sena` por `monto_sena`, con el medio que el
+cliente eligió al reservar, y actualiza `monto_pagado`. Es idempotente: si ya hay una seña
+registrada no crea otra.
+
+> **Antes esto no pasaba** y tenía dos consecuencias: al cliente le figuraba el total entero
+> como saldo pendiente, y la **caja del día** y los **ingresos del dashboard** —que suman
+> `Pago`— no contaban ninguna seña cobrada por transferencia ni por Mercado Pago. Solo
+> aparecían las cobradas a mano con `confirmar_sena()`.
+
+Para las reservas viejas que quedaron sin el pago asentado hay un comando que las reconstruye,
+fechando cada `Pago` el día real en que se acreditó (`sena_pagada_at`) y no el día que se corre:
+
+```bash
+python manage.py recuperar_senas_sin_registrar            # simula, no escribe
+python manage.py recuperar_senas_sin_registrar --aplicar  # aplica
+```
+
+Es idempotente: correrlo dos veces no duplica.
+
 ### Confirmación de reserva → WhatsApp al cliente
 
 Las tres puertas que confirman una reserva (`confirmar_reserva` desde la aprobación del
