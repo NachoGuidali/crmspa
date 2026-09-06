@@ -161,6 +161,9 @@ class Conversacion(models.Model):
         # Fechas que el bot le ofreció en el último mensaje. Sirve para que "el domingo" se
         # resuelva contra lo ofrecido y no contra el próximo domingo del calendario.
         'dias_ofrecidos',
+        # El turno elegido, con su horario, para poder repetirlo en el resumen sin depender
+        # de qué nodo del flujo corrió en esta pasada.
+        'turno_nombre', 'turno_horario',
     ]
 
     class Meta:
