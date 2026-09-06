@@ -162,6 +162,7 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
       ],
       "precio": "72600.00", "precio_base": "66000.00", "recargo_feriado": "6600.00",
       "precio_semana_total": "54000.00", "precio_finde_total": "66000.00",
+      "sena_tipo": "porcentaje", "sena_valor": "50.00",
       "monto_sena": "36300.00", "activo": true
     }
   ]
@@ -198,6 +199,11 @@ feriados tienen 10% de recargo".
 > **Diferencia importante:** `recargo_porcentaje` es el de **esa fecha** (0 si no es feriado);
 > `recargo_feriado_general` es **la política del negocio**. Si el cliente pregunta "¿cuánto sale
 > un feriado?" sin decir cuál, usá el general.
+
+> **Seña con extras:** `monto_sena` es la seña del **circuito solo**. Si el cliente suma
+> extras, calculala con la misma regla que el CRM: si `sena_tipo` es `monto`, la seña es
+> `sena_valor` fijo; si es `porcentaje`, es `(precio + extras) × sena_valor / 100`. Al crear
+> la reserva el CRM la recalcula igual, así que el número que le muestres tiene que coincidir.
 
 Para los **grupales**, `tarifas` trae los tramos con el precio **por persona** de cada uno
 (`precio_persona_semana` / `precio_persona_finde`): es lo que hace falta para responder

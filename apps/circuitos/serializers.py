@@ -31,7 +31,10 @@ class CircuitoSerializer(serializers.ModelSerializer):
             'capacidad_maxima', 'precio_semana', 'precio_finde',
             'precio_persona_adicional_semana', 'precio_persona_adicional_finde',
             'tarifas', 'precio', 'precio_base', 'recargo_feriado',
-            'precio_semana_total', 'precio_finde_total', 'monto_sena', 'activo',
+            'precio_semana_total', 'precio_finde_total',
+            # La regla de la seña, para que el bot pueda calcularla cuando el total lleva
+            # extras (ahí `monto_sena`, que es solo sobre el circuito, se queda corto).
+            'sena_tipo', 'sena_valor', 'monto_sena', 'activo',
         ]
 
     def _personas(self):
