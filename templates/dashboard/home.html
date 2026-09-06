@@ -28,7 +28,18 @@
 <div class="grid grid-4" style="margin-bottom:24px;">
   <div class="card metric-card">
     <div class="value">${{ ingresos_totales|floatformat:0 }}</div>
-    <div class="label">Ingresos del período</div>
+    <div class="label">Plata que entró</div>
+    <div style="font-size:.72rem; color:var(--text-muted); margin-top:4px;">
+      Cobrado en el período, sin importar para qué fecha es el turno.
+    </div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">${{ facturacion_del_periodo|floatformat:0 }}</div>
+    <div class="label">Turnos del período</div>
+    <div style="font-size:.72rem; color:var(--text-muted); margin-top:4px;">
+      Valor de las reservas de estas fechas.
+      {% if por_cobrar_del_periodo %}Falta cobrar ${{ por_cobrar_del_periodo|floatformat:0 }}.{% else %}Todo cobrado.{% endif %}
+    </div>
   </div>
   <div class="card metric-card">
     <div class="value">${{ senas_pendientes|floatformat:0 }}</div>

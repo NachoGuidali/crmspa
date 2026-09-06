@@ -79,6 +79,22 @@ Todo esto es automático. El plazo se cambia en *Configuración → Configuraci�
 
   Ese 10% se cambia en *Configuración → Configuración del negocio* → **Recargo por feriado (%)**.
 
+### Los dos números de plata del dashboard
+
+No son lo mismo y conviene no confundirlos:
+
+| Tarjeta | Qué mide |
+|---|---|
+| **Plata que entró** | Lo cobrado **en el período**, sin importar para qué fecha es el turno. Es lo que entró a la caja. |
+| **Turnos del período** | El valor de las reservas **de esas fechas**, esté cobrado o no, con cuánto falta cobrar. |
+
+Como la seña se cobra con meses de anticipación, casi nunca coinciden: cobrás en septiembre
+una reserva de octubre. La primera te dice cuánta plata movió el mes; la segunda, cuánto vale
+lo que se presta en esas fechas.
+
+**Caja del día** (`Dashboard → Caja del día`) es el detalle de "plata que entró" de un día
+puntual, abierto por medio de pago. Es lo que se usa para el cierre.
+
 ### Verificar transferencias
 
 Cuando un cliente paga por transferencia, la reserva queda en **pendiente de aprobación** hasta

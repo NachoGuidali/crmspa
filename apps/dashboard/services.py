@@ -23,10 +23,27 @@ def _slots_ofrecidos(circuito, desde, hasta):
 
 
 def resumen(desde, hasta):
+    # Dos criterios distintos a propósito:
+    #   - La OCUPACIÓN se mide por la fecha del turno: cuántas personas vienen en el período.
+    #   - La PLATA se mide por la fecha del pago: cuánto entró en el período.
+    # Antes los ingresos también se filtraban por la fecha del turno, y como acá la seña se
+    # cobra con meses de anticipación, el mes en curso mostraba casi siempre $0: la plata ya
+    # había entrado pero el turno era de octubre, así que no contaba para septiembre.
     reservas_periodo = Reserva.objects.filter(fecha__gte=desde, fecha__lte=hasta)
-    pagos_periodo = Pago.objects.filter(reserva__fecha__gte=desde, reserva__fecha__lte=hasta)
+    pagos_periodo = Pago.objects.filter(fecha__date__gte=desde, fecha__date__lte=hasta)
 
     ingresos_totales = pagos_periodo.aggregate(t=Sum('monto'))['t'] or 0
+
+    # Lo que se va a facturar por los turnos del período, esté cobrado o no. Es la otra
+    # lectura de "cuánto vale este mes", y sirve para proyectar.
+    facturacion_del_periodo = (
+        reservas_periodo.filter(estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO)
+        .aggregate(t=Sum('precio_total'))['t'] or 0
+    )
+    cobrado_de_esos_turnos = (
+        Pago.objects.filter(reserva__fecha__gte=desde, reserva__fecha__lte=hasta)
+        .aggregate(t=Sum('monto'))['t'] or 0
+    )
     ingresos_por_circuito = list(
         pagos_periodo.values('reserva__circuito__nombre')
         .annotate(total=Sum('monto'))
@@ -78,6 +95,9 @@ def resumen(desde, hasta):
         'desde': desde, 'hasta': hasta,
         'ingresos_totales': ingresos_totales,
         'ingresos_por_circuito': ingresos_por_circuito,
+        'facturacion_del_periodo': facturacion_del_periodo,
+        'cobrado_de_esos_turnos': cobrado_de_esos_turnos,
+        'por_cobrar_del_periodo': max(facturacion_del_periodo - cobrado_de_esos_turnos, 0),
         'turnos_por_estado': turnos_por_estado,
         'ocupacion_por_circuito': ocupacion_por_circuito,
         'circuito_mas_vendido': circuito_mas_vendido,
