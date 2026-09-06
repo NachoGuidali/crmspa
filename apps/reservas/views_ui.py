@@ -27,6 +27,19 @@ def kanban(request):
     return render(request, 'reservas/kanban.html', {'columnas': columnas})
 
 
+# Arrastrar la tarjeta tiene que hacer EXACTAMENTE lo mismo que apretar el botón
+# equivalente en la ficha. Antes esta vista escribía `reserva.estado` a mano y guardaba,
+# salteándose los servicios: mover una tarjeta a "Confirmado" no le avisaba al cliente, no
+# registraba la seña (con lo cual no entraba a la caja), no arrancaba la ventana de
+# reembolso y no le mandaba el mail al dueño. Cambiaba el color de la tarjeta y nada más.
+MOVIMIENTOS_KANBAN = {
+    Reserva.Estado.CONFIRMADO: services.confirmar_reserva,
+    Reserva.Estado.CANCELADO: services.cancelar_reserva,
+    Reserva.Estado.COMPLETADO: services.marcar_asistio,
+    Reserva.Estado.NO_SHOW: services.marcar_no_show,
+}
+
+
 @login_required
 @require_POST
 def kanban_move(request, pk):
@@ -37,6 +50,21 @@ def kanban_move(request, pk):
         return JsonResponse({'error': 'estado_invalido'}, status=400)
 
     anterior = reserva.estado
+    if nuevo_estado == anterior:
+        return JsonResponse({'ok': True, 'anterior': anterior})
+
+    accion = MOVIMIENTOS_KANBAN.get(nuevo_estado)
+    if accion is not None:
+        try:
+            accion(reserva)
+        except services.ReservaError as e:
+            return JsonResponse({'error': str(e)}, status=422)
+        except ValidationError as e:
+            return JsonResponse({'error': '; '.join(e.messages)}, status=422)
+        return JsonResponse({'ok': True, 'anterior': anterior})
+
+    # Los estados que no tienen un servicio propio (volver a "pendiente de seña", por
+    # ejemplo) siguen siendo un cambio de estado simple.
     reserva.estado = nuevo_estado
     try:
         reserva.full_clean()

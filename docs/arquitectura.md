@@ -238,6 +238,19 @@ python manage.py recuperar_senas_sin_registrar --aplicar  # aplica
 
 Es idempotente: correrlo dos veces no duplica.
 
+### El kanban de reservas no es un cambio de estado suelto
+
+Arrastrar una tarjeta (`kanban_move`) enruta a **el mismo servicio** que el botón equivalente
+de la ficha: `confirmar_reserva`, `cancelar_reserva`, `marcar_asistio`, `marcar_no_show`.
+
+> Antes escribía `reserva.estado` a mano y guardaba. Mover una tarjeta a "Confirmado" cambiaba
+> el color y nada más: no le avisaba al cliente, no registraba la seña (con lo cual no entraba
+> a la caja), no arrancaba la ventana de reembolso y no le mandaba el mail al dueño. Y es la
+> forma más natural de confirmar para quien atiende.
+
+Los estados que no tienen servicio propio (volver a `pendiente_sena`, por ejemplo) siguen
+siendo un cambio simple. Mover a un estado en el que la reserva ya está no hace nada.
+
 ### Confirmación de reserva → WhatsApp al cliente
 
 Las tres puertas que confirman una reserva (`confirmar_reserva` desde la aprobación del
