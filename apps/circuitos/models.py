@@ -72,15 +72,23 @@ class Circuito(models.Model):
         return tramos[0].min_personas if tramos else 1
 
     def precio_base_para(self, fecha, personas=1):
-        """Precio TOTAL de la tarifa del día, SIN el recargo por feriado.
+        """Precio TOTAL de la tarifa que le toca a esa fecha, SIN el recargo por feriado."""
+        from apps.turnero.services import es_dia_tarifa_finde
+
+        return self.precio_por_tarifa(personas, finde=es_dia_tarifa_finde(fecha))
+
+    def precio_por_tarifa(self, personas=1, *, finde=False):
+        """Precio TOTAL para una tarifa dada, sin mirar ninguna fecha.
+
+        Separado de `precio_base_para` para poder cotizar las DOS tarifas de un circuito
+        (semana y finde) sin inventar una fecha de cada tipo. Lo usa la API que consume el
+        bot para poder decir "entre semana sale X, el finde Y" en un solo mensaje.
 
         - Sin tramos: precio plano (precio_semana/finde).
         - Con tramos: tarifa POR PERSONA del tramo que corresponde × personas; si supera el
           tramo más alto, se cobra el tramo más alto por su tope + la tarifa por persona
           adicional por cada persona de más.
         """
-        from apps.turnero.services import es_dia_tarifa_finde
-        finde = es_dia_tarifa_finde(fecha)
         tramos = self._tramos()
 
         if not tramos:

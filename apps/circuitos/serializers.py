@@ -20,6 +20,8 @@ class CircuitoSerializer(serializers.ModelSerializer):
     precio = serializers.SerializerMethodField()
     precio_base = serializers.SerializerMethodField()
     recargo_feriado = serializers.SerializerMethodField()
+    precio_semana_total = serializers.SerializerMethodField()
+    precio_finde_total = serializers.SerializerMethodField()
     monto_sena = serializers.SerializerMethodField()
 
     class Meta:
@@ -28,7 +30,8 @@ class CircuitoSerializer(serializers.ModelSerializer):
             'id', 'nombre', 'descripcion', 'tipo', 'duracion_minutos',
             'capacidad_maxima', 'precio_semana', 'precio_finde',
             'precio_persona_adicional_semana', 'precio_persona_adicional_finde',
-            'tarifas', 'precio', 'precio_base', 'recargo_feriado', 'monto_sena', 'activo',
+            'tarifas', 'precio', 'precio_base', 'recargo_feriado',
+            'precio_semana_total', 'precio_finde_total', 'monto_sena', 'activo',
         ]
 
     def _personas(self):
@@ -60,6 +63,22 @@ class CircuitoSerializer(serializers.ModelSerializer):
         if not fecha:
             return None
         return self.get_precio(obj) - self.get_precio_base(obj)
+
+    def _personas_efectivas(self, obj):
+        personas = self._personas()
+        return personas if personas is not None else obj.personas_referencia()
+
+    def get_precio_semana_total(self, obj):
+        """Cuánto sale este circuito ENTRE SEMANA para esa cantidad de personas.
+
+        No depende de la fecha consultada: sirve para que el bot pueda decir "entre semana
+        sale X, el finde Y" de una, sin tener que preguntar dos veces ni hacer la cuenta.
+        """
+        return obj.precio_por_tarifa(self._personas_efectivas(obj), finde=False)
+
+    def get_precio_finde_total(self, obj):
+        """Lo mismo para la tarifa de fin de semana."""
+        return obj.precio_por_tarifa(self._personas_efectivas(obj), finde=True)
 
     def get_monto_sena(self, obj):
         fecha = self.context.get('fecha')

@@ -30,12 +30,20 @@ class CircuitoListView(ApiKeyLoggedView, APIView):
 
         # Por qué el precio es el que es: tarifa del día y, si aplica, el recargo por feriado.
         # Va a nivel de la fecha y no de cada circuito porque es la misma para todos.
+        from apps.configuracion.models import ConfiguracionNegocio
         from apps.turnero.services import info_tarifa
+
+        # `recargo_porcentaje` (dentro de info_tarifa) es el de ESTA fecha: 0 si no es feriado.
+        # `recargo_feriado_general` es la política del negocio, siempre. Con ese puede contestar
+        # "los feriados tienen 10% de recargo" sin que el cliente haya dicho ninguna fecha.
+        config = ConfiguracionNegocio.get_solo()
 
         return Response({
             'fecha': fecha.isoformat(),
             'personas': personas,
             **info_tarifa(fecha),
+            'recargo_feriado_general': float(config.recargo_feriado_porcentaje or 0),
+            'dias_tarifa_finde': config.dias_tarifa_finde or [5, 6],
             'circuitos': data,
         })
 

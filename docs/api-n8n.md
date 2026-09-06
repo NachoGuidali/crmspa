@@ -147,6 +147,8 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
   "es_feriado": true,
   "feriado": "Día de la Independencia",
   "recargo_porcentaje": 10.0,
+  "recargo_feriado_general": 10.0,
+  "dias_tarifa_finde": [4, 5, 6],
   "circuitos": [
     {
       "id": 2, "nombre": "Grupal Clásica", "descripcion": "...",
@@ -159,6 +161,7 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
         {"min_personas": 7, "max_personas": 8, "precio_persona_semana": "8000.00", "precio_persona_finde": "10000.00"}
       ],
       "precio": "72600.00", "precio_base": "66000.00", "recargo_feriado": "6600.00",
+      "precio_semana_total": "54000.00", "precio_finde_total": "66000.00",
       "monto_sena": "36300.00", "activo": true
     }
   ]
@@ -175,8 +178,30 @@ dicen por qué el precio es el que es:
 | `feriado` | Cómo se llama (ej. "Día de la Independencia"). Vacío si no es feriado. |
 | `recargo_porcentaje` | El % que se sumó. `0` si no es feriado. |
 
+| `recargo_feriado_general` | El % que el spa cobra en feriados, **siempre**, sea o no feriado la fecha consultada. |
+| `dias_tarifa_finde` | Qué días de la semana cobran tarifa de finde (0=lunes … 6=domingo). |
+
 Y en cada circuito: `precio_base` es la tarifa del día **sin** recargo, `recargo_feriado` es
 cuánta plata de `precio` es recargo, y `precio` es **lo que se cobra** (base + recargo).
+
+**Para cotizar las dos tarifas de una**, sin preguntar dos veces ni hacer la cuenta:
+
+| Campo | Qué es |
+|---|---|
+| `precio_semana_total` | Cuánto sale el circuito **entre semana** para esa cantidad de personas. |
+| `precio_finde_total` | Lo mismo con **tarifa de finde**. |
+
+Los dos son **sin** recargo por feriado y **no** dependen de la fecha consultada: podés pedir
+`?fecha=hoy&personas=6` y usarlos para armar "entre semana $510.000, el finde $570.000, y los
+feriados tienen 10% de recargo".
+
+> **Diferencia importante:** `recargo_porcentaje` es el de **esa fecha** (0 si no es feriado);
+> `recargo_feriado_general` es **la política del negocio**. Si el cliente pregunta "¿cuánto sale
+> un feriado?" sin decir cuál, usá el general.
+
+Para los **grupales**, `tarifas` trae los tramos con el precio **por persona** de cada uno
+(`precio_persona_semana` / `precio_persona_finde`): es lo que hace falta para responder
+"3 a 4 personas $90.000 c/u, 5 a 6 $85.000 c/u…".
 
 Sirven para explicarle el precio al cliente en vez de tirarle un número suelto:
 
