@@ -153,6 +153,14 @@ class Conversacion(models.Model):
         # Todos nulleables salvo catalogo_enviado (default False).
         'nivel', 'menu_especial_cantidad', 'extras_pedidos', 'fallos_consecutivos',
         'catalogo_enviado', 'historial',
+        # Datos que el bot va juntando durante la reserva. Estaban fuera de la lista, así que
+        # el PATCH del bot los mandaba y el CRM los descartaba en silencio: el nombre, el
+        # teléfono y el email solo "sobrevivían" mientras la IA los volviera a extraer de cada
+        # mensaje, y se perdían apenas el cliente escribía otra cosa.
+        'nombre_cliente', 'telefono_cliente', 'email_cliente', 'menu_especial', 'medio_pago',
+        # Fechas que el bot le ofreció en el último mensaje. Sirve para que "el domingo" se
+        # resuelva contra lo ofrecido y no contra el próximo domingo del calendario.
+        'dias_ofrecidos',
     ]
 
     class Meta:
