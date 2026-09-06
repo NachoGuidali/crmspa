@@ -10,6 +10,7 @@ CRM de reservas para spa de circuitos, con bot de WhatsApp orquestado por n8n.
 | [`arquitectura.md`](./arquitectura.md) | Técnico / mantenimiento | Cómo funciona por dentro: bot, automatizaciones, cupo, roles, seguridad |
 | [`deploy.md`](./deploy.md) | Quien lo instala | Docker, variables de entorno, WhatsApp, n8n, checklist de producción |
 | [`operacion.md`](./operacion.md) | Dueño y recepción | Uso diario: turnero, inbox, reservas, cierre del día, campañas |
+| [`search-console.md`](./search-console.md) | Dueño | Paso a paso para dar de alta la web en Google Search Console + qué revisar en la ficha de Google Maps |
 
 ## En una frase
 
