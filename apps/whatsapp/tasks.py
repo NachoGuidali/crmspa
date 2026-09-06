@@ -106,9 +106,22 @@ def _contexto_confirmacion(reserva):
         # Formato argentino: $132.000, sin centavos. Los precios del spa son montos redondos.
         return f'${monto or 0:,.0f}'.replace(',', '.')
 
+    # Desglose del precio. Va en UNA variable y no en varias líneas de la plantilla para que,
+    # cuando no hay extras, no quede un renglón vacío en el medio del mensaje.
+    extras = list(reserva.extras.all())
+    if extras:
+        lineas = [f'{reserva.circuito.nombre}: {plata(reserva.precio_total)}']
+        for e in extras:
+            cant = f' x{e.cantidad}' if e.cantidad and e.cantidad > 1 else ''
+            lineas.append(f'{e.nombre}{cant}: {plata(e.subtotal)}')
+        desglose = '\n'.join(lineas) + '\n'
+    else:
+        desglose = ''
+
     return {
         'nombre': reserva.contacto.nombre or '',
         'total': plata(reserva.total),
+        'desglose': desglose,
         'sena_pagada': plata(reserva.monto_pagado),
         'saldo': plata(reserva.saldo),
         'circuito': reserva.circuito.nombre,
