@@ -120,6 +120,19 @@
       .nav-drop-menu a{padding:11px 8px}
       .reservar-btn{align-self:flex-start;margin-top:12px}
     }
+      /* Mobile: la marca entraba a lo ancho y empujaba el botón de menú a la línea de abajo.
+       El nombre pasa a dos líneas en vez de cortarse, y el logo baja de tamaño. */
+    @media (max-width:640px){
+      .marca{gap:10px!important}
+      .marca-logo{height:40px!important}
+      .marca-sep{display:none}
+      .marca-nombre{font-size:15px!important;white-space:normal!important;line-height:1.15}
+      .marca-sub{font-size:8px!important;letter-spacing:.22em!important}
+    }
+    @media (max-width:380px){
+      .marca-logo{height:34px!important}
+      .marca-nombre{font-size:13.5px!important}
+    }
   </style>
 </helmet>
 
@@ -138,12 +151,12 @@
     </span>
   </div>
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(20px,4vw,56px)">
-    <a href="index.html" style="display:flex;align-items:center;gap:16px">
-      <img src="logo.png" alt="Estancia Cuatro Estaciones" style="height:60px;width:auto;display:block;flex:none">
-      <span style="width:1px;height:34px;background:rgba(253,245,237,.25)"></span>
-      <span style="display:flex;flex-direction:column;gap:3px">
-        <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
-        <span style="font-family:'Montserrat',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:.32em;color:#ef8627;white-space:nowrap">Spa de Campo</span>
+    <a href="index.html" class="marca" style="display:flex;align-items:center;gap:16px;min-width:0">
+      <img src="logo.png" alt="Estancia Cuatro Estaciones" class="marca-logo" style="height:60px;width:auto;display:block;flex:none">
+      <span class="marca-sep" style="width:1px;height:34px;background:rgba(253,245,237,.25);flex:none"></span>
+      <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+        <span class="marca-nombre" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
+        <span class="marca-sub" style="font-family:'Montserrat',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:.32em;color:#ef8627;white-space:nowrap">Spa de Campo</span>
       </span>
     </a>
     <button type="button" class="nav-toggle {{ mobileClass }}" onClick="{{ toggleMobile }}" aria-label="Menú"><span></span><span></span><span></span></button>
@@ -172,7 +185,7 @@
   <img src="fotos/grupal-portada.jpg" alt="Spa Grupal — Estancia Cuatro Estaciones" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
   <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(60,38,14,.5), rgba(37,44,26,.68))"></div>
   <div style="position:relative;z-index:2;padding:0 24px">
-    <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#ef8627;margin-bottom:18px">Spa de Campo · Virrey del Pino</div>
+    <div style="font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#f7a45c;margin-bottom:18px;text-shadow:0 1px 10px rgba(0,0,0,.65),0 0 2px rgba(0,0,0,.5)">Spa de Campo · Virrey del Pino</div>
     <h1 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(40px,9vw,88px);letter-spacing:.01em;color:#fdf5ed;margin:0 0 22px">Spa <span style="color:#fdf5ed">Grupal</span></h1>
     <p style="font-size:13.5px;line-height:1.7;color:#f4efed;opacity:.9;margin:0 auto;max-width:560px">Un dia de Spa privado para tu grupo de amigas: Masajes, jacuzzi, sauna, Brunch de Campo, sin compartir el lugar con nadie 
 grupos de 3-8 personas</p>

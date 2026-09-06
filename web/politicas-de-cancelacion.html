@@ -53,7 +53,20 @@
   .legal-block{border-bottom:1px solid #e6ddd2;padding:34px 0}
   .legal-block:first-of-type{padding-top:0}
   .legal-block:last-of-type{border-bottom:none}
-</style>
+    /* Mobile: la marca entraba a lo ancho y empujaba el botón de menú a la línea de abajo.
+       El nombre pasa a dos líneas en vez de cortarse, y el logo baja de tamaño. */
+    @media (max-width:640px){
+      .marca{gap:10px!important}
+      .marca-logo{height:40px!important}
+      .marca-sep{display:none}
+      .marca-nombre{font-size:15px!important;white-space:normal!important;line-height:1.15}
+      .marca-sub{font-size:8px!important;letter-spacing:.22em!important}
+    }
+    @media (max-width:380px){
+      .marca-logo{height:34px!important}
+      .marca-nombre{font-size:13.5px!important}
+    }
+  </style>
 <!-- ── SEO ──────────────────────────────────────────────────────────────
      Va en el <head> estático a propósito: los crawlers y los previsualizadores
      de links (WhatsApp, Facebook) leen el HTML crudo, sin ejecutar el JS del
@@ -100,12 +113,12 @@
     </span>
   </div>
   <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(20px,4vw,56px)">
-    <a href="index.html" style="display:flex;align-items:center;gap:16px">
-      <img src="logo.png" alt="Estancia Cuatro Estaciones" style="height:60px;width:auto;display:block;flex:none;filter:brightness(0) invert(1)">
-      <span style="width:1px;height:34px;background:rgba(253,245,237,.25)"></span>
-      <span style="display:flex;flex-direction:column;gap:3px">
-        <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
-        <span style="font-family:'Montserrat',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:.32em;color:#ef8627;white-space:nowrap">Spa de Campo</span>
+    <a href="index.html" class="marca" style="display:flex;align-items:center;gap:16px;min-width:0">
+      <img src="logo.png" alt="Estancia Cuatro Estaciones" class="marca-logo" style="height:60px;width:auto;display:block;flex:none;filter:brightness(0) invert(1)">
+      <span class="marca-sep" style="width:1px;height:34px;background:rgba(253,245,237,.25);flex:none"></span>
+      <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+        <span class="marca-nombre" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#fdf5ed;letter-spacing:.01em;white-space:nowrap">Estancia Cuatro Estaciones</span>
+        <span class="marca-sub" style="font-family:'Montserrat',sans-serif;font-weight:400;font-size:9.5px;letter-spacing:.32em;color:#ef8627;white-space:nowrap">Spa de Campo</span>
       </span>
     </a>
     <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Menú"><span></span><span></span><span></span></button>
