@@ -177,3 +177,27 @@ def salud_sistema():
         'automations_ok': ultima_automatizacion is not None
         and (ahora - ultima_automatizacion.ejecutado_at) < timedelta(minutes=30),
     }
+
+
+def transferencias_por_verificar(limite=8):
+    """Reservas esperando que alguien mire el comprobante de transferencia.
+
+    Es trabajo con reloj: del otro lado hay un cliente que ya pagó y espera la confirmación,
+    y el mail al dueño se puede pasar por alto. Por eso además se muestra en pantalla.
+    """
+    from apps.reservas.models import Reserva
+
+    qs = (
+        Reserva.objects
+        .filter(estado=Reserva.Estado.PENDIENTE_APROBACION)
+        .select_related('contacto', 'circuito', 'turno')
+        .order_by('created_at')
+    )
+    total = qs.count()
+    return {
+        'total': total,
+        # Cuántas no tienen imagen adjunta: ahí hay que ir a buscarla a la conversación.
+        'sin_comprobante': qs.filter(comprobante='').count() + qs.filter(comprobante__isnull=True).count(),
+        'reservas': list(qs[:limite]),
+        'hay_mas': max(total - limite, 0),
+    }

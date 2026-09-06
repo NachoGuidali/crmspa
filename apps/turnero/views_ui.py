@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.circuitos.models import Circuito
+from apps.dashboard import services as dashboard_services
 from apps.reservas.models import Reserva
 
 from .models import Feriado, Turno
@@ -114,6 +115,9 @@ def hoy(request):
     bloques = [{'turno': t, 'reservas': rs} for t, rs in sorted(por_turno.items(), key=lambda x: x[0].hora_inicio)]
 
     return render(request, 'turnero/hoy.html', {
+        # Transferencias esperando verificación: recepción vive en esta pantalla, así que el
+        # aviso va también acá y no solo en el dashboard del dueño.
+        'por_verificar': dashboard_services.transferencias_por_verificar(),
         'fecha': fecha,
         'es_hoy': fecha == timezone.localdate(),
         'fecha_anterior': fecha - timedelta(days=1),

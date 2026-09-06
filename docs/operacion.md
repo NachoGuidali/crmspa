@@ -79,6 +79,24 @@ Todo esto es automático. El plazo se cambia en *Configuración → Configuraci�
 
   Ese 10% se cambia en *Configuración → Configuración del negocio* → **Recargo por feriado (%)**.
 
+### Verificar transferencias
+
+Cuando un cliente paga por transferencia, la reserva queda en **pendiente de aprobación** hasta
+que alguien mire el comprobante. Mientras tanto el cliente está esperando y el cupo está tomado.
+
+**Dónde aparece el aviso:** arriba de todo en el **Dashboard** y en el **Turnero de hoy**, con
+cuántas hay, quiénes son y cuánto pagaron. Se toca y te lleva a las reservas. Desaparece solo
+cuando no queda ninguna.
+
+**El comprobante se ve en la ficha de la reserva**, sin ir a la conversación: entrás desde el
+aviso o desde el tablero, y la imagen está ahí con el botón *Aprobar y confirmar* al lado.
+
+Si el aviso dice **"sin comprobante"**, esa imagen no llegó con la reserva y hay que buscarla en
+el chat del cliente, en el Inbox.
+
+También llega un mail por cada reserva nueva del bot, a los destinatarios de *Configuración →
+Configuración del negocio → Email de notificaciones*. Si ese campo está vacío no se manda nada.
+
 ### Cuando confirmás una reserva, el cliente recibe un WhatsApp
 
 Apenas la reserva pasa a **confirmada**, el CRM le manda solo al cliente la confirmación con

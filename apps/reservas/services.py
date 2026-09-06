@@ -170,6 +170,48 @@ def _reserva_bot_duplicada(telefono, circuito_id, turno_id, fecha):
     )
 
 
+def _ultimo_comprobante_del_cliente(telefono, desde_hace_horas=6):
+    """La última imagen que mandó ese cliente, para usarla de comprobante.
+
+    El bot manda el comprobante en base64, pero lo saca del payload crudo de Evolution
+    (`data.message.base64`), que solo llega si Evolution está configurado para incluirlo — y
+    con Meta ese campo directamente no existe. Cuando no viene, la reserva quedaba sin
+    comprobante y había que ir a buscarlo a la conversación.
+
+    El CRM ya descarga y guarda toda imagen entrante por su cuenta (`download_and_save_media`),
+    así que la tenemos igual: la enganchamos desde acá y el staff la ve en la ficha.
+    """
+    import os
+
+    from django.conf import settings
+    from django.core.files.base import ContentFile
+
+    from apps.whatsapp.models import Mensaje
+
+    mensaje = (
+        Mensaje.objects
+        .filter(
+            conversacion__telefono=telefono,
+            direccion=Mensaje.Direccion.ENTRANTE,
+            tipo=Mensaje.Tipo.IMAGEN,
+            timestamp__gte=timezone.now() - timedelta(hours=desde_hace_horas),
+        )
+        .exclude(media_url='')
+        .order_by('-timestamp')
+        .first()
+    )
+    if mensaje is None:
+        return None
+
+    # media_url es "/media/uploads/conv_N/archivo.jpg" → la ruta real en disco.
+    rel = mensaje.media_url.replace(settings.MEDIA_URL, '', 1).lstrip('/')
+    ruta = os.path.join(settings.MEDIA_ROOT, rel)
+    if not os.path.exists(ruta):
+        return None
+    with open(ruta, 'rb') as f:
+        return ContentFile(f.read(), name=os.path.basename(ruta))
+
+
 @transaction.atomic
 def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha,
                       cantidad_personas=1, medio_pago='', resumen='',
@@ -220,6 +262,10 @@ def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha
 
     if medio_pago == Reserva.MedioPago.TRANSFERENCIA:
         reserva.estado = Reserva.Estado.PENDIENTE_APROBACION
+        if comprobante is None:
+            # El bot no lo mandó: buscamos la última imagen que mandó el cliente. Sin esto la
+            # reserva llega a "pendiente de aprobación" sin nada que aprobar.
+            comprobante = _ultimo_comprobante_del_cliente(telefono_norm)
         if comprobante is not None:
             reserva.comprobante = comprobante
     elif medio_pago == Reserva.MedioPago.MERCADO_PAGO:

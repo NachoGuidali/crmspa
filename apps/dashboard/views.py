@@ -24,6 +24,7 @@ def home(request):
         desde, hasta = services.periodo_mes_actual()
 
     data = services.resumen(desde, hasta)
+    data['por_verificar'] = services.transferencias_por_verificar()
     return render(request, 'dashboard/home.html', data)
 
 

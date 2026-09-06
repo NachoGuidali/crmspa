@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Agenda {{ fecha|date:"d/m" }}{% endblock %}
 {% block content %}
+{% include "includes/aviso_verificar.html" %}
+
 <div class="topbar">
   <div>
     <h1>{% if es_hoy %}Hoy{% else %}Agenda{% endif %} · {{ fecha|date:"l d/m/Y" }}</h1>

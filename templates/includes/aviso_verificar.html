@@ -1,0 +1,37 @@
+{# Cartel de transferencias esperando verificación. Se incluye en el dashboard (dueño) y en
+   el turnero de hoy (recepción), que son las dos pantallas donde arranca el día cada uno. #}
+{% if por_verificar.total %}
+<a href="{% url 'reservas:kanban' %}"
+   class="card"
+   style="display:block; margin-bottom:18px; text-decoration:none; color:inherit;
+          border-left:4px solid #d98b4a; background:rgba(217,139,74,.09);">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h3 style="margin:0 0 4px;">{{ por_verificar.total }} {% if por_verificar.total == 1 %}transferencia{% else %}transferencias{% endif %} por verificar</h3>
+      <p style="margin:0; font-size:.84rem; color:var(--text-muted);">
+        {% if por_verificar.total == 1 %}Hay un cliente esperando{% else %}Hay clientes esperando{% endif %}
+        la confirmación de su reserva.
+        {% if por_verificar.sin_comprobante %}
+          {{ por_verificar.sin_comprobante }} sin comprobante adjunto — hay que buscarlo en la conversación.
+        {% endif %}
+      </p>
+    </div>
+    <span class="btn" style="background:#d98b4a; flex:none;">Revisar →</span>
+  </div>
+
+  <div style="margin-top:12px; font-size:.84rem; display:grid; gap:6px;">
+    {% for r in por_verificar.reservas %}
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;">
+        <strong>{{ r.contacto.nombre }}</strong>
+        <span style="color:var(--text-muted);">{{ r.circuito.nombre }}</span>
+        <span style="color:var(--text-muted);">{{ r.fecha|date:"d/m" }} · {{ r.turno.nombre }}</span>
+        <span>${{ r.monto_sena|floatformat:0 }}</span>
+        {% if not r.comprobante %}<span style="color:#b4571f;">sin comprobante</span>{% endif %}
+      </div>
+    {% endfor %}
+    {% if por_verificar.hay_mas %}
+      <div style="color:var(--text-muted);">y {{ por_verificar.hay_mas }} más…</div>
+    {% endif %}
+  </div>
+</a>
+{% endif %}
