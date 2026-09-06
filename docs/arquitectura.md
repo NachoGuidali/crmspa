@@ -217,6 +217,39 @@ corresponde reembolso y hasta cuándo (`reembolso_vence_at`). Sin seña acredita
 El plazo se configura en *Configuración del negocio* → **Horas de reembolso desde el pago**
 (`horas_reembolso_desde_pago`, default 24).
 
+### Confirmación de reserva → WhatsApp al cliente
+
+Las tres puertas que confirman una reserva (`confirmar_reserva` desde la aprobación del
+comprobante o Mercado Pago, y `confirmar_sena` desde el cobro manual) pasan por
+`_avisar_reserva_confirmada()`, que dispara tres avisos con destinatarios distintos:
+
+| Aviso | Para quién | Tarea |
+|---|---|---|
+| Confirmación con datos y cómo llegar | **El cliente**, por WhatsApp | `enviar_confirmacion_reserva` |
+| Evento de reserva aprobada | **n8n**, por si tiene que hacer algo extra | `notificar_reserva_aprobada` |
+| "Reserva confirmada" | **El dueño**, por mail | `notificar_evento` |
+
+Dos detalles que importan:
+
+- **`transaction.on_commit`, no `.delay()` suelto.** Quien confirma está dentro de una
+  transacción y el worker de Celery es otro proceso: si arranca antes del commit, lee la
+  reserva sin confirmar y manda datos viejos, o directamente no la encuentra.
+- **Guarda anti-duplicado:** `confirmar_reserva` corta si la reserva ya estaba confirmada, así
+  un doble clic en "Aprobar" no manda dos veces el mensaje.
+
+El mensaje sale por `enviar_automatico()`, que resuelve el proveedor solo: con Evolution es
+texto libre; con Meta, si la ventana de 24hs está cerrada (lo normal si el comprobante se
+aprueba al otro día) manda la **plantilla aprobada**. Sin eso, la confirmación se perdería
+justo después de que el cliente pagó.
+
+El cuerpo sale de la `PlantillaMensaje` de tipo `confirmacion_reserva` (la carga la migración
+`whatsapp/0009`, con `get_or_create` para no pisar ediciones). Los datos del lugar —
+`direccion`, `mapa_url`, `como_llegar`, `url_politicas` — viven en `ConfiguracionNegocio` y no
+en el texto de la plantilla, para que los reusen también los recordatorios.
+
+> **Si no hay plantilla activa**, la tarea corta y deja un `warning` en el log: la reserva se
+> confirma igual, pero al cliente no se le avisa.
+
 ### Reserva temporal del turno mientras se paga (hold)
 
 Cuando se crea una reserva, el turno queda **retenido** hasta `vencimiento_sena`

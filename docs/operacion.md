@@ -79,6 +79,25 @@ Todo esto es automático. El plazo se cambia en *Configuración → Configuraci�
 
   Ese 10% se cambia en *Configuración → Configuración del negocio* → **Recargo por feriado (%)**.
 
+### Cuando confirmás una reserva, el cliente recibe un WhatsApp
+
+Apenas la reserva pasa a **confirmada**, el CRM le manda solo al cliente la confirmación con
+los datos, cómo llegar y qué traer. Pasa por los tres caminos:
+
+- Aprobás el comprobante de transferencia desde la ficha de la reserva.
+- Mercado Pago acredita el pago (cuando lo usen).
+- Cobrás la seña a mano desde la ficha del contacto.
+
+Si tocás "Aprobar" dos veces, **el mensaje sale una sola vez**.
+
+**El texto se edita** en *Configuración → Plantillas* → "Confirmación de reserva". Los datos
+que cambian (nombre, circuito, fecha, turno, personas) se completan solos con `{{variables}}`;
+no las borres.
+
+**La dirección, el mapa, las referencias para llegar y el link a las políticas** no se escriben
+dentro del mensaje: salen de *Configuración → Configuración del negocio*. Se cargan una vez y
+los reusan también los recordatorios, así que si algo cambia lo tocás en un solo lugar.
+
 ### Cargar los feriados
 
 En *Configuración → Feriados*, por cada fecha:

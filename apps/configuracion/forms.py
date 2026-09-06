@@ -176,6 +176,7 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'reserva_exclusiva_por_turno',
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_reembolso_desde_pago',
             'recargo_feriado_porcentaje',
+            'direccion', 'mapa_url', 'como_llegar', 'url_politicas',
             'email_notificaciones',
         ]
         widgets = {

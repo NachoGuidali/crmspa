@@ -86,3 +86,85 @@ def notificar_reserva_aprobada(self, reserva_id):
     except requests.RequestException as exc:
         logger.warning('Error avisando reserva aprobada a n8n (intento %s): %s', self.request.retries + 1, exc)
         raise self.retry(exc=exc)
+
+
+def _contexto_confirmacion(reserva):
+    """Variables que puede usar la plantilla de confirmación de reserva.
+
+    Los datos del lugar (mapa, cómo llegar, políticas) salen de Configuración del negocio y no
+    del texto de la plantilla, así se escriben una vez y los reusan también los recordatorios.
+    """
+    from apps.configuracion.models import ConfiguracionNegocio
+
+    config = ConfiguracionNegocio.get_solo()
+    personas = reserva.cantidad_personas or 1
+
+    DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    fecha = f'{DIAS[reserva.fecha.weekday()]} {reserva.fecha.strftime("%d/%m/%Y")}'
+
+    return {
+        'nombre': reserva.contacto.nombre or '',
+        'circuito': reserva.circuito.nombre,
+        'fecha': fecha,
+        'turno': reserva.turno.nombre,
+        'hora_inicio': reserva.turno.hora_inicio.strftime('%H:%M'),
+        'hora_fin': reserva.turno.hora_fin.strftime('%H:%M'),
+        # Resuelto acá y no en la plantilla: "1 personas" queda mal y el dueño no tiene
+        # forma de poner un condicional en el texto.
+        'personas': f'{personas} persona' if personas == 1 else f'{personas} personas',
+        'direccion': config.direccion or '',
+        'mapa': config.mapa_url or '',
+        'como_llegar': config.como_llegar or '',
+        'politicas': config.url_politicas or '',
+    }
+
+
+@shared_task(bind=True, max_retries=5, retry_backoff=20, retry_backoff_max=600, retry_jitter=True)
+def enviar_confirmacion_reserva(self, reserva_id):
+    """Le manda al cliente el mensaje de "reserva confirmada" por WhatsApp.
+
+    Se dispara cuando la reserva pasa a confirmada, venga de donde venga: el staff aprobando
+    un comprobante de transferencia, Mercado Pago acreditando, o alguien cobrando la seña a
+    mano desde el CRM.
+
+    Usa `enviar_automatico`, que resuelve solo el proveedor: con Evolution manda texto libre;
+    con Meta, si la ventana de 24hs está cerrada (lo normal si el comprobante se aprueba al día
+    siguiente), cambia a la plantilla aprobada. Sin eso, la confirmación se perdería justo
+    después de que el cliente pagó.
+    """
+    from apps.reservas.models import Reserva
+
+    from .models import PlantillaMensaje
+    from .services import enviar_automatico
+
+    reserva = (
+        Reserva.objects.select_related('contacto', 'turno', 'circuito').filter(pk=reserva_id).first()
+    )
+    if reserva is None:
+        return
+
+    plantilla = PlantillaMensaje.objects.filter(
+        tipo=PlantillaMensaje.Tipo.CONFIRMACION_RESERVA, activa=True,
+    ).first()
+    if plantilla is None:
+        logger.warning(
+            'No hay plantilla activa de confirmación de reserva — la reserva %s se confirmó '
+            'pero al cliente no se le avisó. Cargala en Configuración → Plantillas.', reserva_id,
+        )
+        return
+
+    try:
+        enviar_automatico(
+            telefono=reserva.contacto.telefono,
+            plantilla=plantilla,
+            contexto=_contexto_confirmacion(reserva),
+        )
+    except Exception as exc:
+        logger.warning('Error mandando la confirmación de la reserva %s (intento %s): %s',
+                       reserva_id, self.request.retries + 1, exc)
+        try:
+            raise self.retry(exc=exc)
+        except MaxRetriesExceededError:
+            # El cliente pagó y no se entera: que quede fuerte en el log y en el panel de salud.
+            logger.error('No se pudo avisarle al cliente que la reserva %s quedó confirmada, '
+                         'tras %s reintentos.', reserva_id, self.max_retries)

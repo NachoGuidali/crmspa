@@ -262,11 +262,47 @@ def _revalidar_cupo_si_el_hold_vencio(reserva):
 
 
 @transaction.atomic
-def confirmar_reserva(reserva):
-    """Confirma la reserva (Mercado Pago acreditó, o el staff aprobó el comprobante de
-    transferencia) y le avisa al bot para que mande la confirmación final al cliente.
+def _avisar_reserva_confirmada(reserva):
+    """Todo lo que pasa cuando una reserva queda confirmada, venga del camino que venga.
 
-    Acá se acredita la seña, así que es el momento en que arranca la ventana de reembolso."""
+    Vive en una sola función porque hay tres puertas de entrada (staff aprueba comprobante,
+    Mercado Pago acredita, alguien cobra la seña a mano) y las tres tienen que avisar igual.
+
+    Son tres avisos distintos con destinatarios distintos:
+      1. Al CLIENTE, por WhatsApp: la confirmación con los datos y cómo llegar.
+      2. A n8n: por si el bot tiene que hacer algo extra con el evento (opcional).
+      3. Al DUEÑO, por mail.
+    """
+    from apps.whatsapp.tasks import enviar_confirmacion_reserva, notificar_reserva_aprobada
+
+    detalle = (
+        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
+        f'{reserva.fecha} ({reserva.turno.nombre}).'
+    )
+
+    def _disparar():
+        enviar_confirmacion_reserva.delay(reserva.id)
+        notificar_reserva_aprobada.delay(reserva.id)
+        notificar_evento.delay('Reserva confirmada', detalle)
+
+    # `on_commit` y no `.delay()` suelto: quien confirma está dentro de una transacción, y un
+    # worker de Celery es otro proceso — si arranca antes del commit, lee la reserva todavía
+    # sin confirmar y le manda al cliente un mensaje con datos viejos, o no la encuentra.
+    # Fuera de transacción, `on_commit` ejecuta al toque, así que sirve igual en los dos casos.
+    transaction.on_commit(_disparar)
+
+
+def confirmar_reserva(reserva):
+    """Confirma la reserva: Mercado Pago acreditó, o el staff aprobó el comprobante de
+    transferencia.
+
+    Acá se acredita la seña, así que es el momento en que arranca la ventana de reembolso.
+    """
+    if reserva.estado == Reserva.Estado.CONFIRMADO:
+        # Ya estaba confirmada (doble clic en el botón, reintento de Mercado Pago): no la
+        # volvemos a confirmar ni le mandamos al cliente un segundo "reserva confirmada".
+        return reserva
+
     _lock_slot(reserva.circuito_id, reserva.turno_id, reserva.fecha)
     _revalidar_cupo_si_el_hold_vencio(reserva)
     reserva.estado = Reserva.Estado.CONFIRMADO
@@ -275,13 +311,7 @@ def confirmar_reserva(reserva):
         reserva.sena_pagada_at = timezone.now()
         campos.append('sena_pagada_at')
     reserva.save(update_fields=campos)
-    from apps.whatsapp.tasks import notificar_reserva_aprobada
-    notificar_reserva_aprobada.delay(reserva.id)
-    notificar_evento.delay(
-        'Reserva confirmada',
-        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
-        f'{reserva.fecha} ({reserva.turno.nombre}).',
-    )
+    _avisar_reserva_confirmada(reserva)
     return reserva
 
 
@@ -297,9 +327,15 @@ def confirmar_sena(reserva, monto, medio_pago):
     # registrada, mandan la primera: un segundo pago no reabre el plazo.
     if reserva.sena_pagada_at is None:
         reserva.sena_pagada_at = pago.fecha
-    if reserva.estado == Reserva.Estado.PENDIENTE_SENA:
+    # Cobrar la seña también confirma, así que también le avisa al cliente. Antes este camino
+    # no mandaba nada: quien pagaba en efectivo o por transferencia cargada a mano se quedaba
+    # sin la confirmación.
+    recien_confirmada = reserva.estado == Reserva.Estado.PENDIENTE_SENA
+    if recien_confirmada:
         reserva.estado = Reserva.Estado.CONFIRMADO
     reserva.save()
+    if recien_confirmada:
+        _avisar_reserva_confirmada(reserva)
     return reserva
 
 

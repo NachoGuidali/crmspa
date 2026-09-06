@@ -56,6 +56,31 @@ class ConfiguracionNegocio(models.Model):
                   'Pasado ese plazo, la seña queda retenida. Default: 24.',
     )
 
+    # --- Datos que se le mandan al cliente en los mensajes automáticos ---
+    # Viven acá y no dentro del texto de cada plantilla: así se escriben una vez y los reusan
+    # la confirmación de reserva y los recordatorios de 24h y 2h.
+    direccion = models.CharField(
+        max_length=250, blank=True,
+        help_text='Dirección tal cual querés que la lea el cliente. Podés dejarla vacía y usar '
+                  'solo el link del mapa.',
+    )
+    mapa_url = models.URLField(
+        max_length=500, blank=True, verbose_name='Link del mapa',
+        help_text='Link de Google Maps al spa. Es lo que le llega al cliente para llegar: '
+                  'toca y le abre el GPS.',
+    )
+    como_llegar = models.TextField(
+        blank=True, verbose_name='Cómo llegar (referencias)',
+        help_text='Referencias prácticas del acceso: por dónde entrar, estado del camino, qué '
+                  'mirar. Ej. "Los últimos metros son camino de tierra: si llovió, vení con '
+                  'tiempo". Evita llamados y llegadas tarde.',
+    )
+    url_politicas = models.URLField(
+        max_length=500, blank=True, verbose_name='Link a las políticas',
+        help_text='Página de políticas de reserva y cancelación. Se incluye en la confirmación '
+                  'para que el cliente las tenga a mano desde el principio.',
+    )
+
     email_notificaciones = models.CharField(
         max_length=500, blank=True, verbose_name='Email de notificaciones',
         help_text='Uno o varios emails separados por coma. Reciben un aviso cuando: el bot crea '
