@@ -29,7 +29,7 @@ def hub(request):
     secciones = [
         ('Turnos', 'configuracion:turnos', 'Definir los turnos del día (horario, días, activo).'),
         ('Circuitos', 'configuracion:circuitos', 'Alta/edición de circuitos, precios y seña.'),
-        ('Feriados', 'configuracion:feriados', 'Días especiales: cerrados o con tarifa de fin de semana.'),
+        ('Feriados', 'configuracion:feriados', 'Días feriados: cerrados, o abiertos con un recargo sobre el precio del día.'),
         ('Bloqueos', 'configuracion:bloqueos', 'Bloqueos manuales de turnos/días.'),
         ('WhatsApp', 'whatsapp:config', 'Elegir proveedor (Evolution con QR o Meta oficial) y conectar el número.'),
         ('Plantillas de mensaje', 'configuracion:plantillas', 'Mensajes del bot editables sin tocar n8n.'),
@@ -192,15 +192,21 @@ class CircuitoTarifas(DuenoRequiredMixin, UpdateView):
 class FeriadoList(BaseListView):
     model = Feriado
     titulo = 'Feriados'
-    columnas = ['Fecha', 'Descripción', 'Modo', 'Recurrente anual']
+    columnas = ['Fecha', 'Descripción', 'Modo', 'Recargo', 'Recurrente anual']
     crear_url = 'configuracion:feriado_crear'
     editar_url = 'configuracion:feriado_editar'
     borrar_url = 'configuracion:feriado_borrar'
 
     def fila(self, obj):
+        if obj.modo == Feriado.Modo.CERRADO:
+            recargo = '—'
+        elif obj.recargo_porcentaje is not None:
+            recargo = f'{obj.recargo_porcentaje:.0f}% (propio)'
+        else:
+            recargo = f'{obj.porcentaje_efectivo:.0f}% (general)'
         return (obj.pk, [
             obj.fecha.strftime('%d/%m/%Y'), obj.descripcion,
-            obj.get_modo_display(), 'Sí' if obj.recurrente_anual else 'No',
+            obj.get_modo_display(), recargo, 'Sí' if obj.recurrente_anual else 'No',
         ])
 
 

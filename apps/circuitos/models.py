@@ -71,8 +71,8 @@ class Circuito(models.Model):
         tramos = self._tramos()
         return tramos[0].min_personas if tramos else 1
 
-    def precio_para(self, fecha, personas=1):
-        """Precio TOTAL para esa fecha y cantidad de personas.
+    def precio_base_para(self, fecha, personas=1):
+        """Precio TOTAL de la tarifa del día, SIN el recargo por feriado.
 
         - Sin tramos: precio plano (precio_semana/finde).
         - Con tramos: tarifa POR PERSONA del tramo que corresponde × personas; si supera el
@@ -102,6 +102,23 @@ class Circuito(models.Model):
 
         # Menos personas que el tramo más bajo → se cobra a la tarifa del tramo más bajo.
         return getattr(tramos[0], campo) * personas
+
+    def precio_para(self, fecha, personas=1):
+        """Precio TOTAL que se le cobra al cliente para esa fecha: la tarifa del día más el
+        recargo si es feriado.
+
+        El feriado NO reemplaza la tarifa, la recarga. Feriado en sábado = precio de finde
+        + %; feriado un miércoles = precio de semana + %. El porcentaje sale de Configuración
+        del negocio, y un feriado puntual puede tener el suyo propio.
+        """
+        from apps.turnero.services import recargo_feriado
+
+        base = self.precio_base_para(fecha, personas)
+        recargo = recargo_feriado(fecha)
+        if not recargo:
+            return base
+        # Redondeo al peso: los precios del spa son montos redondos, no centavos.
+        return (base * (Decimal('100') + recargo) / Decimal('100')).quantize(Decimal('1'))
 
     def precio_para_fecha(self, fecha, personas=None):
         if personas is None:

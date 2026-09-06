@@ -22,6 +22,16 @@ class ConfiguracionNegocio(models.Model):
                   'Vacío = sábado y domingo. En este spa: viernes, sábado y domingo → [4, 5, 6].',
     )
 
+    recargo_feriado_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, default=10,
+        verbose_name='Recargo por feriado (%)',
+        help_text='Porcentaje que se suma al precio del día cuando la fecha es feriado. Se '
+                  'aplica SOBRE la tarifa que ya le corresponde a ese día: si el feriado cae '
+                  'un sábado, es precio de finde + este %; si cae un día de semana, es precio '
+                  'de semana + este %. Un feriado puntual puede llevar su propio porcentaje '
+                  'distinto (Configuración → Feriados).',
+    )
+
     reserva_exclusiva_por_turno = models.BooleanField(
         default=True,
         verbose_name='Reserva exclusiva por turno',

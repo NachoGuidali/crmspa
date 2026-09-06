@@ -50,9 +50,26 @@ sitio_publico  Web pública / formularios
   - **Por circuito:** cada circuito lleva su propio cupo; la suma de `cantidad_personas` de las
     reservas activas (`pendiente_sena`, `confirmado`, `completado`) no puede superar su capacidad.
     Pueden coexistir reservas de distintos circuitos en el mismo turno.
-- **Precio** según día: `precio_semana` (lun-vie) o `precio_finde` (sáb-dom). Un **feriado**
-  puede marcarse como *"abre con tarifa de fin de semana"* (ese día se atiende y cobra
-  `precio_finde`) o *"cerrado"* (no se atiende). También hay feriados recurrentes anuales.
+- **Precio** según día: `precio_semana` o `precio_finde`, según la config `dias_tarifa_finde`
+  (por defecto sáb-dom; en este spa **vie-sáb-dom**).
+- **Feriados: recargo, no cambio de tarifa.** Un feriado **no reemplaza** la tarifa del día, le
+  **suma un porcentaje encima**:
+
+  | El feriado cae… | Se cobra |
+  |---|---|
+  | Sábado (día de tarifa finde) | `precio_finde` **+ recargo** |
+  | Miércoles (día de tarifa semana) | `precio_semana` **+ recargo** |
+
+  El recargo sale de `ConfiguracionNegocio.recargo_feriado_porcentaje` (default **10%**,
+  editable en *Configuración del negocio*). Un feriado puntual puede pisar ese número con su
+  propio `Feriado.recargo_porcentaje` (ej. 31/12 al 50%); vacío = usa el general.
+
+  El otro modo es *"cerrado"* (no se atiende ese día). También hay feriados **recurrentes
+  anuales**, que se repiten cada año en el mismo mes/día.
+
+  > **Ojo, esto cambió.** Antes el feriado se cobraba a `precio_finde`. Eso hacía que un feriado
+  > en sábado no cobrara nada extra (ya estaba en tarifa de finde) y que uno entre semana saltara
+  > a la tarifa de finde entera. La migración `turnero/0004` reetiqueta los feriados existentes.
 - **Dos esquemas de precio por circuito:**
   - **Plano** (ej. Pareja): un precio fijo `precio_semana`/`precio_finde`.
   - **Por persona en tramos** (ej. Grupal): `TarifaCircuito` define la tarifa **por persona**

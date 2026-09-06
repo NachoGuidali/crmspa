@@ -27,7 +27,17 @@ class CircuitoListView(ApiKeyLoggedView, APIView):
         data = CircuitoSerializer(
             circuitos, many=True, context={'fecha': fecha, 'personas': personas}
         ).data
-        return Response({'fecha': fecha.isoformat(), 'personas': personas, 'circuitos': data})
+
+        # Por qué el precio es el que es: tarifa del día y, si aplica, el recargo por feriado.
+        # Va a nivel de la fecha y no de cada circuito porque es la misma para todos.
+        from apps.turnero.services import info_tarifa
+
+        return Response({
+            'fecha': fecha.isoformat(),
+            'personas': personas,
+            **info_tarifa(fecha),
+            'circuitos': data,
+        })
 
 
 class ExtraListView(ApiKeyLoggedView, APIView):

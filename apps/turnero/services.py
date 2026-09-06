@@ -22,20 +22,55 @@ def dia_habilitado(fecha):
 
 
 def es_dia_tarifa_finde(fecha):
-    """True si a esa fecha le corresponde la tarifa de fin de semana: los días configurados
-    como 'tarifa finde' (por defecto sáb/dom; en este spa vie-sáb-dom), o un feriado marcado
-    como "abre con tarifa de fin de semana"."""
+    """True si a esa fecha le corresponde la tarifa de fin de semana.
+
+    Depende SOLO del día de la semana (config `dias_tarifa_finde`; por defecto sáb/dom, en
+    este spa vie-sáb-dom). Los feriados ya no entran acá: no cambian la tarifa del día, le
+    suman un recargo encima — ver `recargo_feriado()`.
+    """
     from apps.configuracion.models import ConfiguracionNegocio
 
     dias = ConfiguracionNegocio.get_solo().dias_tarifa_finde or [5, 6]
-    if fecha.weekday() in dias:
-        return True
-    finde = Feriado.objects.filter(modo=Feriado.Modo.PRECIO_FINDE)
-    if finde.filter(recurrente_anual=False, fecha=fecha).exists():
-        return True
-    if any(f.cae_en(fecha) for f in finde.filter(recurrente_anual=True)):
-        return True
-    return False
+    return fecha.weekday() in dias
+
+
+def feriado_de(fecha):
+    """El feriado que cae en esa fecha, o None. Contempla los recurrentes anuales.
+
+    Si hubiera más de uno cargado para el mismo día (por ejemplo uno puntual y uno recurrente),
+    gana el puntual: es el que alguien cargó a mano para ese año en concreto.
+    """
+    puntual = Feriado.objects.filter(recurrente_anual=False, fecha=fecha).first()
+    if puntual is not None:
+        return puntual
+    for f in Feriado.objects.filter(recurrente_anual=True):
+        if f.cae_en(fecha):
+            return f
+    return None
+
+
+def recargo_feriado(fecha):
+    """Porcentaje de recargo por feriado que le toca a esa fecha. 0 si no es feriado."""
+    from decimal import Decimal
+
+    feriado = feriado_de(fecha)
+    return feriado.porcentaje_efectivo if feriado is not None else Decimal('0')
+
+
+def info_tarifa(fecha):
+    """Todo lo que hace falta para explicar el precio de un día, en un solo lugar.
+
+    Lo usan la API del bot y la UI, así que la explicación del precio sale siempre igual y no
+    hay dos versiones de la misma cuenta dando vueltas.
+    """
+    feriado = feriado_de(fecha)
+    es_feriado = feriado is not None and feriado.modo == Feriado.Modo.RECARGO
+    return {
+        'tarifa': 'finde' if es_dia_tarifa_finde(fecha) else 'semana',
+        'es_feriado': es_feriado,
+        'feriado': (feriado.descripcion or 'Feriado') if feriado is not None else '',
+        'recargo_porcentaje': float(feriado.porcentaje_efectivo) if es_feriado else 0.0,
+    }
 
 
 def turnos_bloqueados(circuito, fecha):
@@ -61,7 +96,18 @@ def disponibilidad_circuito(circuito, fecha):
     Esta es la función que consume la API de disponibilidad para n8n.
     """
     if not dia_habilitado(fecha):
-        return {'fecha': fecha.isoformat(), 'habilitado': False, 'turnos': []}
+        # Le decimos al bot POR QUÉ está cerrado: no es lo mismo "ese día no abrimos nunca"
+        # que "el 25 de diciembre estamos cerrados". Con esto puede dar una respuesta útil
+        # en vez de un "no hay turnos" seco.
+        feriado = feriado_de(fecha)
+        cerrado_por_feriado = feriado is not None and feriado.modo == Feriado.Modo.CERRADO
+        return {
+            'fecha': fecha.isoformat(),
+            'habilitado': False,
+            'motivo_cierre': 'feriado' if cerrado_por_feriado else 'dia_no_laborable',
+            'motivo_detalle': (feriado.descripcion or 'Feriado') if cerrado_por_feriado else '',
+            'turnos': [],
+        }
 
     from apps.configuracion.models import ConfiguracionNegocio
     from apps.reservas.models import Reserva
@@ -110,7 +156,12 @@ def disponibilidad_circuito(circuito, fecha):
             'ocupado_por_otro_circuito': ocupado_por_otro_circuito,
         })
 
-    return {'fecha': fecha.isoformat(), 'habilitado': True, 'turnos': resultado}
+    return {
+        'fecha': fecha.isoformat(),
+        'habilitado': True,
+        **info_tarifa(fecha),
+        'turnos': resultado,
+    }
 
 
 def turnero_crudo(desde, dias=14):
@@ -180,6 +231,10 @@ def disponibilidad_rango(circuito, desde, hasta, personas=None):
         dias.append({
             'fecha': d.isoformat(),
             'habilitado': info['habilitado'],
+            'es_feriado': info.get('es_feriado', False),
+            'feriado': info.get('feriado', ''),
+            'recargo_porcentaje': info.get('recargo_porcentaje', 0.0),
+            'tarifa': info.get('tarifa', ''),
             'hay_lugar': bool(turnos_libres),
             'turnos_libres': [
                 {

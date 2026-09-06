@@ -86,7 +86,7 @@ Los ejemplos usan `http://localhost:8003` (Docker local).
 | `circuito_not_found` | El circuito no existe o está inactivo |
 | `turno_not_found` | El turno no existe o está inactivo |
 | `turno_no_aplica_ese_dia` | Ese turno no se ofrece ese día de la semana |
-| `dia_no_habilitado` | Feriado o día fuera de los laborables |
+| `dia_no_habilitado` | Feriado **cerrado** o día fuera de los laborables |
 | `turno_bloqueado` | Bloqueo manual (mantenimiento, evento privado, etc.) |
 | `fecha_en_el_pasado` | La fecha pedida ya pasó |
 | `sin_cupo: ...` | No hay lugar en ese turno/fecha |
@@ -143,6 +143,10 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
 {
   "fecha": "2026-07-11",
   "personas": 6,
+  "tarifa": "finde",
+  "es_feriado": true,
+  "feriado": "Día de la Independencia",
+  "recargo_porcentaje": 10.0,
   "circuitos": [
     {
       "id": 2, "nombre": "Grupal Clásica", "descripcion": "...",
@@ -154,11 +158,34 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
         {"min_personas": 5, "max_personas": 6, "precio_persona_semana": "9000.00", "precio_persona_finde": "11000.00"},
         {"min_personas": 7, "max_personas": 8, "precio_persona_semana": "8000.00", "precio_persona_finde": "10000.00"}
       ],
-      "precio": "66000.00", "monto_sena": "33000.00", "activo": true
+      "precio": "72600.00", "precio_base": "66000.00", "recargo_feriado": "6600.00",
+      "monto_sena": "36300.00", "activo": true
     }
   ]
 }
 ```
+
+**Feriados: el precio del día viene con recargo.** Los cuatro campos del nivel de la fecha
+dicen por qué el precio es el que es:
+
+| Campo | Qué es |
+|---|---|
+| `tarifa` | `"semana"` o `"finde"`, según qué día de la semana cae la fecha. |
+| `es_feriado` | `true` si esa fecha es feriado y el spa abre. |
+| `feriado` | Cómo se llama (ej. "Día de la Independencia"). Vacío si no es feriado. |
+| `recargo_porcentaje` | El % que se sumó. `0` si no es feriado. |
+
+Y en cada circuito: `precio_base` es la tarifa del día **sin** recargo, `recargo_feriado` es
+cuánta plata de `precio` es recargo, y `precio` es **lo que se cobra** (base + recargo).
+
+Sirven para explicarle el precio al cliente en vez de tirarle un número suelto:
+
+> *"El sábado 11 son $72.600. Es feriado, así que sale la tarifa de fin de semana ($66.000)
+> con un 10% de recargo."*
+
+> **Un feriado NO cambia la tarifa, la recarga.** Feriado en sábado = precio de finde + 10%.
+> Feriado un miércoles = precio de semana + 10%. El porcentaje lo maneja el spa desde el CRM y
+> puede cambiar, así que **leelo de la respuesta, nunca lo hardcodees en n8n**.
 
 **Dos tipos de precio:**
 - **Precio plano** (ej. Pareja): `precio_semana` / `precio_finde` tienen valor y `tarifas` está vacío.
@@ -168,8 +195,8 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
   3–4 personas una tarifa, 5–6 otra, 7–8 otra. Pasando el último tramo, cada persona adicional
   paga `precio_persona_adicional_*`. El tope es `capacidad_maxima`.
 
-> `precio` y `monto_sena` ya vienen **calculados** para `fecha` + `personas`. Usalos, no
-> recalcules. Si no mandaste `personas`, `precio` se calcula con una cantidad de referencia
+> `precio` y `monto_sena` ya vienen **calculados** para `fecha` + `personas`, con el recargo
+> por feriado ya aplicado. Usalos, no recalcules. Si no mandaste `personas`, `precio` se calcula con una cantidad de referencia
 > (el mínimo del tramo más bajo), útil para mostrar un "desde $…".
 
 ### Catálogo de extras/opcionales
@@ -201,6 +228,10 @@ devuelve los **globales** (aplican a cualquier circuito) más los **propios** de
 {
   "fecha": "2026-07-11",
   "habilitado": true,
+  "tarifa": "finde",
+  "es_feriado": true,
+  "feriado": "Día de la Independencia",
+  "recargo_porcentaje": 10.0,
   "circuito_id": 1,
   "circuito_nombre": "Circuito Relax",
   "turnos": [
@@ -213,8 +244,29 @@ devuelve los **globales** (aplican a cualquier circuito) más los **propios** de
   ]
 }
 ```
-- `habilitado: false` → el negocio no atiende ese día (`turnos` vacío).
 - Ofrecé al cliente solo los turnos con `cupo_disponible > 0` y `bloqueado: false`.
+- `es_feriado`, `feriado`, `recargo_porcentaje` y `tarifa`: mismos campos que en
+  `/circuitos/`. Sirven para **avisar el recargo al ofrecer el día**, antes de que el cliente
+  se enganche con una fecha. El monto exacto sale de `/circuitos/?fecha=&personas=`.
+
+**Cuando el día está cerrado** (`habilitado: false`), la respuesta dice **por qué**:
+
+```json
+{
+  "fecha": "2026-12-25",
+  "habilitado": false,
+  "motivo_cierre": "feriado",
+  "motivo_detalle": "Navidad",
+  "turnos": []
+}
+```
+
+| `motivo_cierre` | Qué pasó |
+|---|---|
+| `feriado` | Es un feriado cargado como **cerrado**. `motivo_detalle` trae el nombre. |
+| `dia_no_laborable` | Ese día de la semana el spa no atiende. |
+
+Con eso el bot contesta *"el 25 estamos cerrados por Navidad"* en vez de un "no hay turnos" seco.
 
 ### Disponibilidad de un rango de fechas (varios días de una)
 `GET /api/v1/disponibilidad/rango/?circuito_id=3&desde=2026-08-01&hasta=2026-08-31&personas=6`
@@ -231,11 +283,19 @@ para esa cantidad). El rango máximo es **62 días**.
   "dias": [
     {
       "fecha": "2026-08-01", "habilitado": true, "hay_lugar": true,
+      "tarifa": "finde", "es_feriado": false, "feriado": "", "recargo_porcentaje": 0.0,
       "turnos_libres": [
         {"turno_id": 2, "turno_nombre": "Turno tarde", "hora_inicio": "15:00", "hora_fin": "19:00", "cupo_disponible": 8}
       ]
     },
-    {"fecha": "2026-08-02", "habilitado": true, "hay_lugar": false, "turnos_libres": []}
+    {
+      "fecha": "2026-08-17", "habilitado": true, "hay_lugar": true,
+      "tarifa": "semana", "es_feriado": true, "feriado": "Paso a la Inmortalidad de San Martín",
+      "recargo_porcentaje": 10.0,
+      "turnos_libres": [
+        {"turno_id": 1, "turno_nombre": "Turno mañana", "hora_inicio": "10:00", "hora_fin": "14:00", "cupo_disponible": 8}
+      ]
+    }
   ]
 }
 ```
@@ -243,6 +303,8 @@ Cómo lo usa el bot:
 - **"¿qué días hay en agosto?"** → filtrá los `dias` con `hay_lugar: true`.
 - **"el sábado 23 no hay, ¿cuándo sí?"** → consultá el rango desde esa fecha y ofrecé el primer
   día con `hay_lugar: true` (o el primero cuyo `turnos_libres` incluya el turno que quiere).
+- **Al ofrecer un día con `es_feriado: true`, avisá el recargo.** Que el cliente se entere del
+  precio antes de elegir la fecha, no después.
 - **400** si el rango está invertido (`hasta < desde`) o supera 62 días.
 - `ocupado_por_otro_circuito: true` → (solo en **modo spa exclusivo**) el turno ya está
   reservado por otro circuito, así que no hay lugar aunque sea otro servicio.

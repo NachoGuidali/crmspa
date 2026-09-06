@@ -33,7 +33,7 @@
        href="{% url 'turnero:dia' celda.fecha|date:'Y-m-d' %}">
       <div class="cal-daynum"><span class="n">{{ celda.fecha.day }}</span></div>
       {% if celda.es_feriado %}
-        <span class="cal-chip feriado">{% if celda.feriado_abre %}Feriado · finde{% else %}Feriado · cerrado{% endif %}</span>
+        <span class="cal-chip feriado">{% if celda.feriado_abre %}Feriado · +{{ celda.feriado_recargo|floatformat:"-2" }}%{% else %}Feriado · cerrado{% endif %}</span>
       {% endif %}
       {% if celda.resumen.reservas and not celda.es_feriado %}
         <span class="cal-chip ocup">{{ celda.resumen.reservas }} reserva{{ celda.resumen.reservas|pluralize }} · {{ celda.resumen.personas }}p</span>

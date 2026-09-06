@@ -57,12 +57,44 @@ Al final del día, en el `Turnero` del día, marcá cada reserva:
   **pendiente de seña** con un vencimiento.
 - Si el cliente **no paga la seña a tiempo**, el sistema **libera el cupo** solo.
 - Al **confirmar la seña**, la reserva pasa a **confirmada**.
-- **Cancelación:** si el cliente cancela con la anticipación configurada (por defecto 24h),
-  la seña es **reembolsable**; si cancela tarde, queda **retenida**.
+- **Cancelación:** la seña se reembolsa **solo si se cancela dentro de las 24 hs posteriores
+  al pago** (no a la fecha del turno). Pasado ese plazo queda **retenida**. Antes de apretar
+  "Cancelar", la ficha de la reserva te dice si corresponde reembolso y hasta cuándo.
 - **No-show:** la seña queda retenida.
 
-Todo esto es automático. La ventana de cancelación se cambia en
-*Configuración → Configuración del negocio*.
+Todo esto es automático. El plazo se cambia en *Configuración → Configuración del negocio* →
+**Horas de reembolso desde el pago**.
+
+### Precios según el día
+
+- **Días de semana** y **fin de semana** tienen su propio precio por circuito. Qué días cuentan
+  como "finde" se configura (en este spa: viernes, sábado y domingo).
+- **Feriados: se cobra el precio del día + un recargo.** El feriado **no** cambia la tarifa,
+  le suma un porcentaje encima:
+
+  | Si el feriado cae… | Se cobra |
+  |---|---|
+  | Un sábado | precio de fin de semana **+ 10%** |
+  | Un miércoles | precio de semana **+ 10%** |
+
+  Ese 10% se cambia en *Configuración → Configuración del negocio* → **Recargo por feriado (%)**.
+
+### Cargar los feriados
+
+En *Configuración → Feriados*, por cada fecha:
+
+| Campo | Para qué |
+|---|---|
+| **Fecha** y **Descripción** | Ej. 9 de julio — "Día de la Independencia". |
+| **Modo** | *Abre con recargo* (se atiende y se cobra el plus) o *Cerrado* (no se atiende ese día). |
+| **Recargo propio (%)** | Dejalo **vacío** y usa el 10% general. Completalo solo si ese feriado cobra distinto (ej. 31 de diciembre al 50%). |
+| **Recurrente anual** | Tildalo para los que caen siempre el mismo día (25 de Mayo, Navidad). Se repiten solos todos los años, no hay que volver a cargarlos. |
+
+En la lista, la columna **Recargo** te muestra qué está cobrando cada uno: `10% (general)` o
+`50% (propio)`. En el **calendario del turnero** los feriados aparecen marcados con su recargo.
+
+El bot toma todo esto solo: al ofrecer una fecha feriada avisa el recargo, y cotiza con el
+precio ya recargado. No hay que avisarle nada aparte.
 
 ---
 

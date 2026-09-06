@@ -37,8 +37,16 @@ class Turno(models.Model):
 
 
 class Feriado(models.Model):
+    """Día feriado. Un feriado NO cambia la tarifa del día: le suma un recargo encima.
+
+    Es la diferencia importante con la versión anterior, que cobraba tarifa de finde. Con
+    recargo, un feriado que cae sábado sale precio de finde + %, y uno que cae un miércoles
+    sale precio de semana + %. Antes, un feriado en sábado no cobraba nada extra (ya estaba
+    en tarifa de finde) y uno entre semana saltaba a la tarifa de finde entera.
+    """
+
     class Modo(models.TextChoices):
-        PRECIO_FINDE = 'precio_finde', 'Abre con tarifa de fin de semana'
+        RECARGO = 'recargo', 'Abre con recargo sobre el precio del día'
         CERRADO = 'cerrado', 'Cerrado (no se atiende)'
 
     fecha = models.DateField()
@@ -47,9 +55,17 @@ class Feriado(models.Model):
         default=False, help_text='Si está marcado, se repite todos los años en el mismo mes/día.'
     )
     modo = models.CharField(
-        max_length=20, choices=Modo.choices, default=Modo.PRECIO_FINDE,
-        help_text='"Abre con tarifa de fin de semana": ese día se atiende y se cobra el precio '
-                  'de finde. "Cerrado": ese día no se atiende.',
+        max_length=20, choices=Modo.choices, default=Modo.RECARGO,
+        help_text='"Abre con recargo": se atiende y se cobra la tarifa normal del día '
+                  '(semana o finde, según qué día caiga) más el recargo. '
+                  '"Cerrado": ese día no se atiende.',
+    )
+    recargo_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name='Recargo propio (%)',
+        help_text='Dejalo vacío para usar el recargo general de Configuración del negocio. '
+                  'Completalo solo si ESTE feriado cobra un porcentaje distinto '
+                  '(ej. 31 de diciembre).',
     )
 
     class Meta:
@@ -64,6 +80,22 @@ class Feriado(models.Model):
         if self.recurrente_anual:
             return (self.fecha.month, self.fecha.day) == (fecha.month, fecha.day)
         return self.fecha == fecha
+
+    @property
+    def porcentaje_efectivo(self):
+        """El recargo que se aplica de verdad: el propio del feriado, o el general si no tiene.
+
+        Un feriado cerrado no cobra nada, así que devuelve 0.
+        """
+        from decimal import Decimal
+
+        if self.modo != self.Modo.RECARGO:
+            return Decimal('0')
+        if self.recargo_porcentaje is not None:
+            return self.recargo_porcentaje
+
+        from apps.configuracion.models import ConfiguracionNegocio
+        return ConfiguracionNegocio.get_solo().recargo_feriado_porcentaje or Decimal('0')
 
 
 class BloqueoManual(models.Model):

@@ -47,8 +47,32 @@ class TurnoForm(forms.ModelForm):
 class FeriadoForm(forms.ModelForm):
     class Meta:
         model = Feriado
-        fields = ['fecha', 'descripcion', 'modo', 'recurrente_anual']
-        widgets = {'fecha': forms.DateInput(attrs={'type': 'date'})}
+        fields = ['fecha', 'descripcion', 'modo', 'recargo_porcentaje', 'recurrente_anual']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'type': 'date'}),
+            'recargo_porcentaje': forms.NumberInput(attrs={'step': '0.01', 'min': '0',
+                                                           'placeholder': 'Vacío = el general'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Mostramos cuál es el recargo general para que no haya que ir a buscarlo a otra pantalla.
+        from apps.configuracion.models import ConfiguracionNegocio
+        general = ConfiguracionNegocio.get_solo().recargo_feriado_porcentaje
+        self.fields['recargo_porcentaje'].help_text = (
+            f'Dejalo vacío para usar el recargo general, que hoy es {general:.0f}% '
+            f'(se cambia en Configuración del negocio). Completalo solo si ESTE feriado cobra '
+            f'otro porcentaje, por ejemplo el 31 de diciembre.'
+        )
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get('modo') == Feriado.Modo.CERRADO and datos.get('recargo_porcentaje') is not None:
+            raise forms.ValidationError(
+                'Un feriado cerrado no cobra nada, así que no lleva recargo. '
+                'Borrá el porcentaje o cambiá el modo a "Abre con recargo".'
+            )
+        return datos
 
 
 class BloqueoManualForm(forms.ModelForm):
@@ -151,6 +175,7 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'horario_atencion_desde', 'horario_atencion_hasta',
             'reserva_exclusiva_por_turno',
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_reembolso_desde_pago',
+            'recargo_feriado_porcentaje',
             'email_notificaciones',
         ]
         widgets = {

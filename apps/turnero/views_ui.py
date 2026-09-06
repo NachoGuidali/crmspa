@@ -48,7 +48,7 @@ def calendario(request):
     )
     reservas_por_dia = {r['fecha']: {'count': r['count'], 'personas': r['personas'] or 0} for r in reservas_qs}
     feriados = {
-        f.fecha: f.modo
+        f.fecha: f
         for f in Feriado.objects.filter(recurrente_anual=False, fecha__gte=primero, fecha__lte=ultimo)
     }
     feriados_rec = list(Feriado.objects.filter(recurrente_anual=True))
@@ -59,18 +59,21 @@ def calendario(request):
     for semana in cal.monthdatescalendar(anio, mes):
         fila = []
         for dia in semana:
-            modo_feriado = feriados.get(dia)
-            if modo_feriado is None:
+            feriado = feriados.get(dia)
+            if feriado is None:
                 for f in feriados_rec:
                     if f.cae_en(dia):
-                        modo_feriado = f.modo
+                        feriado = f
                         break
+            abre = feriado is not None and feriado.modo == Feriado.Modo.RECARGO
             fila.append({
                 'fecha': dia,
                 'es_del_mes': dia.month == mes,
                 'es_hoy': dia == hoy,
-                'es_feriado': modo_feriado is not None,
-                'feriado_abre': modo_feriado == Feriado.Modo.PRECIO_FINDE,
+                'es_feriado': feriado is not None,
+                'feriado_abre': abre,
+                # El recargo que se cobra ese día, para verlo en el calendario sin entrar a nada.
+                'feriado_recargo': feriado.porcentaje_efectivo if abre else None,
                 'resumen': _resumen_dia(dia, turnos_activos, reservas_por_dia),
             })
         semanas.append(fila)
