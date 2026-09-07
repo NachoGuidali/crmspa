@@ -251,6 +251,28 @@ de la ficha: `confirmar_reserva`, `cancelar_reserva`, `marcar_asistio`, `marcar_
 Los estados que no tienen servicio propio (volver a `pendiente_sena`, por ejemplo) siguen
 siendo un cambio simple. Mover a un estado en el que la reserva ya está no hace nada.
 
+### El bot se apaga y se vuelve a prender solo
+
+El bot queda apagado (`bot_activo = False`) por **dos motivos distintos**, y conviene no
+confundirlos:
+
+| Motivo | `Conversacion.estado` | ¿Se reactiva al confirmar? |
+|---|---|---|
+| Se creó la reserva y espera verificación | `reserva_confirmada` | **Sí** |
+| Handoff real: queja, cancelación, pidió hablar con alguien | `requiere_atencion_humana` | **No** — hay alguien atendiendo |
+
+Al confirmar, `_reactivar_bot()` prende el bot del primer caso. Tres cosas que hace y que son
+todas necesarias:
+
+1. **Limpia `reserva_creada`.** Es lo que mantiene el bot apagado: el PATCH de conversaciones
+   lo vuelve a apagar en *cada* llamada mientras siga en `true`. Sin limpiarlo, prender
+   `bot_activo` no dura hasta el próximo mensaje.
+2. **Vuelve `estado_flujo` a `menu`.** Si no, el bot retoma en `turno_pago_comprobante` y le
+   pide el comprobante de nuevo a alguien que ya tiene la reserva confirmada.
+3. **Olvida los datos de ESA reserva** (fecha, turno, personas, menú, extras) para que un
+   pedido nuevo no los herede, pero **conserva nombre, teléfono y email**: ya los dio, no hay
+   por qué volver a pedírselos.
+
 ### Confirmación de reserva → WhatsApp al cliente
 
 Las tres puertas que confirman una reserva (`confirmar_reserva` desde la aprobación del

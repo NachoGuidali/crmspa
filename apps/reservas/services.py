@@ -307,6 +307,44 @@ def _revalidar_cupo_si_el_hold_vencio(reserva):
         )
 
 
+def _reactivar_bot(reserva):
+    """Vuelve a prender el bot cuando la reserva queda confirmada.
+
+    Al crear la reserva el bot se apaga y queda esperando que alguien verifique la
+    transferencia. Una vez confirmada ya no hay nada que esperar: si el cliente escribe
+    ("¿cómo llego?", "¿puedo llevar mascota?", o quiere reservar de nuevo), no tiene sentido
+    que nadie le conteste hasta que un humano lea el inbox.
+
+    NO se reactiva si la conversación estaba en atención humana de verdad — una queja, un
+    pedido de cancelación, alguien que pidió hablar con una persona. Ahí hay alguien
+    ocupándose y prender el bot sería pisarle la conversación.
+    """
+    from apps.whatsapp.models import Conversacion
+
+    conv = Conversacion.objects.filter(telefono=reserva.contacto.telefono).first()
+    if conv is None:
+        return
+    if conv.estado == Conversacion.Estado.REQUIERE_ATENCION_HUMANA:
+        return
+
+    estado = dict(conv.estado_bot or {})
+    # `reserva_creada` es lo que mantiene el bot apagado: el CRM lo vuelve a apagar en cada
+    # PATCH mientras siga en true. Sin limpiarlo, prender `bot_activo` no dura nada.
+    estado['reserva_creada'] = False
+    estado['estado_flujo'] = 'menu'
+    # Se borra lo de ESTA reserva para que un pedido nuevo no herede fecha, turno ni menú
+    # de la anterior. Los datos de contacto se conservan: ya nos los dio, no se los pedimos
+    # de nuevo.
+    for campo in ('fecha_solicitada', 'personas', 'tipo_propuesta', 'nivel', 'menu_especial',
+                  'menu_especial_cantidad', 'extras_pedidos', 'medio_pago', 'horario_confirmado',
+                  'turno_nombre', 'turno_horario', 'dias_ofrecidos', 'fallos_consecutivos'):
+        estado.pop(campo, None)
+
+    conv.estado_bot = estado
+    conv.bot_activo = True
+    conv.save(update_fields=['estado_bot', 'bot_activo'])
+
+
 def _avisar_reserva_confirmada(reserva):
     """Todo lo que pasa cuando una reserva queda confirmada, venga del camino que venga.
 
@@ -324,6 +362,9 @@ def _avisar_reserva_confirmada(reserva):
         f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
         f'{reserva.fecha} ({reserva.turno.nombre}).'
     )
+
+    # Antes de avisar: el bot vuelve a estar disponible para este cliente.
+    _reactivar_bot(reserva)
 
     def _disparar():
         enviar_confirmacion_reserva.delay(reserva.id)
