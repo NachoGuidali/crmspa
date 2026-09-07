@@ -113,6 +113,22 @@ el chat del cliente, en el Inbox.
 También llega un mail por cada reserva nueva del bot, a los destinatarios de *Configuración →
 Configuración del negocio → Email de notificaciones*. Si ese campo está vacío no se manda nada.
 
+### Cuándo contesta el bot y cuándo no
+
+El bot deja de contestar en dos situaciones, y se vuelve a prender distinto en cada una:
+
+| Por qué se apagó | Se prende solo cuando… | Botón "Prender bot" |
+|---|---|---|
+| Creó la reserva y espera que verifiques la transferencia | **Confirmás la reserva** | también sirve |
+| Se derivó a una persona (queja, cancelación, pidió hablar con alguien, o no entendió 3 veces seguidas el mismo paso) | **Nunca solo** | es la única forma |
+
+O sea: si la conversación está derivada, confirmar la reserva **no** vuelve a prender el bot.
+Es a propósito — si alguien se quejó o pidió cancelar, hay una persona ocupándose y el bot no
+tiene que meterse. Ahí lo prendés vos desde la conversación cuando el tema esté cerrado.
+
+Al prenderlo, la conversación arranca de cero: el bot se olvida de la reserva que estaba
+armando, pero **se acuerda del nombre, teléfono y email** del cliente.
+
 ### Cuando confirmás una reserva, el cliente recibe un WhatsApp
 
 Apenas la reserva pasa a **confirmada**, el CRM le manda solo al cliente la confirmación con

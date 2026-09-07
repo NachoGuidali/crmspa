@@ -209,8 +209,26 @@ def inbox_accion(request):
             messages.error(request, f'No se pudo enviar: {exc}')
 
     elif accion == 'toggle_bot':
-        conv.bot_activo = not conv.bot_activo
-        conv.save(update_fields=['bot_activo'])
+        if conv.bot_activo:
+            conv.bot_activo = False
+            conv.save(update_fields=['bot_activo'])
+        else:
+            # Prender el bot es más que poner el flag en True, y por eso el botón "no hacía
+            # nada" justo cuando más se lo necesitaba:
+            #   1. Lo que se le manda a n8n es `bot_n8n_activo`, que es
+            #      `bot_activo AND estado != requiere_atencion_humana`. Con la conversación
+            #      derivada, el bot quedaba prendido en la UI pero mudo en la práctica.
+            #   2. Si `reserva_creada` sigue en True, el PATCH de conversaciones vuelve a
+            #      apagarlo en la siguiente llamada del bot.
+            estado_bot = dict(conv.estado_bot or {})
+            estado_bot['reserva_creada'] = False
+            if estado_bot.get('estado_flujo') == Conversacion.ESTADO_FLUJO_DERIVADO:
+                estado_bot['estado_flujo'] = 'menu'
+            conv.estado_bot = estado_bot
+            conv.bot_activo = True
+            if conv.estado == Conversacion.Estado.REQUIERE_ATENCION_HUMANA:
+                conv.estado = Conversacion.Estado.EN_GESTION
+            conv.save(update_fields=['bot_activo', 'estado', 'estado_bot'])
 
     elif accion == 'cambiar_estado':
         nuevo = request.POST.get('estado')
