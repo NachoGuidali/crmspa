@@ -31,7 +31,7 @@ def robots_txt(_request):
     podría listar la URL igual, sin descripción, si alguien la enlaza.
     """
     contenido = (
-        '# CRM interno de Estancia Cuatro Estaciones — nada de acá va a los buscadores.\n'
+        '# CRM interno de Cuatro Raíces — nada de acá va a los buscadores.\n'
         '# El noindex real lo pone el header X-Robots-Tag en cada respuesta; acá no se\n'
         '# bloquea el rastreo para que Google pueda leerlo. La web pública está en\n'
         '# https://spacuatroestaciones.com/robots.txt\n'

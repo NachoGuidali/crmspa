@@ -14,7 +14,7 @@ Cómo está construido el CRM y cómo se comporta ante cada situación. Compleme
 | Tareas asíncronas / programadas | Celery + django-celery-beat (Redis como broker) |
 | WhatsApp gateway | Evolution API (self-hosted) |
 | Orquestador del bot | n8n (cliente externo de la API) |
-| Frontend | Django templates + CSS propio (marca "Estancia Cuatro Estaciones") |
+| Frontend | Django templates + CSS propio (marca "Cuatro Raíces") |
 
 ### Apps de Django
 

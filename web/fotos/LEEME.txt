@@ -1,4 +1,4 @@
-CARPETA "fotos" — Estancia Cuatro Estaciones
+CARPETA "fotos" — Cuatro Raíces
 ================================================
 
 Reemplazá cada uno de estos archivos por tu foto real, manteniendo el MISMO nombre

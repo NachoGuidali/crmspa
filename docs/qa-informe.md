@@ -1,4 +1,4 @@
-# Informe de QA y revisión técnica — CRM Spa Cuatro Estaciones
+# Informe de QA y revisión técnica — CRM Cuatro Raíces Spa
 
 **Fecha:** 2026-07-27 · **Revisor:** QA/Django senior · **Estado del proyecto:** desarrollo (VPS, pre-producción)
 **Stack:** Django 5.1 · DRF · Postgres · Celery + Redis · Pillow · WhiteNoise · Docker Compose

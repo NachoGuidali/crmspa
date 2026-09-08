@@ -167,7 +167,7 @@ cuenta y revisá:
 Estas necesitan una decisión tuya, no son técnicas:
 
 1. **¿"Residencia" o "Estancia"?** En Google Maps el negocio figura como **Residencia Cuatro
-   Estaciones**, pero la web y la marca dicen **Estancia Cuatro Estaciones**. Para Google son
+   Estaciones**, pero la web y la marca dicen **Cuatro Raíces**. Para Google son
    dos negocios distintos y eso le resta fuerza a los dos. Conviene unificar con un solo nombre.
 
 2. **¿Sigue siendo 4,7 con 115 reseñas?** Ese número está escrito en la web. Si cambió, decilo

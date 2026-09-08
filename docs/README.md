@@ -1,4 +1,4 @@
-# CRM Spa — Estancia Cuatro Estaciones
+# CRM Spa — Cuatro Raíces
 
 CRM de reservas para spa de circuitos, con bot de WhatsApp orquestado por n8n.
 

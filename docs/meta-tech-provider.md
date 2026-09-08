@@ -59,7 +59,7 @@ Business, y después onboardear a **Spa 4 Estaciones** (y otros números) como c
 5. Queda **"en revisión"**. **No podés avanzar al App Review hasta que esté verificado.**
 
 > **Tip monotributo:** usá exactamente el nombre y domicilio que figuran en la constancia de AFIP.
-> Si el negocio opera como "Estancia Cuatro Estaciones", eso va como cliente después; acá va **tu**
+> Si el negocio opera como "Cuatro Raíces", eso va como cliente después; acá va **tu**
 > identidad de Tech Provider (tu monotributo).
 
 ## Fase 7 — Datos básicos de la app

@@ -83,7 +83,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # --- Configuración del negocio ---
         cfg = ConfiguracionNegocio.get_solo()
-        cfg.nombre_negocio = 'Estancia Cuatro Estaciones'
+        cfg.nombre_negocio = 'Cuatro Raíces'
         cfg.dias_tarifa_finde = [4, 5, 6]       # Vie-Sáb-Dom
         cfg.reserva_exclusiva_por_turno = True   # spa privado, 1 reserva por turno
         cfg.save()
