@@ -37,7 +37,7 @@ def hub(request):
         ('Campos personalizados', 'configuracion:campos', 'Campos extra de contacto (ej. aniversario) para filtrar y segmentar.'),
         ('Extras / opcionales', 'configuracion:extras', 'Adicionales con precio para sumar a las reservas (upsell).'),
         ('Automatizaciones', 'configuracion:automatizaciones', 'Activar/desactivar y configurar automatizaciones.'),
-        ('Popups de la web', 'configuracion:popups', 'Carteles de promos y fechas especiales en spacuatroestaciones.com. Prender, apagar y programar.'),
+        ('Popups de la web', 'configuracion:popups', 'Carteles de promos y fechas especiales en spacuatroraices.com.ar. Prender, apagar y programar.'),
         ('Negocio', 'configuracion:negocio', 'Plazo de seña, política de cancelación, días laborables.'),
         ('Usuarios y roles', 'configuracion:usuarios', 'Cuentas de acceso (dueño / recepción).'),
     ]

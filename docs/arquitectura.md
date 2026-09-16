@@ -393,7 +393,7 @@ Para detectar a tiempo si el sistema quedó mudo:
 
 ## 10. Web pública ← CRM (contenido editable sin deploy)
 
-La web (`spacuatroestaciones.com`) es **HTML estático** servido por nginx desde `web/`: Django
+La web (`spacuatroraices.com.ar`) es **HTML estático** servido por nginx desde `web/`: Django
 no la toca. Para que el dueño pueda cambiar cosas sin tocar código, hay dos puentes, los dos
 con la misma forma — **un endpoint público en el CRM + un `<script>` en la web**:
 
@@ -436,7 +436,7 @@ es visible para cualquiera**: nada sensible ahí.
 
 ### CORS
 
-Los dos scripts hacen `fetch` cross-origin (`spacuatroestaciones.com` → `crm.spacuatroestaciones.com`).
+Los dos scripts hacen `fetch` cross-origin (`spacuatroraices.com.ar` → `crm.spacuatroraices.com.ar`).
 Sin `CORS_ALLOWED_ORIGINS` con el dominio de la web, el navegador los bloquea y no se ve ni el
 precio ni el popup. Ver `.env.example`.
 

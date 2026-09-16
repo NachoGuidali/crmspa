@@ -94,8 +94,8 @@ La arquitectura es **una sola base de datos**, dos caras:
 
 | Dominio | Qué sirve | Cómo |
 |---|---|---|
-| **spacuatroestaciones.com** | Web pública (marketing) | Sitio **estático** (`web/`) servido por nginx. Las reservas van por WhatsApp. |
-| **crm.spacuatroestaciones.com** | CRM | Django/gunicorn dockerizado (127.0.0.1:8003), proxeado por nginx. |
+| **spacuatroraices.com.ar** | Web pública (marketing) | Sitio **estático** (`web/`) servido por nginx. Las reservas van por WhatsApp. |
+| **crm.spacuatroraices.com.ar** | CRM | Django/gunicorn dockerizado (127.0.0.1:8003), proxeado por nginx. |
 
 Los **precios que muestra la web salen del CRM**: la web puede leerlos del endpoint público
 `GET /api/v1/publico/circuitos/` (ver más abajo). Cambiás un precio en el CRM → la web lo toma.
@@ -104,34 +104,36 @@ Los **precios que muestra la web salen del CRM**: la web puede leerlos del endpo
 
 ```bash
 # 1. DNS: dos registros A a la IP del VPS
-#    spacuatroestaciones.com        → IP
-#    www.spacuatroestaciones.com    → IP
-#    crm.spacuatroestaciones.com    → IP
+#    spacuatroraices.com.ar        → IP   (principal)
+#    www.spacuatroraices.com.ar    → IP   (redirige al principal)
+#    spacuatroraices.com           → IP   (redirige al principal)
+#    www.spacuatroraices.com       → IP   (redirige al principal)
+#    crm.spacuatroraices.com.ar    → IP
 
 # 2. Subir el proyecto y la carpeta web/ al servidor, y levantar el CRM
 docker compose up -d --build
 
 # 3. nginx del host + certbot (SSL)
 sudo apt install -y nginx certbot python3-certbot-nginx
-sudo cp deploy/nginx-spacuatroestaciones.conf /etc/nginx/sites-available/spacuatroestaciones
-sudo ln -s /etc/nginx/sites-available/spacuatroestaciones /etc/nginx/sites-enabled/
+sudo cp deploy/nginx-spacuatroraices.conf /etc/nginx/sites-available/spacuatroraices
+sudo ln -s /etc/nginx/sites-available/spacuatroraices /etc/nginx/sites-enabled/
 #    (ajustar en el archivo la ruta 'root' a donde dejaste la carpeta web/)
 sudo nginx -t && sudo systemctl reload nginx
 
 # 4. Certificados SSL (certbot edita el nginx solo y agrega los bloques 443 + redirección)
-sudo certbot --nginx -d spacuatroestaciones.com -d www.spacuatroestaciones.com -d crm.spacuatroestaciones.com
+sudo certbot --nginx -d spacuatroraices.com.ar -d www.spacuatroraices.com.ar -d spacuatroraices.com -d www.spacuatroraices.com -d crm.spacuatroraices.com.ar
 ```
 
 En el `.env` de producción:
 ```
-ALLOWED_HOSTS=crm.spacuatroestaciones.com
-CSRF_TRUSTED_ORIGINS=https://crm.spacuatroestaciones.com
-CORS_ALLOWED_ORIGINS=https://spacuatroestaciones.com,https://www.spacuatroestaciones.com
+ALLOWED_HOSTS=crm.spacuatroraices.com.ar
+CSRF_TRUSTED_ORIGINS=https://crm.spacuatroraices.com.ar
+CORS_ALLOWED_ORIGINS=https://spacuatroraices.com.ar,https://www.spacuatroraices.com.ar
 ```
 
 > **Conectar la web a los precios del CRM (paso final, cuando la web esté terminada):** hoy
 > `web/index.html` tiene los precios escritos en el JS. Para que se actualicen solos desde el
-> CRM, hacé que esa sección lea de `https://crm.spacuatroestaciones.com/api/v1/publico/circuitos/`
+> CRM, hacé que esa sección lea de `https://crm.spacuatroraices.com.ar/api/v1/publico/circuitos/`
 > (devuelve los tramos y precios en JSON). El endpoint ya está listo y con CORS habilitado.
 
 ---
@@ -167,7 +169,7 @@ CORS_ALLOWED_ORIGINS=https://spacuatroestaciones.com,https://www.spacuatroestaci
 - [ ] `SECRET_KEY` random y secreto (no `django-insecure`).
 - [ ] `DEBUG=False`.
 - [ ] `DB_PASSWORD` fuerte en el `.env` (ya no es el default `crmspa`).
-- [ ] `ALLOWED_HOSTS=crm.spacuatroestaciones.com` y `CSRF_TRUSTED_ORIGINS` con https.
+- [ ] `ALLOWED_HOSTS=crm.spacuatroraices.com.ar` y `CSRF_TRUSTED_ORIGINS` con https.
 - [ ] `CORS_ALLOWED_ORIGINS` con el dominio de la web pública.
 - [ ] DNS: los 3 registros A apuntando al VPS.
 - [ ] nginx del host + certbot (SSL en los dos dominios).

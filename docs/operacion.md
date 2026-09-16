@@ -183,7 +183,7 @@ de la fila** por WhatsApp y le da unas horas para confirmar antes de pasar al si
 - **Vouchers / Gift cards** (`Vouchers`): vendé un circuito para regalar. Genera un código
   `SPA-XXXX-XXXX`. Cuando lo canjean (por el bot o a mano), crea una reserva ya confirmada.
 - **Popups de la web** (`Configuración → Popups de la web`): el cartel que aparece sobre
-  spacuatroestaciones.com para anunciar una promo o una fecha especial. Ver abajo.
+  spacuatroraices.com.ar para anunciar una promo o una fecha especial. Ver abajo.
 
 ### Popups de la web (promos y fechas especiales)
 

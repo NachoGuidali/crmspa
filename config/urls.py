@@ -34,7 +34,7 @@ def robots_txt(_request):
         '# CRM interno de Cuatro Raíces — nada de acá va a los buscadores.\n'
         '# El noindex real lo pone el header X-Robots-Tag en cada respuesta; acá no se\n'
         '# bloquea el rastreo para que Google pueda leerlo. La web pública está en\n'
-        '# https://spacuatroestaciones.com/robots.txt\n'
+        '# https://spacuatroraices.com.ar/robots.txt\n'
         'User-agent: *\n'
         'Allow: /\n'
     )
@@ -80,7 +80,7 @@ urlpatterns = [
     path('tareas/', include('apps.tareas.urls')),
     path('', include('apps.dashboard.urls')),
 
-    # Media PÚBLICO: lo que la web de spacuatroestaciones.com tiene que poder mostrar sin
+    # Media PÚBLICO: lo que la web de spacuatroraices.com.ar tiene que poder mostrar sin
     # login (hoy, las fotos de los popups). Va ANTES de la regla protegida para ganarle el
     # match. Todo lo que se suba acá es visible para cualquiera: nada sensible.
     re_path(

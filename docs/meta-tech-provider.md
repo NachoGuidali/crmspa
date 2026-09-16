@@ -1,5 +1,11 @@
 # Darse de alta como Tech Provider en Meta (paso a paso, desde cero)
 
+
+> **Dominio (sept-2026):** la web se mudó a `spacuatroraices.com.ar`. Las URLs de abajo son
+> las que se cargaron en la app de Meta y quedan como registro de lo enviado; siguen
+> funcionando porque el dominio viejo redirige al nuevo. Actualizalas en el panel de la app
+> (y el webhook, ver `docs/mudanza-dominio.md`) cuando Meta termine la revisión.
+
 Guía para registrarte **vos (monotributo)** como **Tech Provider** de la Plataforma de WhatsApp
 Business, y después onboardear a **Spa 4 Estaciones** (y otros números) como clientes con
 **Coexistence** (el número queda usable en la app del celular **y** en la API/CRM).

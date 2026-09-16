@@ -1,4 +1,4 @@
-"""API pública (sin autenticación) para que la web visible (spacuatroestaciones.com)
+"""API pública (sin autenticación) para que la web visible (spacuatroraices.com.ar)
 lea precios y circuitos directamente del CRM. Así, cambiar un precio en el CRM se refleja
 en la web sin tocar código."""
 from rest_framework.permissions import AllowAny
@@ -73,7 +73,7 @@ class PopupPublicoView(APIView):
 
         imagen = None
         if popup.imagen:
-            # Absoluta: la web corre en otro dominio (spacuatroestaciones.com) que el CRM.
+            # Absoluta: la web corre en otro dominio (spacuatroraices.com.ar) que el CRM.
             imagen = request.build_absolute_uri(popup.imagen.url)
 
         return Response({'popup': {

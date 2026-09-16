@@ -205,7 +205,7 @@ del handshake GET de Meta, y CSRF no aplica a los APIView (sin SessionAuth) — 
 - [x] M5 — `F('total_usos') + 1`. *(2026-08-20)*
 
 **Infra / operación:**
-- [ ] HTTPS con certificado válido en nginx (certbot) para `crm.spacuatroestaciones.com`.
+- [ ] HTTPS con certificado válido en nginx (certbot) para `crm.spacuatroraices.com.ar`.
 - [ ] Backups automáticos de Postgres + prueba de restore.
 - [ ] Retención/rotación de logs (WebhookLog, LogEnvioWhatsApp, celery results).
 - [ ] Monitoreo/alertas (Celery vivo, errores de Meta, reintentos agotados).

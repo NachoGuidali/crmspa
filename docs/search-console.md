@@ -1,7 +1,7 @@
 # Cómo dar de alta la web en Google Search Console
 
 **Para:** quien administra la cuenta de Google del spa
-**Sitio:** spacuatroestaciones.com
+**Sitio:** spacuatroraices.com.ar
 
 ---
 
@@ -20,7 +20,7 @@ mapa del sitio. Falta solo darla de alta.
 
 - **La cuenta de Google del spa.** Usá **la misma** con la que manejás la ficha del negocio en
   Google Maps. Si usás otra, después no se pueden conectar entre sí.
-- **Acceso al proveedor del dominio** (donde se compró `spacuatroestaciones.com`, normalmente
+- **Acceso al proveedor del dominio** (donde se compró `spacuatroraices.com.ar`, normalmente
   DonWeb). Hace falta en el paso 3. **Si no lo tenés, pedíselo a Nacho** — es un solo dato que
   hay que cargar y no cuesta nada.
 
@@ -50,7 +50,7 @@ Google te va a mostrar **dos opciones**:
 En el recuadro de la izquierda ("Dominio"), escribí exactamente:
 
 ```
-spacuatroestaciones.com
+spacuatroraices.com.ar
 ```
 
 Sin `https://` y sin `www`. Tocá **Continuar**.
@@ -111,10 +111,10 @@ Arriba de todo hay una barra de búsqueda que dice *"Inspeccionar cualquier URL"
 cuatro direcciones, **de a una**, y en cada una tocá **"Solicitar indexación"**:
 
 ```
-https://spacuatroestaciones.com/
-https://spacuatroestaciones.com/spa-de-parejas.html
-https://spacuatroestaciones.com/spa-grupal.html
-https://spacuatroestaciones.com/despedida-de-soltera.html
+https://spacuatroraices.com.ar/
+https://spacuatroraices.com.ar/spa-de-parejas.html
+https://spacuatroraices.com.ar/spa-grupal.html
+https://spacuatroraices.com.ar/despedida-de-soltera.html
 ```
 
 Cada una tarda un minuto en procesarse. Si dice *"La URL no está en Google"*, está bien — es
@@ -133,7 +133,7 @@ Volvé a entrar **en 2 semanas** y mirá dos secciones:
   información más útil: te dice qué busca realmente la gente que llega al spa.
 - **Páginas** — cuáles indexó y cuáles no.
 
-> Vas a ver aparecer también `crm.spacuatroestaciones.com` (el sistema interno), marcado como
+> Vas a ver aparecer también `crm.spacuatroraices.com.ar` (el sistema interno), marcado como
 > **"Excluida por etiqueta noindex"**. **Está bien así, es a propósito**: el CRM no tiene que
 > salir en Google. No hay nada que arreglar ahí.
 
@@ -152,7 +152,7 @@ cuenta y revisá:
 - [ ] **Horarios de atención cargados** y actualizados.
 - [ ] **Servicios cargados uno por uno**: Spa de Parejas, Spa Grupal, Despedida de Soltera.
 - [ ] **Rango de precios** y atributos (estacionamiento, apto grupos, etc.).
-- [ ] **El link a la web** apuntando a `spacuatroestaciones.com`.
+- [ ] **El link a la web** apuntando a `spacuatroraices.com.ar`.
 - [ ] **Fotos nuevas cada tanto.** Google le da mejor lugar a los perfiles activos, y las fotos
       son lo primero que mira la gente. De material te sobra.
 - [ ] **Responder todas las reseñas**, no solo algunas. Cuenta como señal de actividad, y el que

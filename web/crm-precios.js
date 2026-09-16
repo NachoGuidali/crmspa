@@ -1,4 +1,4 @@
-// Conecta los precios de la web con el CRM (crm.spacuatroestaciones.com).
+// Conecta los precios de la web con el CRM (crm.<dominio de la web>).
 // Cambiando un precio en el CRM, la web lo toma. Si el CRM no responde, quedan
 // los precios escritos en la página como fallback.
 //
@@ -7,7 +7,16 @@
 //   componentDidMount() { var self = this; window.CRM.fetchPrecios(function (p) { self.setState({ precios: p }); }); }
 //   renderVals() { return { ..., circuitos: window.CRM.aplicar(circuitos, this.state.precios) }; }
 (function () {
-  var API = 'https://crm.spacuatroestaciones.com/api/v1/publico/circuitos/';
+  // El CRM vive en el subdominio crm. del mismo dominio que la página. Se calcula en vez de
+  // escribirlo fijo para que ande durante la mudanza de dominio: servida desde
+  // spacuatroraices.com.ar pega a crm.spacuatroraices.com.ar, y si todavía se sirve desde el
+  // dominio viejo pega al CRM viejo. Abierta como archivo local (sin host), usa el principal.
+  function crmBase() {
+    var h = (window.location && window.location.hostname || '').replace(/^www\./, '');
+    if (!h || h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h)) h = 'spacuatroraices.com.ar';
+    return 'https://crm.' + h;
+  }
+  var API = crmBase() + '/api/v1/publico/circuitos/';
 
   function fmtMoney(n) {
     if (n === null || n === undefined || isNaN(n)) return '';

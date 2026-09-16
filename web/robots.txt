@@ -1,4 +1,4 @@
-# Cuatro Raíces — spacuatroestaciones.com
+# Cuatro Raíces — spacuatroraices.com.ar
 
 User-agent: *
 Allow: /
@@ -6,4 +6,4 @@ Allow: /
 # Las páginas legales están marcadas noindex en su propio <head>; no se bloquean acá
 # a propósito: si Google no las puede leer, no se entera del noindex.
 
-Sitemap: https://spacuatroestaciones.com/sitemap.xml
+Sitemap: https://spacuatroraices.com.ar/sitemap.xml

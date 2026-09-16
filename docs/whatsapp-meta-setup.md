@@ -25,7 +25,7 @@ aparecen y cómo resolverlos. Al final, el paso de **número de prueba → núme
 
 1. Meta → tu app → **WhatsApp → Configuración** → sección **Webhook** → **Editar**.
 2. **URL de devolución de llamada (Callback URL):**
-   `https://crm.spacuatroestaciones.com/whatsapp/webhook/meta/`
+   `https://crm.spacuatroraices.com.ar/whatsapp/webhook/meta/`
 3. **Identificador de verificación (Verify Token):** el mismo que pusiste en el CRM.
 4. **Verificar y guardar.** Meta pega un `GET` al CRM; si el token coincide, queda verde.
    - Requiere **HTTPS con certificado válido** en el dominio del CRM.

@@ -18,7 +18,7 @@ class PopupWebQuerySet(models.QuerySet):
 
 
 class PopupWeb(models.Model):
-    """Cartel emergente de la web pública (spacuatroestaciones.com), editable desde el CRM.
+    """Cartel emergente de la web pública (spacuatroraices.com.ar), editable desde el CRM.
 
     La web es estática: no la sirve Django. El puente es `GET /api/v1/publico/popup/`, que
     `web/crm-popup.js` consulta al cargar la página. Prender, apagar, cambiar el texto o la

@@ -4,7 +4,7 @@
 class NoIndexMiddleware:
     """Marca TODA respuesta del CRM como no indexable (`X-Robots-Tag: noindex, nofollow`).
 
-    El CRM vive en crm.spacuatroestaciones.com, un subdominio público: sin esto, Google puede
+    El CRM vive en crm.spacuatroraices.com.ar, un subdominio público: sin esto, Google puede
     indexar la pantalla de login y mostrarla en los resultados junto a la web del spa. Feo para
     la marca y sin ningún beneficio.
 

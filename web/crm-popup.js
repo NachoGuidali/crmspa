@@ -10,7 +10,16 @@
 (function () {
   'use strict';
 
-  var API = 'https://crm.spacuatroestaciones.com/api/v1/publico/popup/';
+  // El CRM vive en el subdominio crm. del mismo dominio que la página. Se calcula en vez de
+  // escribirlo fijo para que ande durante la mudanza de dominio: servida desde
+  // spacuatroraices.com.ar pega a crm.spacuatroraices.com.ar, y si todavía se sirve desde el
+  // dominio viejo pega al CRM viejo. Abierta como archivo local (sin host), usa el principal.
+  function crmBase() {
+    var h = (window.location && window.location.hostname || '').replace(/^www\./, '');
+    if (!h || h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h)) h = 'spacuatroraices.com.ar';
+    return 'https://crm.' + h;
+  }
+  var API = crmBase() + '/api/v1/publico/popup/';
   var DEMORA_MS = 1200;           // que el visitante vea la página antes del cartel
   var CLAVE = 'crm_popup_visto';  // { "<id>:<version>": <timestamp de cierre> }
 
