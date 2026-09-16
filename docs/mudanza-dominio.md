@@ -118,21 +118,21 @@ Tenés que ver el POST llegando al host **nuevo**.
 Solo cuando las fases 1 a 4 anden. A partir de acá quien entre a `spacuatroestaciones.com` termina
 en `spacuatroraices.com.ar`.
 
-Editá **a mano** `/etc/nginx/sites-available/spacuatroestaciones` (no lo pises con el template:
-tiene los bloques de certbot). En los bloques de la **web** —los de `server_name
-spacuatroestaciones.com` y `www.spacuatroestaciones.com`, **los que escuchan en 443**—
-reemplazá todo el contenido de `location / { ... }` y el bloque de assets por:
-
-```nginx
-    return 301 https://spacuatroraices.com.ar$request_uri;
-```
-
-**No toques el bloque de `crm.spacuatroestaciones.com`.**
+No pises `/etc/nginx/sites-available/spacuatroestaciones` con el template: tiene los bloques de
+certbot. Lo cambia un script que toca **solo** los bloques de la web (los del CRM quedan byte por
+byte iguales), hace backup, corre `nginx -t` y si falla restaura el backup sin recargar nada:
 
 ```bash
-sudo nginx -t && sudo systemctl reload nginx
+cd /opt/crmspa && git pull
+sudo python3 deploy/redirigir-dominio-viejo.py --solo-mostrar   # revisá el diff, no escribe
+sudo python3 deploy/redirigir-dominio-viejo.py                  # aplica, prueba y recarga
 curl -sI https://spacuatroestaciones.com/spa-grupal.html | grep -i "^location"
 ```
+
+Si preferís hacerlo a mano: en los bloques `server` de `spacuatroestaciones.com` y
+`www.spacuatroestaciones.com` que tienen `root`, sacá `root`, `index` y los `location`, y poné
+`return 301 https://spacuatroraices.com.ar$request_uri;`. **No toques el de
+`crm.spacuatroestaciones.com`.**
 
 Tiene que responder `location: https://spacuatroraices.com.ar/spa-grupal.html` — la ruta se
 conserva, así cada link viejo cae en su página equivalente.
