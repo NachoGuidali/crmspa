@@ -129,6 +129,9 @@ sudo python3 deploy/redirigir-dominio-viejo.py                  # aplica, prueba
 curl -sI https://spacuatroestaciones.com/spa-grupal.html | grep -i "^location"
 ```
 
+Tiene que responder `location: https://spacuatroraices.com.ar/spa-grupal.html` — la ruta se
+conserva, así cada link viejo cae en su página equivalente.
+
 Si preferís hacerlo a mano: en los bloques `server` de `spacuatroestaciones.com` y
 `www.spacuatroestaciones.com` que tienen `root`, sacá `root`, `index` y los `location`, y poné
 `return 301 https://spacuatroraices.com.ar$request_uri;`. **No toques el de
@@ -157,9 +160,6 @@ CORS_ALLOWED_ORIGINS=https://spacuatroraices.com.ar
 ```bash
 docker compose up -d web celery celery-beat
 ```
-
-Tiene que responder `location: https://spacuatroraices.com.ar/spa-grupal.html` — la ruta se
-conserva, así cada link viejo cae en su página equivalente.
 
 ## Fase 6 — Google y redes
 
