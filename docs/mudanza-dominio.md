@@ -7,7 +7,7 @@
 | spacuatroraices.com · www.spacuatroraices.com | Redirigen (301) al principal. |
 | **crm.spacuatroraices.com.ar** | CRM. |
 | spacuatroestaciones.com (+ www) | **Redirige (301) al principal.** Queda vivo para que los links viejos no se rompan. |
-| crm.spacuatroestaciones.com | Sigue atendiendo el CRM mientras se mudan los webhooks. |
+| crm.spacuatroestaciones.com | Redirige (301) a crm.spacuatroraices.com.ar, una vez movidos los webhooks (fase 5). |
 
 > **El orden importa.** Cada fase deja todo funcionando antes de pasar a la siguiente. Hasta la
 > fase 5 el dominio viejo sigue exactamente igual que hoy: si algo falla a mitad de camino, la web
@@ -134,6 +134,30 @@ Si preferís hacerlo a mano: en los bloques `server` de `spacuatroestaciones.com
 `return 301 https://spacuatroraices.com.ar$request_uri;`. **No toques el de
 `crm.spacuatroestaciones.com`.**
 
+### El CRM viejo
+
+Solo con n8n, Evolution y Meta ya apuntando a `crm.spacuatroraices.com.ar` (fase 4): un webhook
+que siga pegando en el viejo **se pierde** después de esto.
+
+```bash
+sudo python3 deploy/redirigir-dominio-viejo.py --crm --solo-mostrar
+sudo python3 deploy/redirigir-dominio-viejo.py --crm
+curl -sI https://crm.spacuatroestaciones.com/usuarios/login/ | grep -i "^location"
+```
+
+Tiene que responder `location: https://crm.spacuatroraices.com.ar/usuarios/login/`. Después,
+en `/opt/crmspa/.env` dejá solo el CRM nuevo y recreá los contenedores:
+
+```
+ALLOWED_HOSTS=crm.spacuatroraices.com.ar
+CSRF_TRUSTED_ORIGINS=https://crm.spacuatroraices.com.ar
+CORS_ALLOWED_ORIGINS=https://spacuatroraices.com.ar
+```
+
+```bash
+docker compose up -d web celery celery-beat
+```
+
 Tiene que responder `location: https://spacuatroraices.com.ar/spa-grupal.html` — la ruta se
 conserva, así cada link viejo cae en su página equivalente.
 
@@ -155,7 +179,5 @@ conserva, así cada link viejo cae en su página equivalente.
 
 - **No dejes vencer `spacuatroestaciones.com`.** Los redirects dependen de que siga activo. Como
   mínimo un año, idealmente para siempre: es barato y hay links viejos en todos lados.
-- Cuando los webhooks lleven un tiempo andando en el dominio nuevo, podés sacar
-  `crm.spacuatroestaciones.com` de `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS`.
 - La URL de privacidad cargada en la app de Meta sigue en el dominio viejo (funciona por el
   redirect). Actualizala en el panel de la app cuando termine la revisión.

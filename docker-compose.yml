@@ -49,7 +49,7 @@ services:
       - media_data:/app/media
       - static_data:/app/staticfiles
     ports:
-      # Solo accesible desde el propio servidor: nginx (en el host) proxya crm.spacuatroestaciones.com
+      # Solo accesible desde el propio servidor: nginx (en el host) proxya crm.spacuatroraices.com.ar
       # a este puerto. Nunca exponer gunicorn directo a internet.
       - "127.0.0.1:8003:8000"
     depends_on:

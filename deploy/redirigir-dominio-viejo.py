@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Hace que la WEB de spacuatroestaciones.com redirija (301) a spacuatroraices.com.ar.
+"""Hace que el dominio viejo (spacuatroestaciones.com) redirija (301) al nuevo.
 
-Toca solo los bloques de la web pública. El CRM (crm.spacuatroestaciones.com) queda igual: los
-webhooks de Meta y Evolution pueden seguir pegando ahí, y un webhook no sigue redirects.
+Sin flag toca solo los bloques de la WEB → spacuatroraices.com.ar. El CRM viejo queda igual.
+Con --crm toca solo el bloque del CRM viejo → crm.spacuatroraices.com.ar. Hacelo recién cuando los
+webhooks de Meta y Evolution (y el flujo de n8n) apunten al CRM nuevo: un webhook no sigue
+redirects, un POST que pegue en el viejo se pierde.
 
 Por qué un script y no editar a mano: el archivo de /etc/nginx fue reescrito por certbot, y un
 error de sintaxis ahí tira abajo TODOS los sitios del server — la web nueva y el CRM incluidos.
@@ -16,6 +18,8 @@ Este script:
 Uso:
     sudo python3 deploy/redirigir-dominio-viejo.py --solo-mostrar   # muestra el cambio, no escribe
     sudo python3 deploy/redirigir-dominio-viejo.py                  # aplica, prueba y recarga
+    sudo python3 deploy/redirigir-dominio-viejo.py --crm --solo-mostrar   # idem, CRM viejo
+    sudo python3 deploy/redirigir-dominio-viejo.py --crm
 """
 import difflib
 import re
@@ -26,11 +30,12 @@ import time
 
 ARCHIVO = '/etc/nginx/sites-available/spacuatroestaciones'
 VIEJO = 'spacuatroestaciones.com'
-NUEVO = 'https://spacuatroraices.com.ar$request_uri'
+NUEVO_WEB = 'https://spacuatroraices.com.ar$request_uri'
+NUEVO_CRM = 'https://crm.spacuatroraices.com.ar$request_uri'
 
-# Directivas que sirven la web y que el redirect reemplaza. Todo lo demás (listen, ssl_*,
+# Directivas que sirven el sitio y que el redirect reemplaza. Todo lo demás (listen, ssl_*,
 # server_name, los "# managed by Certbot") se conserva tal cual.
-QUE_SERVIR = re.compile(r'^\s*(root|index|try_files|expires|access_log)\b')
+QUE_SERVIR = re.compile(r'^\s*(root|index|try_files|expires|access_log|client_max_body_size)\b')
 
 
 def bloques_server(texto):
@@ -64,8 +69,14 @@ def es_web_vieja(bloque):
     return 'root' in bloque and 'proxy_pass' not in bloque
 
 
-def convertir(bloque):
-    """Saca lo que sirve la web (root, index, locations) y pone el redirect."""
+def es_crm_viejo(bloque):
+    """El bloque del CRM viejo: server_name crm.spacuatroestaciones.com y hace proxy_pass."""
+    nombres = re.search(r'server_name\s+([^;]+);', bloque)
+    return bool(nombres) and 'crm.' + VIEJO in nombres.group(1) and 'proxy_pass' in bloque
+
+
+def convertir(bloque, destino):
+    """Saca lo que sirve el sitio (root, index, locations) y pone el redirect."""
     # Los `location` se sacan enteros, contando llaves.
     salida, i = [], 0
     for m in re.finditer(r'(?m)^[ \t]*location\b[^{]*\{', bloque):
@@ -92,13 +103,14 @@ def convertir(bloque):
     # comentarios propios que quedaron huérfanos sobre lo que se sacó
     lineas = [l for l in lineas
               if not re.match(r'^\s*#\s*(Carpeta web|Cache de assets)', l)]
+    lineas = [re.sub(r'\s*#\s*subida de imágenes.*$', '', l) for l in lineas]
     cuerpo = '\n'.join(lineas)
 
     # El redirect va justo después de server_name, así se lee arriba del bloque.
     redirect = (
-        '\n    # Web vieja: redirige al dominio nuevo conservando la ruta, así cada link viejo cae\n'
-        '    # en su página equivalente y Google traslada el posicionamiento.\n'
-        f'    return 301 {NUEVO};'
+        '\n    # Dominio viejo: redirige al nuevo conservando la ruta, así cada link viejo cae\n'
+        '    # en su página equivalente.\n'
+        f'    return 301 {destino};'
     )
     cuerpo = re.sub(r'(server_name\s+[^;]+;)', r'\1' + redirect.replace('\\', '\\\\').replace('$', '$'),
                     cuerpo, count=1)
@@ -108,38 +120,41 @@ def convertir(bloque):
 
 def main():
     solo_mostrar = '--solo-mostrar' in sys.argv
+    modo_crm = '--crm' in sys.argv
     ruta = next((a for a in sys.argv[1:] if not a.startswith('--')), ARCHIVO)
+    destino = NUEVO_CRM if modo_crm else NUEVO_WEB
+    que = 'del CRM viejo' if modo_crm else 'de la web vieja'
 
     original = open(ruta).read()
-    if f'return 301 {NUEVO}' in original:
-        print('El redirect ya está aplicado. No hay nada que hacer.')
-        return 0
-
     bloques = bloques_server(original)
-    web = [(a, b) for a, b in bloques if es_web_vieja(original[a:b])]
-    crm = [(a, b) for a, b in bloques if 'crm.' + VIEJO in original[a:b]]
+    elegidos = [(a, b) for a, b in bloques
+                if (es_crm_viejo if modo_crm else es_web_vieja)(original[a:b])]
+    # El resto de los bloques tiene que quedar byte por byte igual.
+    otros = [(a, b) for a, b in bloques if (a, b) not in elegidos]
 
-    if not web:
-        print('No encontré ningún bloque de la web vieja (server_name con '
-              f'{VIEJO} y root). No toco nada.')
+    if not elegidos:
+        if f'return 301 {destino}' in original:
+            print(f'El redirect {que} ya está aplicado. No hay nada que hacer.')
+            return 0
+        print(f'No encontré ningún bloque {que}. No toco nada.')
         return 1
 
     nuevo, desde = [], 0
-    for a, b in web:
+    for a, b in elegidos:
         nuevo.append(original[desde:a])
-        nuevo.append(convertir(original[a:b]))
+        nuevo.append(convertir(original[a:b], destino))
         desde = b
     nuevo.append(original[desde:])
     nuevo = ''.join(nuevo)
 
-    # Red de seguridad: el CRM tiene que quedar byte por byte igual.
-    for a, b in crm:
+    # Red de seguridad: lo que no se eligió no puede cambiar.
+    for a, b in otros:
         if original[a:b] not in nuevo:
-            print('ABORTADO: el cambio tocaba el bloque del CRM. No escribo nada.')
+            print('ABORTADO: el cambio tocaba otro bloque. No escribo nada.')
             return 1
 
-    print(f'Bloques de la web vieja a redirigir: {len(web)}')
-    print(f'Bloques del CRM viejo (sin tocar):   {len(crm)}\n')
+    print(f'Bloques {que} a redirigir: {len(elegidos)}')
+    print(f'Otros bloques (sin tocar): {len(otros)}\n')
     sys.stdout.writelines(difflib.unified_diff(
         original.splitlines(True), nuevo.splitlines(True), 'antes', 'después'))
 
@@ -173,7 +188,10 @@ def main():
         print('Recargalo a mano: sudo systemctl reload nginx')
         return 1
     print('\nnginx -t OK y recargado. Probá:')
-    print(f'  curl -sI https://{VIEJO}/spa-grupal.html | grep -i ^location')
+    if modo_crm:
+        print(f'  curl -sI https://crm.{VIEJO}/usuarios/login/ | grep -i ^location')
+    else:
+        print(f'  curl -sI https://{VIEJO}/spa-grupal.html | grep -i ^location')
     return 0
 
 
