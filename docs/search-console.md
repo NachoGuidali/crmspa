@@ -92,13 +92,16 @@ Ahora hay que pegarlo en el panel del proveedor del dominio:
 Esto le pasa a Google la lista de todas las páginas de una.
 
 1. En el menú de la izquierda, entrá a **"Sitemaps"**.
-2. Donde dice "Agregar un sitemap nuevo", escribí:
+2. Donde dice "Agregar un sitemap nuevo", pegá la dirección **completa**:
 
 ```
-sitemap.xml
+https://spacuatroraices.com.ar/sitemap.xml
 ```
 
 3. Tocá **Enviar**.
+
+> En las propiedades de tipo **Dominio** hay que poner la dirección entera, con `https://`.
+> Si escribís solo `sitemap.xml`, Google responde *"Dirección de sitemap no válida"*.
 
 Tiene que quedar en estado **"Correcto"**, con **7 páginas** detectadas. Si figura "No se pudo
 obtener", esperá un rato y actualizá — a veces lo lee recién unas horas después.
