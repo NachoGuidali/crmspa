@@ -122,6 +122,28 @@ justamente lo que estás pidiendo que cambie.
 
 ---
 
+## Paso 6 — Mudar el sitio viejo (solo si ya existía `spacuatroestaciones.com` en Search Console)
+
+La web antes vivía en `spacuatroestaciones.com`. Si ese dominio ya estaba dado de alta acá,
+este paso le avisa a Google que se mudó y le traslada el posicionamiento ganado. Sin esto,
+Google trata a la web nueva como un sitio desconocido que arranca de cero.
+
+1. Arriba a la izquierda, cambiá a la propiedad **vieja** (`spacuatroestaciones.com`).
+2. Entrá a **Configuración** → **Cambio de dirección**.
+3. En "Actualizar Google", elegí **spacuatroraices.com.ar** de la lista y tocá **Validar y
+   actualizar**.
+
+Google comprueba solo que el dominio viejo redirija al nuevo (ya lo hace) y que las dos
+propiedades estén verificadas en **la misma cuenta**. Si la propiedad vieja está en otra
+cuenta de Google, hay que entrar con esa.
+
+> Si el dominio viejo **nunca** estuvo en Search Console, saltealo: no hay nada que mudar.
+
+> **No borres la propiedad vieja ni la saques de Search Console.** El aviso de mudanza tiene
+> que quedar activo unos 6 meses, hasta que Google termine de pasar todo al dominio nuevo.
+
+---
+
 ## Listo. ¿Y ahora?
 
 **Los primeros días el panel va a estar vacío** y va a decir que no hay datos. **Es normal, no
