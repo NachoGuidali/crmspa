@@ -1,6 +1,19 @@
 CARPETA "fotos" — Cuatro Raíces
 ================================================
 
+TAMAÑO DE LAS FOTOS (importante)
+Una foto sacada del celular pesa entre 2 y 5 MB, y eso hace que la web tarde en abrir
+en datos móviles. Google mide esa demora y la usa para decidir el orden en las búsquedas.
+Antes de subir una foto nueva, achicala:
+
+  - fondos de pantalla completa (hero-*, *-portada, banner-*): 1920 px de lado largo
+  - fotos de galería (galeria-*): 1200 px de lado largo
+  - el resto: 1400 px de lado largo
+  - calidad 80, formato JPG
+
+Cada archivo tendría que quedar por debajo de los 400 KB. Si no sabés cómo, pedilo y se hace
+en un minuto con un script.
+
 Reemplazá cada uno de estos archivos por tu foto real, manteniendo el MISMO nombre
 (o cambiá el nombre y actualizá el "src" correspondiente en index.html).
 
