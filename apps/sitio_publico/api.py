@@ -34,6 +34,8 @@ class CircuitosPublicosView(APIView):
                 'sena_tipo': c.sena_tipo,
                 'sena_valor': _num(c.sena_valor),
                 'por_persona': bool(tramos),
+                # Lista "¿Qué incluye?" de la web. Vacía = la web deja la que trae escrita.
+                'incluye': c.incluye_items(),
             }
             if tramos:
                 # Grupales: precio POR PERSONA por tramo (semana = Lun-Jue, finde = Vie-Sáb-Dom)

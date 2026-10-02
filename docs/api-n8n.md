@@ -163,7 +163,9 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
       "precio": "72600.00", "precio_base": "66000.00", "recargo_feriado": "6600.00",
       "precio_semana_total": "54000.00", "precio_finde_total": "66000.00",
       "sena_tipo": "porcentaje", "sena_valor": "50.00",
-      "monto_sena": "36300.00", "activo": true
+      "monto_sena": "36300.00",
+      "incluye": ["Merienda clásica (dulce y salada)", "Masaje relajante 25'", "..."],
+      "activo": true
     }
   ]
 }

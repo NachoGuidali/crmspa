@@ -17,6 +17,9 @@ class TarifaCircuitoSerializer(serializers.ModelSerializer):
 
 class CircuitoSerializer(serializers.ModelSerializer):
     tarifas = TarifaCircuitoSerializer(many=True, read_only=True)
+    # Lo mismo que muestra la web en "¿Qué incluye?", ya partido en ítems: así el bot contesta
+    # con la lista de verdad y hay un solo lugar donde mantenerla.
+    incluye = serializers.SerializerMethodField()
     precio = serializers.SerializerMethodField()
     precio_base = serializers.SerializerMethodField()
     recargo_feriado = serializers.SerializerMethodField()
@@ -34,8 +37,11 @@ class CircuitoSerializer(serializers.ModelSerializer):
             'precio_semana_total', 'precio_finde_total',
             # La regla de la seña, para que el bot pueda calcularla cuando el total lleva
             # extras (ahí `monto_sena`, que es solo sobre el circuito, se queda corto).
-            'sena_tipo', 'sena_valor', 'monto_sena', 'activo',
+            'sena_tipo', 'sena_valor', 'monto_sena', 'incluye', 'activo',
         ]
+
+    def get_incluye(self, obj):
+        return obj.incluye_items()
 
     def _personas(self):
         return self.context.get('personas')

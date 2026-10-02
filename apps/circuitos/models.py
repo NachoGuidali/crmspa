@@ -44,6 +44,13 @@ class Circuito(models.Model):
         help_text='Si es porcentaje: número de 0 a 100. Si es monto fijo: importe en pesos.',
     )
 
+    # Lo que la web muestra como "¿Qué incluye?" en la card del circuito. Un ítem por línea:
+    # el spa lo cambia seguido y así no hay que tocar el HTML ni desplegar.
+    incluye = models.TextField(
+        blank=True,
+        help_text='Un ítem por línea. Es la lista "¿Qué incluye?" que muestra la web.',
+    )
+
     imagen = models.ImageField(upload_to='circuitos/', blank=True, null=True)
     activo = models.BooleanField(default=True, help_text='Si está inactivo, no se muestra en la web pública.')
 
@@ -57,6 +64,15 @@ class Circuito(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def incluye_items(self):
+        """La lista de `incluye` como ítems, sin líneas vacías ni viñetas escritas a mano."""
+        items = []
+        for linea in self.incluye.splitlines():
+            linea = linea.strip().lstrip('-•–—*').strip()
+            if linea:
+                items.append(linea)
+        return items
 
     @staticmethod
     def es_finde(fecha):

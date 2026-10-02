@@ -65,6 +65,23 @@ Al final del día, en el `Turnero` del día, marcá cada reserva:
 Todo esto es automático. El plazo se cambia en *Configuración → Configuración del negocio* →
 **Horas de reembolso desde el pago**.
 
+### Lo que incluye cada circuito (la lista de la web)
+
+La lista **"¿Qué incluye?"** que se ve en las cards de la web sale del CRM:
+*Configuración → Circuitos → editar un circuito* → campo **Incluye**, un ítem por línea.
+
+Al guardar, la web la toma sola — no hay que tocar la página ni pedir un despliegue. Puede
+tardar unos minutos en verse por el caché del navegador (con Ctrl+F5 se ve al toque). Si el
+campo queda **vacío**, la web muestra la lista que trae escrita de fábrica, así que vaciarlo no
+deja la card sin nada.
+
+En la **home** las cards son un resumen y muestran los **primeros 5 ítems**; en la página de
+cada circuito se ve la lista completa. Conviene ordenar la lista poniendo primero lo que más
+vende.
+
+> La página de **Despedida de Soltera** no tiene un circuito propio en el CRM: esa lista sigue
+> escrita en la página. Si hiciera falta editarla seguido, se le crea un circuito.
+
 ### Precios según el día
 
 - **Días de semana** y **fin de semana** tienen su propio precio por circuito. Qué días cuentan

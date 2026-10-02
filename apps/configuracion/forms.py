@@ -90,12 +90,19 @@ class CircuitoForm(forms.ModelForm):
             'capacidad_minima', 'capacidad_maxima',
             'precio_semana', 'precio_finde',
             'precio_persona_adicional_semana', 'precio_persona_adicional_finde',
-            'sena_tipo', 'sena_valor', 'imagen', 'activo',
+            'sena_tipo', 'sena_valor', 'incluye', 'imagen', 'activo',
         ]
         help_texts = {
             'precio_semana': 'Precio plano (circuitos de precio fijo como Pareja). Si el circuito '
                              'cobra por persona según el grupo, dejá esto vacío y cargá los tramos.',
             'capacidad_maxima': 'Tope máximo de personas que admite este circuito.',
+            'incluye': 'Un ítem por línea. Es la lista "¿Qué incluye?" de la web: al guardar, '
+                       'la web la toma sola (puede tardar unos minutos por el caché del navegador).',
+        }
+        widgets = {
+            'incluye': forms.Textarea(attrs={'rows': 12, 'placeholder': 'Masaje relajante 25\'\n'
+                                                                       'Jacuzzi con hidromasaje 40\'\n'
+                                                                       'Infusiones libres'}),
         }
 
 

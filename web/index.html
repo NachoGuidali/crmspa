@@ -954,7 +954,7 @@ class Component extends DCLogic {
       toggleMobile: this.toggleMobile,
       waLinkGeneral: this.waLink('Hola! Quiero consultar por una experiencia en Cuatro Raíces'),
       valores, galeria, brunchGaleria, productos, testimonios, testimonioDots, faqsLeft, faqsRight,
-      circuitos: window.CRM.aplicar(circuitos, this.state.precios),
+      circuitos: window.CRM.aplicar(circuitos, this.state.precios, { incluyeMax: 5 }),
       setRootRef: this.setRootRef,
       setHeaderRef: this.setHeaderRef,
       setHeroBgRef: this.setHeroBgRef,

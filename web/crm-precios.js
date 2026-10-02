@@ -6,6 +6,7 @@
 //   state = { ..., precios: null };
 //   componentDidMount() { var self = this; window.CRM.fetchPrecios(function (p) { self.setState({ precios: p }); }); }
 //   renderVals() { return { ..., circuitos: window.CRM.aplicar(circuitos, this.state.precios) }; }
+//   (en el home, que muestra las cards como resumen: aplicar(circuitos, precios, { incluyeMax: 5 }))
 (function () {
   // El CRM vive en el subdominio crm. del mismo dominio que la página. Se calcula en vez de
   // escribirlo fijo para que ande durante la mudanza de dominio: servida desde
@@ -40,8 +41,11 @@
       .catch(function () {});
   }
 
-  function aplicar(circuitos, precios) {
+  // opciones.incluyeMax: cuántos ítems de "¿Qué incluye?" mostrar. El home usa las cards como
+  // resumen (5 líneas) y las páginas de cada circuito muestran la lista entera.
+  function aplicar(circuitos, precios, opciones) {
     if (!precios || !circuitos) return circuitos;
+    var incluyeMax = (opciones && opciones.incluyeMax) || 0;
     var porClave = {};
     precios.forEach(function (p) { porClave[claveCircuito(p.nombre)] = p; });
 
@@ -50,6 +54,12 @@
       if (!api || !c.flyer) return c;
       var flyer = Object.assign({}, c.flyer);
       var nuevo = Object.assign({}, c);
+
+      // "¿Qué incluye?": si el CRM tiene cargada la lista, manda esa. Vacía en el CRM
+      // significa "dejá la de la página", no "no mostrar nada".
+      if (api.incluye && api.incluye.length) {
+        nuevo.bullets = incluyeMax ? api.incluye.slice(0, incluyeMax) : api.incluye;
+      }
 
       if (api.por_persona && api.tramos && api.tramos.length) {
         flyer.tiers = api.tramos.map(function (t) {
