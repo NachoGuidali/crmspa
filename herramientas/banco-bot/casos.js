@@ -1,0 +1,75 @@
+// Los casos de prueba. Cada uno es un mensaje real del turnero con el paso en el que llega.
+// `ia` es lo que devuelve el modelo: vacío ({}) significa "el modelo no entendió nada", que es
+// el escenario que importa — ahí se ve qué resuelve el flujo por su cuenta.
+const { conversacion: conv } = require('./banco.js');
+
+module.exports = [
+  // ── El turnero paso a paso, con el modelo mudo ──
+  { nombre: 'personas: "somos 4"', texto: 'somos 4',
+    conversacion: conv('turno_personas'), ia: {}, espera: { personas: 4 } },
+  { nombre: 'personas: "para 2"', texto: 'para 2',
+    conversacion: conv('turno_personas', { personas: null, tipo_propuesta: null }), ia: {}, espera: { personas: 2 } },
+  { nombre: 'personas: "spa de parejas"', texto: 'spa de parejas',
+    conversacion: conv('turno_personas', { personas: null, tipo_propuesta: null }), ia: {},
+    espera: { personas: 2, tipo_propuesta: 'pareja' } },
+  { nombre: 'fecha: "el sabado"', texto: 'el sabado',
+    conversacion: conv('turno_fecha'), ia: {}, espera: { fecha_solicitada: '2026-10-17' } },
+  { nombre: 'fecha: "25/10"', texto: '25/10',
+    conversacion: conv('turno_fecha'), ia: {}, espera: { fecha_solicitada: '2026-10-25' } },
+  { nombre: 'fecha: "mañana"', texto: 'lo quiero para mañana',
+    conversacion: conv('turno_fecha'), ia: {}, espera: { fecha_solicitada: '2026-10-14' } },
+  { nombre: 'fecha: "mañana" NO elige turno', texto: 'lo quiero para mañana',
+    conversacion: conv('turno_fecha'), ia: {}, espera: { turno_pedido: null } },
+  { nombre: 'turno: "a la mañana"', texto: 'a la mañana',
+    conversacion: conv('turno_fecha_elegir_turno'), ia: {}, espera: { turno_pedido: 'mañana' } },
+  { nombre: 'turno: "tarde"', texto: 'tarde',
+    conversacion: conv('turno_fecha_elegir_turno'), ia: {}, espera: { turno_pedido: 'tarde' } },
+  { nombre: 'turno: "mañana" acá es el turno, no el día', texto: 'mañana',
+    conversacion: conv('turno_fecha_elegir_turno'), ia: {},
+    espera: { turno_pedido: 'mañana', fecha_solicitada: undefined } },
+  { nombre: 'confirma fecha: "si dale"', texto: 'si dale',
+    conversacion: conv('turno_confirmar_fecha'), ia: {}, espera: { confirma_fecha: true } },
+  { nombre: 'nombre: "Fiorella Adimari"', texto: 'Fiorella Adimari',
+    conversacion: conv('turno_datos_nombre'), ia: {}, espera: { nombre_cliente: 'Fiorella Adimari' } },
+  { nombre: 'teléfono: "1121518287"', texto: '1121518287',
+    conversacion: conv('turno_datos_telefono'), ia: {}, espera: { telefono_cliente: '1121518287' } },
+  { nombre: 'email', texto: 'adimari@gmail.com',
+    conversacion: conv('turno_datos_email'), ia: {}, espera: { email_cliente: 'adimari@gmail.com' } },
+  { nombre: 'email: "no tengo"', texto: 'no tengo',
+    conversacion: conv('turno_datos_email'), ia: {}, espera: { email_cliente: 'no_tiene' } },
+  { nombre: 'pago: "transferencia"', texto: 'por transferencia',
+    conversacion: conv('turno_pago'), ia: {}, espera: { medio_pago: 'transferencia' } },
+  { nombre: 'pago: "mercado pago"', texto: 'mercado pago',
+    conversacion: conv('turno_pago'), ia: {}, espera: { medio_pago: 'mercado_pago' } },
+
+  // ── El menú especial, que es donde más se traba ──
+  { nombre: 'menú: "sisi agregalo" (el modelo dice ninguno)', texto: 'sisi agregalo',
+    conversacion: conv('turno_datos_menu'), ia: { menu_especial: 'ninguno', entendido: true },
+    espera: { menu_especial: null }, tieneQueRepreguntar: true },
+  { nombre: 'menú: "sin tacc para 2"', texto: 'sin tacc para 2',
+    conversacion: conv('turno_datos_menu'), ia: {},
+    espera: { menu_especial: [{ tipo: 'celiaco', cantidad: null }] } },
+  { nombre: 'menú: "comemos de todo"', texto: 'comemos de todo',
+    conversacion: conv('turno_datos_menu'), ia: {}, espera: { menu_especial: 'ninguno' } },
+
+  // ── Pedir info sin perder el hilo ──
+  { nombre: 'info de parejas con una reserva grupal armada',
+    texto: 'pasame info de las experiencias de spa de parejas',
+    conversacion: conv('turno_fecha'), ia: { solicita_info: 'catalogo', entendido: true },
+    espera: { tipo_propuesta: 'pareja', personas: 2 } },
+  { nombre: 'cambia de circuito en el paso de la fecha', texto: 'Spa de parejas! para 2 personas',
+    conversacion: conv('turno_fecha'), ia: {},
+    espera: { tipo_propuesta: 'pareja', fallback_dias_por_no_entendido: false } },
+
+  // ── Derivar a una persona ──
+  { nombre: 'tercer fallo seguido en el mismo paso → deriva', texto: 'ninguni',
+    conversacion: conv('turno_fecha', { fallos_consecutivos: 'turno_fecha:2' }), ia: {},
+    espera: { derivar_por_loop: true, requiere_humano: true } },
+  { nombre: 'preguntar otra cosa NO cuenta como fallo', texto: 'donde queda?',
+    conversacion: conv('turno_fecha'), ia: { solicita_info: 'ubicacion', entendido: true },
+    espera: { fallos_consecutivos: '' } },
+  { nombre: 'cancelar siempre va a una persona', texto: 'quiero cancelar',
+    conversacion: conv('turno_fecha'), ia: {}, espera: { requiere_humano: true } },
+  { nombre: '"gracias" no dispara la lista de días', texto: 'gracias!',
+    conversacion: conv('turno_fecha'), ia: {}, espera: { fallback_dias_por_no_entendido: false } },
+];
