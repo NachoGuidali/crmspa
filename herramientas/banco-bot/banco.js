@@ -6,10 +6,10 @@ const { DT } = require('./luxon-min.js');
 
 const NODO = 'Code: parsear interpretacion IA';
 
-function codigoDelFlujo(rutaJson) {
+function codigoDelFlujo(rutaJson, nombreNodo = NODO) {
   const flujo = JSON.parse(fs.readFileSync(rutaJson, 'utf8'));
-  const nodo = flujo.nodes.find(n => n.name === NODO);
-  if (!nodo) throw new Error(`No encontré el nodo "${NODO}" en ${rutaJson}`);
+  const nodo = flujo.nodes.find(n => n.name === nombreNodo);
+  if (!nodo) throw new Error(`No encontré el nodo "${nombreNodo}" en ${rutaJson}`);
   return nodo.parameters.jsCode;
 }
 

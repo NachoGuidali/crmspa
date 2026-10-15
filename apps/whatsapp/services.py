@@ -83,7 +83,7 @@ def _guardar_mensaje_entrante(m: dict):
 
     try:
         with transaction.atomic():
-            Mensaje.objects.create(
+            mensaje = Mensaje.objects.create(
                 conversacion=conversacion,
                 contacto=contacto,
                 whatsapp_message_id=message_id,
@@ -121,6 +121,9 @@ def _guardar_mensaje_entrante(m: dict):
     return {
         'phone': telefono,
         'message': m['content'],
+        # Id del mensaje: el bot junta en una sola respuesta lo que el cliente escribió en
+        # varias tandas, y lo usa para saber cuál de las ejecuciones en curso es la última.
+        'mensaje_id': mensaje.id,
         'contact_name': conversacion.nombre_contacto,
         'bot_n8n_activo': conversacion.bot_activo and conversacion.estado != Conversacion.Estado.REQUIERE_ATENCION_HUMANA,
         'conversacion_id': conversacion.id,

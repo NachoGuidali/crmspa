@@ -9,7 +9,12 @@ y cuándo deriva a una persona. Casi todos los "se trabó" o "no entendió" sale
 ```bash
 cd herramientas/banco-bot
 node probar.js "/ruta/al/Bot WhatsApp - nuevo flujo nacho (v2 revisado).json"
+node probar-entrada.js "/ruta/al/mismo.json"
 ```
+
+El segundo prueba el nodo **`juntar mensajes`**: el que decide, cuando el cliente escribe en
+varias tandas, cuál de las ejecuciones contesta y con qué texto. Si eso falla, el bot contesta
+tres veces o no contesta ninguna.
 
 Tienen que dar todos OK. Para ver qué cambia respecto de la versión que está en producción:
 
