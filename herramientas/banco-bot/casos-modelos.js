@@ -1,0 +1,88 @@
+// Conversaciones reales para comparar modelos. Cada caso es el contexto exacto que el bot le
+// manda a la IA (mismo formato que arma "Code: armar historial para IA") más lo que una
+// respuesta correcta tendría que traer.
+//
+// Para agregar un caso: copiá una conversación que haya salido mal del inbox y escribí abajo
+// qué campos esperabas. Mientras más casos reales, mejor decide la comparación.
+module.exports = [
+  {
+    nombre: 'Dice que sí al menú sin decir cuál',
+    paso: 'turno_datos_menu',
+    datos: 'personas=3, tipo_propuesta=grupal, nivel=premium, fecha_y_turno=2026-10-19, menu_especial=(sin dato), extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: 'Contamos con Menú aparte apto Celíaco o vegetariano. ¿Necesitás que lo agreguemos?',
+    historial: 'bot: ¿Cuál es tu email?\ncliente: adimarifiorella@gmail.com\nbot: Contamos con Menú aparte apto Celíaco o vegetariano. ¿Necesitás que lo agreguemos?',
+    mensaje: 'sisi agregalo',
+    espera: { menu_especial: null, pregunta_aclaracion: 'algo (tiene que repreguntar cuál)' },
+  },
+  {
+    nombre: 'Pregunta por otro circuito teniendo una reserva a medio armar',
+    paso: 'turno_fecha',
+    datos: 'personas=3, tipo_propuesta=grupal, nivel=premium, fecha_y_turno=(sin dato), menu_especial=ninguno, extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: '¿Qué fecha estás buscando, y en qué turno preferís?',
+    historial: 'bot: ✅ Reserva para el Lunes 19 de Octubre ... ¿Está todo bien?',
+    mensaje: 'pasame info de las experienicas de spa de parejas',
+    espera: { tipo_propuesta: 'parejas', solicita_info: 'catalogo' },
+  },
+  {
+    nombre: 'Cambia de circuito en el paso de la fecha',
+    paso: 'turno_fecha',
+    datos: 'personas=3, tipo_propuesta=grupal, nivel=premium, fecha_y_turno=(sin dato), menu_especial=ninguno, extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: '¿Qué fecha estás buscando, y en qué turno preferís?',
+    historial: 'cliente: y clasico?\nbot: ¿Qué fecha estás buscando?',
+    mensaje: 'Spa de parejas! para 2 personas',
+    espera: { tipo_propuesta: 'parejas', personas: 2 },
+  },
+  {
+    nombre: 'Repregunta corta por la otra versión (no es elegirla)',
+    paso: 'turno_fecha',
+    datos: 'personas=2, tipo_propuesta=parejas, nivel=premium, fecha_y_turno=(sin dato), menu_especial=(sin dato), extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: '🌿 Spa de Parejas Premium ... (precios)',
+    historial: 'cliente: pasame info de spa de parejas\nbot: 🌿 Spa de Parejas Premium ... (precios)',
+    mensaje: 'y clasico?',
+    espera: { solicita_info: 'catalogo', nivel: 'clasico' },
+  },
+  {
+    nombre: 'Pregunta si le agregaron el menú (en realidad lo está pidiendo)',
+    paso: 'turno_confirmar_resumen',
+    datos: 'personas=3, tipo_propuesta=grupal, nivel=premium, fecha_y_turno=2026-10-19, menu_especial=ninguno, extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: '✅ Reserva para el Lunes 19 de Octubre ... ¿Está todo bien? Confirmame y te paso los datos para la seña',
+    historial: 'cliente: sisi agregalo\nbot: ✅ Reserva para el Lunes 19 ... ¿Está todo bien?',
+    mensaje: 'agregaste el menu sin tacc?',
+    espera: { menu_especial: '[{celiaco}]', solicita_info: null },
+  },
+  {
+    nombre: 'Fecha con referencia vaga',
+    paso: 'turno_fecha',
+    datos: 'personas=4, tipo_propuesta=grupal, nivel=(sin dato), fecha_y_turno=(sin dato), menu_especial=(sin dato), extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: '¿Qué día estás buscando?',
+    historial: 'bot: ¿Qué día estás buscando?',
+    mensaje: 'el finde largo de noviembre',
+    espera: { fecha: 'rango', tipo_rango: 'finde_de_mes o similar', mes_mencionado: 11 },
+  },
+  {
+    nombre: 'Quiere cancelar (va derecho a una persona)',
+    paso: 'turno_pago_comprobante',
+    datos: 'personas=3, tipo_propuesta=grupal, nivel=premium, fecha_y_turno=2026-10-19, menu_especial=ninguno, extras=(sin dato)',
+    catalogo: 'SI',
+    ultimo_mensaje_bot: 'Mandame la foto del comprobante cuando puedas.',
+    historial: 'bot: Te paso el alias para la seña.',
+    mensaje: 'me surgio un imprevisto, puedo pasarlo para otro dia?',
+    espera: { requiere_humano: true },
+  },
+  {
+    nombre: 'Varias cosas en un mensaje (lo que llega junto tras la espera)',
+    paso: 'turno_personas',
+    datos: 'personas=(sin dato), tipo_propuesta=(sin dato), nivel=(sin dato), fecha_y_turno=(sin dato), menu_especial=(sin dato), extras=(sin dato)',
+    catalogo: 'NO',
+    ultimo_mensaje_bot: '¿Para cuántas personas sería, y qué propuesta te interesa?',
+    historial: 'cliente: hola\nbot: ¿Para cuántas personas sería, y qué propuesta te interesa?',
+    mensaje: 'hola!\nsomos 5 amigas\nqueriamos el premium para el sabado',
+    espera: { personas: 5, tipo_propuesta: 'grupal', nivel: 'premium', dia_semana_mencionado: 'sabado' },
+  },
+];

@@ -43,3 +43,22 @@ vuelve a romperse en silencio.
 Solo el parser. No prueba los nodos que arman los mensajes, las llamadas al CRM ni el ruteo entre
 pasos; eso se prueba en n8n con un flujo duplicado. `luxon-min.js` es un reemplazo mínimo de las
 fechas que n8n expone como `$now`.
+
+## Comparar modelos
+
+Le hace las mismas preguntas a varios modelos con el prompt real del bot y muestra las
+respuestas lado a lado, con tiempo, tokens y costo de cada una:
+
+```bash
+export OPENAI_API_KEY=...        # la de Groq la saca del flujo si no está en el entorno
+node comparar-modelos.js "/ruta/al/flujo.json"
+node comparar-modelos.js "/ruta/al/flujo.json" groq:openai/gpt-oss-120b openai:gpt-5-nano
+```
+
+Los casos están en `casos-modelos.js`: son conversaciones reales que salieron mal. Agregá las
+nuevas ahí. El veredicto lo ponés vos mirando si el modelo entendió lo que la persona quiso
+decir; el script no "corrige" solo, porque no hay una única respuesta correcta.
+
+> **Gasta plata de verdad**: cada corrida son unas 8 llamadas por modelo (centavos). Y consume
+> del límite por minuto de la cuenta: con el plan gratis de Groq (8.000 tokens por minuto) la
+> corrida completa se corta por rate limit a mitad de camino.
