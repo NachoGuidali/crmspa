@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Comprobantes{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'dashboard:home' %}" style="color:var(--text-muted); font-size:.8rem;">← Dashboard</a></p>
+    <h1>Comprobantes recibidos</h1>
+    <p style="color:var(--text-muted); margin:0;">
+      Las transferencias que los clientes mandaron por WhatsApp, con su reserva.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px; align-items:flex-start;">
+    <a class="btn btn-secondary" href="{% url 'dashboard:export_comprobantes_csv' %}?desde={{ desde|date:'Y-m-d' }}&hasta={{ hasta|date:'Y-m-d' }}">Exportar CSV</a>
+    <a class="btn" href="{% url 'dashboard:export_comprobantes_zip' %}?desde={{ desde|date:'Y-m-d' }}&hasta={{ hasta|date:'Y-m-d' }}">Descargar imágenes (ZIP)</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+    <div class="form-row" style="margin:0;">
+      <label for="desde">Desde</label>
+      <input type="date" id="desde" name="desde" value="{{ desde|date:'Y-m-d' }}">
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label for="hasta">Hasta</label>
+      <input type="date" id="hasta" name="hasta" value="{{ hasta|date:'Y-m-d' }}">
+    </div>
+    <button type="submit" class="btn">Ver</button>
+    <span style="color:var(--text-muted); font-size:.82rem;">
+      {{ reservas|length }} comprobante{{ reservas|length|pluralize }} · ${{ total_sena|floatformat:0 }} en señas
+    </span>
+  </form>
+</div>
+
+<div class="card">
+  <table class="simple">
+    <thead>
+      <tr><th>Fecha del pago</th><th>Cliente</th><th>Reserva</th><th>Circuito</th><th>Seña</th><th>Estado</th><th>Comprobante</th></tr>
+    </thead>
+    <tbody>
+      {% for r in reservas %}
+      <tr>
+        <td>{{ r.fecha_comprobante|date:"d/m/Y H:i" }}</td>
+        <td><a href="{% url 'reservas:detalle' r.pk %}">{{ r.contacto.nombre }}</a><br>
+            <span style="color:var(--text-muted); font-size:.78rem;">{{ r.contacto.telefono }}</span></td>
+        <td>{{ r.fecha|date:"d/m/Y" }}{% if r.turno %}<br><span style="color:var(--text-muted); font-size:.78rem;">{{ r.turno.nombre }}</span>{% endif %}</td>
+        <td>{{ r.circuito.nombre }}<br><span style="color:var(--text-muted); font-size:.78rem;">{{ r.cantidad_personas }} personas</span></td>
+        <td>${{ r.monto_sena|floatformat:0 }}</td>
+        <td>{{ r.get_estado_display }}</td>
+        <td><a href="{{ r.comprobante.url }}" target="_blank" rel="noopener">
+          <img src="{{ r.comprobante.url }}" alt="Comprobante de {{ r.contacto.nombre }}" loading="lazy"
+               style="height:56px; width:auto; border:1px solid var(--border,#ddd); border-radius:4px; display:block;">
+        </a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="color:var(--text-muted);">
+        No hay comprobantes en este período. Ojo: acá solo aparecen los que quedaron
+        <strong>adjuntos a la reserva</strong>; si un cliente mandó la foto suelta por WhatsApp,
+        está en el inbox.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

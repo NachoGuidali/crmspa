@@ -40,6 +40,7 @@ def hub(request):
         ('Popups de la web', 'configuracion:popups', 'Carteles de promos y fechas especiales en spacuatroraices.com.ar. Prender, apagar y programar.'),
         ('Negocio', 'configuracion:negocio', 'Plazo de seña, política de cancelación, días laborables.'),
         ('Usuarios y roles', 'configuracion:usuarios', 'Cuentas de acceso (dueño / recepción).'),
+        ('Comprobantes', 'dashboard:comprobantes', 'Las transferencias recibidas por WhatsApp. Filtrar por fecha y bajar en CSV o ZIP.'),
     ]
     return render(request, 'configuracion/hub.html', {'secciones': secciones})
 
