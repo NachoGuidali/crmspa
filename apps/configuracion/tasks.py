@@ -29,9 +29,10 @@ def notificar_evento(self, asunto, cuerpo):
         send_mail(
             subject=f'[{config.nombre_negocio}] {asunto}',
             message=cuerpo,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=config.remitente(),
             recipient_list=destinatarios,
             fail_silently=False,
+            connection=config.conexion_email(),
         )
     except Exception as exc:
         logger.warning('Error enviando notificación por email (intento %s): %s', self.request.retries + 1, exc)
@@ -68,9 +69,10 @@ def enviar_aviso_interno(self, evento, contexto):
             send_mail(
                 subject=f'[{config.nombre_negocio}] {asunto}',
                 message=texto,
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=config.remitente(),
                 recipient_list=emails,
                 fail_silently=False,
+                connection=config.conexion_email(),
             )
         except Exception as exc:
             logger.warning('Error mandando el aviso %s por mail (intento %s): %s',

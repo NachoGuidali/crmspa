@@ -1,7 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from apps.automations.models import Automatizacion
@@ -552,11 +554,46 @@ class NegocioEditar(BaseFormView, UpdateView):
     model = ConfiguracionNegocio
     form_class = forms.ConfiguracionNegocioForm
     titulo = 'Configuración del negocio'
-    template_name = 'configuracion/form.html'
+    template_name = 'configuracion/negocio_form.html'
     success_url = reverse_lazy('configuracion:hub')
 
     def get_object(self, queryset=None):
         return ConfiguracionNegocio.get_solo()
+
+
+@login_required
+@require_POST
+def probar_email(request):
+    """Manda un mail de prueba con la configuración guardada y dice qué pasó.
+
+    Sin esto, un SMTP mal cargado se descubre recién cuando falta un aviso importante: el
+    envío real corre en Celery y el error queda en los logs del servidor.
+    """
+    from django.contrib import messages
+
+    if not request.user.es_dueno:
+        raise PermissionDenied
+    config = ConfiguracionNegocio.get_solo()
+    destino = (config.email_notificaciones or '').split(',')[0].strip() or request.user.email
+    if not destino:
+        messages.error(request, 'No hay a quién mandarle la prueba: cargá un email de notificaciones.')
+        return redirect('configuracion:negocio')
+
+    from django.core.mail import send_mail
+
+    try:
+        send_mail(
+            subject=f'[{config.nombre_negocio}] Prueba de envío',
+            message='Si estás leyendo esto, los avisos del CRM salen bien.',
+            from_email=config.remitente(),
+            recipient_list=[destino],
+            fail_silently=False,
+            connection=config.conexion_email(),
+        )
+        messages.success(request, f'Mail de prueba enviado a {destino}. Revisá la casilla (y el spam).')
+    except Exception as exc:
+        messages.error(request, f'No se pudo enviar: {exc}')
+    return redirect('configuracion:negocio')
 
 
 # ── Popups de la web pública ─────────────────────────────────────────────────

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'configuracion:hub' %}" style="color:var(--text-muted); font-size:.8rem;">← Configuración</a></p>
+    <h1>{{ titulo }}</h1>
+  </div>
+</div>
+
+<div class="card" style="max-width:620px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div style="color:#a33; margin-bottom:12px;">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    {% if field.name == 'smtp_host' %}
+    <h3 style="margin:24px 0 4px;">Envío de mails</h3>
+    <p style="color:var(--text-muted); font-size:.8rem; margin:0 0 12px;">
+      Por acá salen los avisos al equipo. Si lo dejás vacío, se usa lo que esté configurado en
+      el servidor. Después de guardar, probá el envío con el botón de abajo.
+    </p>
+    {% endif %}
+    <div class="form-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div style="font-size:.74rem; color:var(--text-muted); margin-top:3px;">{{ field.help_text }}</div>{% endif %}
+      {% if field.errors %}<div style="color:#a33; font-size:.78rem; margin-top:3px;">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="submit" class="btn">Guardar</button>
+      <a href="{% url 'configuracion:hub' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="max-width:620px; margin-top:16px;">
+  <h3 style="margin-top:0;">Probar el envío</h3>
+  <p style="color:var(--text-muted); font-size:.84rem;">
+    Manda un mail de prueba al primero de los emails de notificaciones, con la configuración
+    ya guardada. Si algo está mal, acá te lo dice en vez de fallar en silencio cuando llegue
+    un aviso de verdad.
+  </p>
+  <form method="post" action="{% url 'configuracion:probar_email' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-secondary">Mandar mail de prueba</button>
+  </form>
+</div>
+{% endblock %}

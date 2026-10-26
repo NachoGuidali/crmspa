@@ -184,13 +184,23 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_reembolso_desde_pago',
             'recargo_feriado_porcentaje',
             'direccion', 'mapa_url', 'como_llegar', 'url_politicas',
-            'email_notificaciones',
+            'smtp_host', 'smtp_puerto', 'smtp_usuario', 'smtp_password', 'smtp_tls',
+            'smtp_remitente', 'email_notificaciones',
         ]
         widgets = {
+            # La contraseña no se devuelve al navegador. Si se deja vacía al guardar, queda
+            # la que ya estaba (ver clean_smtp_password).
+            'smtp_password': forms.PasswordInput(render_value=False, attrs={'placeholder': '••••••••'}),
             'horario_atencion_desde': forms.TimeInput(attrs={'type': 'time'}),
             'horario_atencion_hasta': forms.TimeInput(attrs={'type': 'time'}),
             'politica_cancelacion': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+    def clean_smtp_password(self):
+        # Vacío = no la cambiaron. Sin esto, guardar cualquier otro campo del formulario
+        # borraba la contraseña del SMTP y los mails dejaban de salir en silencio.
+        return self.cleaned_data.get('smtp_password') or self.instance.smtp_password
 
 
 class AutomatizacionForm(forms.ModelForm):

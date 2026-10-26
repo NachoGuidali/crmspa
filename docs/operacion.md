@@ -65,6 +65,18 @@ Al final del día, en el `Turnero` del día, marcá cada reserva:
 Todo esto es automático. El plazo se cambia en *Configuración → Configuración del negocio* →
 **Horas de reembolso desde el pago**.
 
+### Desde qué casilla salen los mails
+
+*Configuración → Negocio → Envío de mails*: servidor, puerto, usuario y contraseña. Con Gmail
+hay que generar una **contraseña de aplicación** desde la seguridad de la cuenta de Google — la
+contraseña normal no funciona.
+
+Después de guardar, usá **"Mandar mail de prueba"**: si algo está mal, te lo dice ahí mismo.
+Sin eso, un dato mal cargado recién se descubre cuando falta un aviso importante.
+
+> La contraseña no se vuelve a mostrar. Si dejás el campo vacío al guardar, queda la que ya
+> estaba; solo se reemplaza si escribís una nueva.
+
 ### Avisos al equipo (quién se entera de qué)
 
 En *Configuración → Avisos internos* hay **seis motivos**, y cada uno se configura por

@@ -81,6 +81,33 @@ class ConfiguracionNegocio(models.Model):
                   'para que el cliente las tenga a mano desde el principio.',
     )
 
+    # ── Salida de mails (SMTP) ───────────────────────────────────────────────
+    # Se configura acá y no en el .env para no tener que entrar al servidor cada vez que
+    # cambia una casilla. Si queda vacío, se usa lo que haya configurado el servidor.
+    smtp_host = models.CharField(
+        max_length=200, blank=True, verbose_name='Servidor SMTP',
+        help_text='Ej. smtp.gmail.com. Vacío = se usa lo configurado en el servidor.',
+    )
+    smtp_puerto = models.PositiveIntegerField(
+        default=587, verbose_name='Puerto', help_text='587 con TLS (lo habitual) o 465 con SSL.',
+    )
+    smtp_usuario = models.CharField(
+        max_length=200, blank=True, verbose_name='Usuario', help_text='Normalmente la casilla completa.',
+    )
+    smtp_password = models.CharField(
+        max_length=200, blank=True, verbose_name='Contraseña',
+        help_text='En Gmail NO va la contraseña de la cuenta: hay que generar una "contraseña '
+                  'de aplicación" desde la seguridad de Google.',
+    )
+    smtp_tls = models.BooleanField(
+        default=True, verbose_name='Usar TLS',
+        help_text='Destildar solo si el servidor pide SSL directo (puerto 465).',
+    )
+    smtp_remitente = models.CharField(
+        max_length=200, blank=True, verbose_name='Remitente',
+        help_text='Desde qué dirección salen los avisos. Vacío = el usuario de arriba.',
+    )
+
     email_notificaciones = models.CharField(
         max_length=500, blank=True, verbose_name='Email de notificaciones (respaldo)',
         help_text='Lo que usa un motivo que todavía no tiene destinatarios propios. Para elegir '
@@ -128,6 +155,27 @@ class ConfiguracionNegocio(models.Model):
             hora = cuando.time()
             return self.horario_atencion_desde <= hora <= self.horario_atencion_hasta
         return True
+
+
+    def conexion_email(self):
+        """La conexión SMTP a usar: la cargada acá, o la del servidor si está vacía."""
+        from django.core.mail import get_connection
+
+        if not self.smtp_host:
+            return get_connection()      # lo que diga el .env
+        # El backend se nombra explícito: si no, manda el EMAIL_BACKEND del entorno (en
+        # desarrollo es la consola) y los datos cargados acá se ignorarían en silencio.
+        return get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=self.smtp_host, port=self.smtp_puerto,
+            username=self.smtp_usuario, password=self.smtp_password,
+            use_tls=self.smtp_tls, use_ssl=(not self.smtp_tls and self.smtp_puerto == 465),
+        )
+
+    def remitente(self):
+        from django.conf import settings
+
+        return self.smtp_remitente or self.smtp_usuario or settings.DEFAULT_FROM_EMAIL
 
 
 class AvisoInterno(models.Model):

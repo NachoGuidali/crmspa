@@ -17,6 +17,7 @@ def crud(prefix, name, v):
 urlpatterns = [
     path('', views.hub, name='hub'),
     path('negocio/', views.NegocioEditar.as_view(), name='negocio'),
+    path('negocio/probar-email/', views.probar_email, name='probar_email'),
 ]
 
 urlpatterns += crud('turnos', 'turno', {
