@@ -8,7 +8,7 @@ from apps.turnero.models import DIAS_SEMANA, BloqueoManual, Feriado, Turno
 from apps.usuarios.models import User
 from apps.whatsapp.models import PlantillaMensaje, RespuestaRapida
 
-from .models import ConfiguracionNegocio
+from .models import AvisoInterno, ConfiguracionNegocio
 
 
 class DiasSemanaField(forms.MultipleChoiceField):
@@ -260,3 +260,15 @@ class PopupWebForm(forms.ModelForm):
         if not datos.get('mensaje') and not datos.get('imagen') and not self.instance.imagen:
             raise forms.ValidationError('El cartel necesita al menos un mensaje o una imagen.')
         return datos
+
+
+class AvisoInternoForm(forms.ModelForm):
+    class Meta:
+        model = AvisoInterno
+        fields = ['activo', 'emails', 'asunto', 'cuerpo_email', 'whatsapps', 'texto_whatsapp']
+        widgets = {
+            'emails': forms.TextInput(attrs={'placeholder': 'fiorella@gmail.com, recepcion@gmail.com'}),
+            'whatsapps': forms.TextInput(attrs={'placeholder': '1151587091, 1123456789'}),
+            'cuerpo_email': forms.Textarea(attrs={'rows': 8}),
+            'texto_whatsapp': forms.Textarea(attrs={'rows': 6}),
+        }

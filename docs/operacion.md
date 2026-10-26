@@ -65,6 +65,38 @@ Al final del día, en el `Turnero` del día, marcá cada reserva:
 Todo esto es automático. El plazo se cambia en *Configuración → Configuración del negocio* →
 **Horas de reembolso desde el pago**.
 
+### Avisos al equipo (quién se entera de qué)
+
+En *Configuración → Avisos internos* hay **seis motivos**, y cada uno se configura por
+separado: a qué mails va, a qué WhatsApps, y con qué texto.
+
+| Motivo | Cuándo salta |
+|---|---|
+| Reserva nueva del bot | El bot cargó una reserva |
+| Comprobante para verificar | Llegó una transferencia con comprobante y falta aprobarla |
+| Reserva confirmada | Se acreditó la seña (por el staff, por Mercado Pago o a mano) |
+| Reserva cancelada | Se canceló, con el motivo y si la seña se reembolsa o queda retenida |
+| Conversación que necesita a una persona | El bot derivó la charla, con el motivo |
+| El bot no pudo responder | Falla técnica: el cliente quedó esperando |
+
+Para cada uno:
+
+- **Emails**: varios separados por coma. Vacío = no manda mail por ese motivo.
+- **WhatsApps**: números separados por coma (ej. `1151587091`). Salen del mismo número del
+  spa. Vacío = no manda WhatsApp.
+- **Texto**: el del mail arranca vacío, y así manda el detalle completo con todos los datos.
+  El de WhatsApp viene con un texto corto que podés cambiar.
+- **Variables**: se escriben entre llaves y se reemplazan al enviar — `{cliente}`, `{telefono}`,
+  `{circuito}`, `{fecha}`, `{turno}`, `{personas}`, `{total}`, `{sena}`, `{medio_pago}`,
+  `{extras}`, `{motivo}`, `{link}`. Cada motivo muestra las suyas abajo del formulario. Una
+  variable que ese motivo no tenga queda vacía, no rompe el aviso.
+- **Destildar "Activo"** apaga ese motivo para todos.
+
+> Los avisos por WhatsApp **no aparecen en el inbox**: son internos y no abren una conversación.
+
+> El campo *Email de notificaciones* de Configuración del negocio quedó como **respaldo**: lo
+> usa cualquier motivo al que no le hayas puesto destinatarios propios.
+
 ### Lo que incluye cada circuito (la lista de la web)
 
 La lista **"¿Qué incluye?"** que se ve en las cards de la web sale del CRM:

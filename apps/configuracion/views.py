@@ -13,7 +13,7 @@ from apps.usuarios.models import User
 from apps.whatsapp.models import PlantillaMensaje, RespuestaRapida
 
 from . import forms
-from .models import ConfiguracionNegocio
+from .models import AvisoInterno, ConfiguracionNegocio
 
 
 class DuenoRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -40,6 +40,7 @@ def hub(request):
         ('Popups de la web', 'configuracion:popups', 'Carteles de promos y fechas especiales en spacuatroraices.com.ar. Prender, apagar y programar.'),
         ('Negocio', 'configuracion:negocio', 'Plazo de seña, política de cancelación, días laborables.'),
         ('Usuarios y roles', 'configuracion:usuarios', 'Cuentas de acceso (dueño / recepción).'),
+        ('Avisos internos', 'configuracion:avisos', 'Quién se entera de qué: mails y WhatsApps por cada motivo (reserva confirmada, comprobante a verificar, atención humana).'),
         ('Comprobantes', 'dashboard:comprobantes', 'Las transferencias recibidas por WhatsApp. Filtrar por fecha y bajar en CSV o ZIP.'),
     ]
     return render(request, 'configuracion/hub.html', {'secciones': secciones})
@@ -186,6 +187,36 @@ class CircuitoTarifas(DuenoRequiredMixin, UpdateView):
             formset.save()
             return redirect('configuracion:circuitos')
         return self.render_to_response(self.get_context_data(formset=formset))
+
+
+# ── Avisos internos ──────────────────────────────────────────────────────────
+
+class AvisoList(BaseListView):
+    model = AvisoInterno
+    titulo = 'Avisos internos'
+    columnas = ['Motivo', 'Emails', 'WhatsApps', 'Activo']
+    editar_url = 'configuracion:aviso_editar'
+
+    def fila(self, obj):
+        return (obj.pk, [
+            obj.get_evento_display(),
+            ', '.join(obj.lista_emails()) or '—',
+            ', '.join(obj.lista_whatsapps()) or '—',
+            'Sí' if obj.activo else 'No',
+        ])
+
+
+class AvisoEditar(BaseFormView, UpdateView):
+    model = AvisoInterno
+    form_class = forms.AvisoInternoForm
+    template_name = 'configuracion/aviso_form.html'
+    success_url = reverse_lazy('configuracion:avisos')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = f'Aviso: {self.object.get_evento_display()}'
+        ctx['variables'] = self.object.variables_disponibles()
+        return ctx
 
 
 # ── Feriados ─────────────────────────────────────────────────────────────────

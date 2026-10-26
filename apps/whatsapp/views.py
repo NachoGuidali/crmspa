@@ -387,7 +387,10 @@ class HandoffView(ApiKeyLoggedView, APIView):
         data = serializer.validated_data
 
         try:
-            resultado = services.handoff(telefono=data['telefono'], agente_id=data['agente_id'])
+            resultado = services.handoff(
+                telefono=data['telefono'], agente_id=data['agente_id'],
+                motivo=data.get('motivo', ''),
+            )
         except services.HandoffError:
             return Response({'error': 'conversation_not_found'}, status=404)
 

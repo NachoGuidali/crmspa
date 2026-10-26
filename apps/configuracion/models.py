@@ -82,10 +82,10 @@ class ConfiguracionNegocio(models.Model):
     )
 
     email_notificaciones = models.CharField(
-        max_length=500, blank=True, verbose_name='Email de notificaciones',
-        help_text='Uno o varios emails separados por coma. Reciben un aviso cuando: el bot crea '
-                  'una reserva, se confirma una reserva, se cancela una reserva, o una '
-                  'conversación pasa a requerir atención humana. Vacío = no se manda nada.',
+        max_length=500, blank=True, verbose_name='Email de notificaciones (respaldo)',
+        help_text='Lo que usa un motivo que todavía no tiene destinatarios propios. Para elegir '
+                  'quién recibe qué —y sumar avisos por WhatsApp— andá a Configuración → '
+                  'Avisos internos.',
     )
 
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,3 +128,80 @@ class ConfiguracionNegocio(models.Model):
             hora = cuando.time()
             return self.horario_atencion_desde <= hora <= self.horario_atencion_hasta
         return True
+
+
+class AvisoInterno(models.Model):
+    """Aviso al EQUIPO cuando pasa algo en el CRM (no es un mensaje al cliente).
+
+    Uno por motivo, para poder elegir por separado quién se entera de qué: la confirmación de
+    una reserva le puede llegar al dueño por mail y a recepción por WhatsApp, y el pedido de
+    atención humana solo a quien esté atendiendo.
+
+    El texto se escribe acá, con variables entre llaves: `{cliente}`, `{fecha}`, etc. Las que no
+    existan para ese motivo quedan vacías, no rompen el aviso.
+    """
+
+    class Evento(models.TextChoices):
+        RESERVA_NUEVA = 'reserva_nueva', 'Reserva nueva del bot'
+        COMPROBANTE_POR_VERIFICAR = 'comprobante_por_verificar', 'Comprobante para verificar'
+        RESERVA_CONFIRMADA = 'reserva_confirmada', 'Reserva confirmada'
+        RESERVA_CANCELADA = 'reserva_cancelada', 'Reserva cancelada'
+        ATENCION_HUMANA = 'atencion_humana', 'Conversación que necesita a una persona'
+        BOT_CAIDO = 'bot_caido', 'El bot no pudo responder (falla técnica)'
+
+    # Variables que puede usar el texto de cada motivo. Se muestran en el formulario.
+    VARIABLES = {
+        'reserva_nueva': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'turno', 'personas',
+                          'total', 'sena', 'medio_pago', 'estado', 'extras', 'menu', 'link'],
+        'comprobante_por_verificar': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'personas',
+                                      'total', 'sena', 'link'],
+        'reserva_confirmada': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'turno', 'personas',
+                               'total', 'sena', 'medio_pago', 'extras', 'menu', 'link'],
+        'reserva_cancelada': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'personas',
+                              'motivo', 'destino_sena', 'link'],
+        'atencion_humana': ['cliente', 'telefono', 'motivo', 'link'],
+        'bot_caido': ['cliente', 'telefono', 'motivo', 'link'],
+    }
+
+    evento = models.CharField(max_length=40, choices=Evento.choices, unique=True)
+    activo = models.BooleanField(
+        default=True, help_text='Destildado, este motivo no avisa a nadie.',
+    )
+    emails = models.CharField(
+        max_length=500, blank=True, verbose_name='Emails',
+        help_text='Uno o varios separados por coma. Vacío = no se manda mail por este motivo.',
+    )
+    asunto = models.CharField(
+        max_length=200, blank=True,
+        help_text='Asunto del mail. Admite variables. Vacío = el nombre del motivo.',
+    )
+    cuerpo_email = models.TextField(
+        blank=True, verbose_name='Texto del mail',
+        help_text='Vacío = se manda el detalle completo que arma el sistema.',
+    )
+    whatsapps = models.CharField(
+        max_length=500, blank=True, verbose_name='WhatsApps',
+        help_text='Números separados por coma (ej. 1151587091). Vacío = no se manda WhatsApp.',
+    )
+    texto_whatsapp = models.TextField(
+        blank=True, verbose_name='Texto del WhatsApp',
+        help_text='Vacío = el mismo texto del mail. Conviene uno más corto.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['evento']
+        verbose_name = 'Aviso interno'
+        verbose_name_plural = 'Avisos internos'
+
+    def __str__(self):
+        return self.get_evento_display()
+
+    def lista_emails(self):
+        return [e.strip() for e in (self.emails or '').split(',') if e.strip()]
+
+    def lista_whatsapps(self):
+        return [t.strip() for t in (self.whatsapps or '').split(',') if t.strip()]
+
+    def variables_disponibles(self):
+        return self.VARIABLES.get(self.evento, [])

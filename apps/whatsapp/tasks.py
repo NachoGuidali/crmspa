@@ -49,12 +49,15 @@ def _derivar_a_humano_por_falla_n8n(payload: dict):
     conv.bot_activo = False
     conv.save(update_fields=['estado', 'bot_activo'])
 
-    from apps.configuracion.tasks import notificar_evento
-    notificar_evento.delay(
-        'Conversación requiere atención humana (bot caído)',
-        f'{conv.get_display_name()} ({conv.telefono}) quedó sin respuesta: n8n no contestó '
-        f'tras varios reintentos. Revisar que el bot esté funcionando.',
-    )
+    from apps.configuracion import avisos
+    from apps.configuracion.models import AvisoInterno
+
+    avisos.disparar(AvisoInterno.Evento.BOT_CAIDO, {
+        'cliente': conv.get_display_name(),
+        'telefono': conv.telefono,
+        'motivo': 'n8n no contestó tras varios reintentos: el cliente quedó sin respuesta.',
+        'link': avisos.url_crm(f'/whatsapp/inbox/?conv={conv.pk}'),
+    })
 
 
 @shared_task(bind=True, max_retries=5, retry_backoff=10, retry_backoff_max=600, retry_jitter=True)

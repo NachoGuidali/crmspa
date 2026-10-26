@@ -13,3 +13,6 @@ class EnviarMensajeSerializer(serializers.Serializer):
 class HandoffSerializer(serializers.Serializer):
     telefono = serializers.CharField()
     agente_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    # Por qué deriva (lo manda el bot): tema crítico, no entendió tres veces, o lo pidió el
+    # cliente. Va en el aviso al equipo.
+    motivo = serializers.CharField(required=False, allow_blank=True, default='')

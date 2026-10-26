@@ -266,7 +266,7 @@ class HandoffError(Exception):
     pass
 
 
-def handoff(*, telefono, agente_id=None):
+def handoff(*, telefono, agente_id=None, motivo=''):
     """Deriva la conversación a un agente humano y desactiva el bot de n8n."""
     from utils.phone import normalize_ar_phone
 
@@ -286,12 +286,15 @@ def handoff(*, telefono, agente_id=None):
     conversacion.agente = agente
     conversacion.save()
 
-    from apps.configuracion.tasks import notificar_evento
-    notificar_evento.delay(
-        'Conversación requiere atención humana',
-        f'{conversacion.get_display_name()} ({conversacion.telefono}) necesita que alguien '
-        f'tome la charla desde el inbox.',
-    )
+    from apps.configuracion import avisos
+    from apps.configuracion.models import AvisoInterno
+
+    avisos.disparar(AvisoInterno.Evento.ATENCION_HUMANA, {
+        'cliente': conversacion.get_display_name(),
+        'telefono': conversacion.telefono,
+        'motivo': motivo or 'Pidió hablar con una persona',
+        'link': avisos.url_crm(f'/whatsapp/inbox/?conv={conversacion.pk}'),
+    })
 
     return {
         'ok': True,

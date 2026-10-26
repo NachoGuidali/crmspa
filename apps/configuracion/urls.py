@@ -26,6 +26,11 @@ urlpatterns += crud('circuitos', 'circuito', {
 urlpatterns += [
     path('circuitos/<int:pk>/tramos/', views.CircuitoTarifas.as_view(), name='circuito_tarifas'),
 ]
+# Los avisos no se crean ni se borran: son los seis motivos del sistema, solo se editan.
+urlpatterns += [
+    path('avisos/', views.AvisoList.as_view(), name='avisos'),
+    path('avisos/<int:pk>/editar/', views.AvisoEditar.as_view(), name='aviso_editar'),
+]
 urlpatterns += crud('feriados', 'feriado', {
     'list': views.FeriadoList, 'crear': views.FeriadoCrear, 'editar': views.FeriadoEditar, 'borrar': views.FeriadoBorrar})
 urlpatterns += crud('bloqueos', 'bloqueo', {

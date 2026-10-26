@@ -7,7 +7,8 @@ from django.utils import timezone
 
 from apps.circuitos.models import Circuito, Extra
 from apps.configuracion.models import ConfiguracionNegocio
-from apps.configuracion.tasks import notificar_evento
+from apps.configuracion import avisos
+from apps.configuracion.models import AvisoInterno
 from apps.contactos.models import Contacto
 from apps.turnero.models import Turno
 from utils.phone import normalize_ar_phone
@@ -275,13 +276,12 @@ def crear_reserva_bot(*, telefono, nombre_contacto, circuito_id, turno_id, fecha
 
     reserva.save()
 
-    notificar_evento.delay(
-        'Nueva reserva del bot',
-        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
-        f'{reserva.fecha} ({reserva.turno.nombre}) — {reserva.cantidad_personas} persona(s) — '
-        f'medio de pago: {reserva.get_medio_pago_display() or "sin especificar"} — '
-        f'estado: {reserva.get_estado_display()}.',
-    )
+    datos = avisos.contexto_reserva(reserva)
+    avisos.disparar(AvisoInterno.Evento.RESERVA_NUEVA, datos)
+    # Una transferencia llega con el comprobante puesto y nadie la aprobó todavía: ese es un
+    # aviso aparte, porque suele ir a quien verifica y no a quien mira las reservas nuevas.
+    if reserva.estado == Reserva.Estado.PENDIENTE_APROBACION:
+        avisos.disparar(AvisoInterno.Evento.COMPROBANTE_POR_VERIFICAR, datos)
     return reserva
 
 
@@ -369,7 +369,7 @@ def _avisar_reserva_confirmada(reserva):
     def _disparar():
         enviar_confirmacion_reserva.delay(reserva.id)
         notificar_reserva_aprobada.delay(reserva.id)
-        notificar_evento.delay('Reserva confirmada', detalle)
+        avisos.disparar(AvisoInterno.Evento.RESERVA_CONFIRMADA, avisos.contexto_reserva(reserva))
 
     # `on_commit` y no `.delay()` suelto: quien confirma está dentro de una transacción, y un
     # worker de Celery es otro proceso — si arranca antes del commit, lee la reserva todavía
@@ -571,12 +571,9 @@ def cancelar_reserva(reserva, motivo=''):
         destino_sena = 'CORRESPONDE REEMBOLSAR la seña (canceló dentro del plazo).'
     else:
         destino_sena = 'La seña queda RETENIDA (canceló fuera del plazo).'
-    notificar_evento.delay(
-        'Reserva cancelada',
-        f'{reserva.contacto.nombre} ({reserva.contacto.telefono}) — {reserva.circuito.nombre} — '
-        f'{reserva.fecha} ({reserva.turno.nombre}). Motivo: {motivo or "no especificado"}. '
-        f'{destino_sena}',
-    )
+    avisos.disparar(AvisoInterno.Evento.RESERVA_CANCELADA, avisos.contexto_reserva(
+        reserva, motivo=motivo or 'no especificado', destino_sena=destino_sena,
+    ))
     return reserva
 
 

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{% url 'configuracion:avisos' %}" style="color:var(--text-muted); font-size:.8rem;">← Avisos internos</a></p>
+    <h1>{{ titulo }}</h1>
+    <p style="color:var(--text-muted); margin:0;">
+      Este aviso es para el equipo, no para el cliente. Dejá vacío lo que no quieras usar.
+    </p>
+  </div>
+</div>
+
+<div class="card" style="max-width:720px;">
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div style="color:#a33; margin-bottom:12px;">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <div class="form-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div style="font-size:.74rem; color:var(--text-muted); margin-top:3px;">{{ field.help_text }}</div>{% endif %}
+      {% if field.errors %}<div style="color:#a33; font-size:.78rem; margin-top:3px;">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="submit" class="btn">Guardar</button>
+      <a href="{% url 'configuracion:avisos' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="max-width:720px; margin-top:16px;">
+  <h3 style="margin-top:0;">Variables que podés usar en los textos</h3>
+  <p style="color:var(--text-muted); font-size:.84rem;">
+    Se escriben entre llaves y se reemplazan al mandar el aviso. Una variable que este motivo
+    no tenga queda vacía, no rompe nada.
+  </p>
+  <p style="line-height:2;">
+    {% for v in variables %}<code style="background:var(--fondo-suave,#f3f1ec); padding:3px 7px; border-radius:4px;">{{ "{" }}{{ v }}{{ "}" }}</code>&nbsp;{% endfor %}
+  </p>
+  <p style="color:var(--text-muted); font-size:.82rem; margin-bottom:0;">
+    Ejemplo: <code>Reserva de {{ "{cliente}" }} el {{ "{fecha}" }} — seña {{ "{sena}" }}</code>
+  </p>
+</div>
+{% endblock %}
