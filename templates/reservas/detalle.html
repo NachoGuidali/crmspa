@@ -71,8 +71,10 @@
     <h3>Cancelar</h3>
     <p style="font-size:.82rem; color:var(--text-muted);">Cancela la reserva y libera el cupo.</p>
 
-    {# La política manda: la seña se reembolsa solo si se cancela dentro de las N horas
-       posteriores al pago. Se lo mostramos al staff ANTES de que apriete el botón. #}
+    {% comment %}
+    La política manda: la seña se reembolsa solo si se cancela dentro de las N horas
+    posteriores al pago. Se lo mostramos al staff ANTES de que apriete el botón.
+    {% endcomment %}
     {% if not reserva.sena_pagada_at %}
       <p style="font-size:.82rem; padding:8px 10px; border-radius:6px; background:rgba(120,120,120,.12);">
         <strong>Sin seña acreditada.</strong> No hay reembolso que evaluar.

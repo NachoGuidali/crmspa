@@ -1,5 +1,7 @@
-{# Cartel de transferencias esperando verificación. Se incluye en el dashboard (dueño) y en
-   el turnero de hoy (recepción), que son las dos pantallas donde arranca el día cada uno. #}
+{% comment %}
+Cartel de transferencias esperando verificación. Se incluye en el dashboard (dueño) y en el
+turnero de hoy (recepción), que son las dos pantallas donde arranca el día cada uno.
+{% endcomment %}
 {% if por_verificar.total %}
 <a href="{% url 'reservas:kanban' %}"
    class="card"
