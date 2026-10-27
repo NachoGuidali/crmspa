@@ -13,7 +13,11 @@
       <p style="color:var(--text-muted); margin-top:-6px; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase;">Spa de Campo · CRM</p>
       <form method="post" style="margin-top:24px; text-align:left;">
         {% csrf_token %}
-        {% if form.errors %}
+        {% if form.bloqueado %}
+          {% for error in form.non_field_errors %}
+          <p style="color:#a33; font-size:.82rem;">{{ error }}</p>
+          {% endfor %}
+        {% elif form.errors %}
           <p style="color:#a33; font-size:.82rem;">Usuario o contraseña incorrectos.</p>
         {% endif %}
         <div class="form-row">
