@@ -178,7 +178,42 @@ CORS_ALLOWED_ORIGINS=https://spacuatroraices.com.ar,https://www.spacuatroraices.
 - [ ] Webhook token de Evolution configurado.
 - [ ] API Key creada para n8n.
 - [ ] Usuario dueño creado; recepcionistas con `rol=recepcion`.
-- [ ] SMTP configurado (`EMAIL_*`) y email(s) del dueño cargados en *Configuración del negocio*
-      si querés notificaciones por email (reserva del bot, confirmación, cancelación, handoff).
-- [ ] Backups del volumen `postgres_data`.
-- [ ] Backups del volumen `postgres_data`.
+- [ ] SMTP cargado en *Configuración → Negocio → Envío de mails* (o `EMAIL_*` en el `.env`) y
+      el **mail de prueba** recibido.
+- [ ] Destinatarios de cada motivo en *Configuración → Avisos internos*.
+- [ ] **Backups automáticos andando** (ver abajo), con una restauración probada.
+
+## 7. Backups
+
+`deploy/backup.sh` guarda las dos bases (CRM y la sesión de WhatsApp de Evolution) y los
+archivos subidos —los comprobantes de transferencia, que necesita contabilidad—, verifica que
+cada archivo se pueda abrir y borra los de más de 14 días.
+
+```bash
+sudo /opt/crmspa/deploy/backup.sh                 # a /opt/crmspa/backups
+sudo DIAS_A_CONSERVAR=30 /opt/crmspa/deploy/backup.sh /mnt/disco/backups
+```
+
+Para que corra solo todas las noches:
+
+```bash
+sudo crontab -e
+# 0 3 * * * /opt/crmspa/deploy/backup.sh >> /var/log/crmspa-backup.log 2>&1
+```
+
+Termina con código distinto de cero si algún archivo salió mal, así el cron lo puede detectar.
+
+**Restaurar** (el script imprime estos comandos con la fecha ya puesta):
+
+```bash
+gunzip -c backups/crm_FECHA.sql.gz | docker compose exec -T db psql -U crmspa -d crmspa
+cat backups/media_FECHA.tar.gz | docker compose exec -T web tar xzf - -C /app/media
+```
+
+> **Probá una restauración ahora, no el día que la necesites.** Restaurá el dump en una base
+> aparte (`CREATE DATABASE prueba_restore;`) y mirá que las reservas estén. Un backup que nunca
+> se restauró es una suposición, no un respaldo.
+
+> Los backups quedan en el mismo servidor: si se pierde el VPS, se pierden con él. Copiarlos
+> a otro lado (otro disco, otra máquina, la nube) es lo que convierte esto en un respaldo de
+> verdad.
