@@ -183,7 +183,19 @@ CORS_ALLOWED_ORIGINS=https://spacuatroraices.com.ar,https://www.spacuatroraices.
 - [ ] Destinatarios de cada motivo en *Configuración → Avisos internos*.
 - [ ] **Backups automáticos andando** (ver abajo), con una restauración probada.
 
-## 7. Backups
+## 7. Que el disco no se llene
+
+Los contenedores guardan sus logs sin tope: en un VPS chico eso termina llenando el disco, y
+cuando el disco se llena Postgres deja de escribir y se cae todo. El `docker-compose.yml` ya
+limita cada servicio a 5 archivos de 20 MB. Para controlarlo de vez en cuando:
+
+```bash
+df -h /                      # espacio libre
+docker system df             # cuánto ocupan imágenes y volúmenes
+docker image prune -f        # borra imágenes viejas de los rebuilds
+```
+
+## 8. Backups
 
 `deploy/backup.sh` guarda las dos bases (CRM y la sesión de WhatsApp de Evolution) y los
 archivos subidos —los comprobantes de transferencia, que necesita contabilidad—, verifica que

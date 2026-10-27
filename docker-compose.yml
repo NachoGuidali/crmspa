@@ -2,6 +2,11 @@ services:
   db:
     image: postgres:15-alpine
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     environment:
       POSTGRES_DB: ${DB_NAME:-crmspa}
       POSTGRES_USER: ${DB_USER:-crmspa}
@@ -25,6 +30,11 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     # Igual que la base: solo accesible desde el propio servidor.
     ports:
@@ -35,6 +45,11 @@ services:
   web:
     build: .
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
@@ -61,6 +76,11 @@ services:
   celery:
     build: .
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     command: celery -A config worker -l info --concurrency=2
     env_file: .env
     environment:
@@ -79,6 +99,11 @@ services:
   celery-beat:
     build: .
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file: .env
     environment:
@@ -95,6 +120,11 @@ services:
   evolution-api:
     image: evoapicloud/evolution-api:latest
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     ports:
       - "8081:8080"
     environment:
