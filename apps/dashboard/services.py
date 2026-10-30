@@ -98,6 +98,9 @@ def resumen(desde, hasta):
         'facturacion_del_periodo': facturacion_del_periodo,
         'cobrado_de_esos_turnos': cobrado_de_esos_turnos,
         'por_cobrar_del_periodo': max(facturacion_del_periodo - cobrado_de_esos_turnos, 0),
+        # Lo mismo pero de TODAS las reservas en pie, sin filtro de fechas: es la plata que el
+        # spa tiene para cobrar en total, incluida la de turnos de meses que vienen.
+        'por_cobrar_total': saldos_por_cobrar()['total'],
         'turnos_por_estado': turnos_por_estado,
         'ocupacion_por_circuito': ocupacion_por_circuito,
         'circuito_mas_vendido': circuito_mas_vendido,
