@@ -274,5 +274,15 @@ class ReservaNotaView(ApiKeyLoggedView, APIView):
         if origen not in NotaReserva.Origen.values:
             origen = NotaReserva.Origen.BOT
         nota = NotaReserva.objects.create(reserva=reserva, origen=origen, texto=texto[:2000])
+
+        # Avisar al equipo: esto es información que llega sola, no algo que alguien tipeó.
+        # Las notas del propio equipo no avisan (quien la escribió ya se enteró).
+        from apps.configuracion import avisos
+        from apps.configuracion.models import AvisoInterno
+
+        if origen != NotaReserva.Origen.STAFF:
+            avisos.disparar(AvisoInterno.Evento.NOTA_EN_RESERVA,
+                            avisos.contexto_reserva(reserva, nota=nota.texto))
+
         self._contacto_relacionado = reserva.contacto
         return Response({'ok': True, 'nota_id': nota.id, 'reserva_id': reserva.id}, status=201)

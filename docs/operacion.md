@@ -84,7 +84,9 @@ y de quién salió. Sirve para que recepción y el dueño vean lo mismo sin rele
 
 - **A mano**: escribís en el casillero de arriba y queda firmado con tu usuario. Ej: *"llamó para
   avisar que llega 20 minutos tarde"*, *"pidió cambiar el menú de una persona"*.
-- **El bot** también puede dejar notas, y aparecen marcadas como *Bot de WhatsApp*.
+- **El bot** también puede dejar notas, y aparecen marcadas como *Bot de WhatsApp*. Esas sí
+  pueden avisarte por mail o WhatsApp: se configura en *Avisos internos → El bot anotó algo en
+  una reserva*. Las que escribe el equipo no avisan a nadie.
 
 Es distinto del campo **Notas** de la reserva, que es el detalle fijo de la carga (qué incluye,
 aclaraciones). El historial es lo que va pasando.
@@ -102,6 +104,7 @@ separado: a qué mails va, a qué WhatsApps, y con qué texto.
 | Reserva cancelada | Se canceló, con el motivo y si la seña se reembolsa o queda retenida |
 | Conversación que necesita a una persona | El bot derivó la charla, con el motivo |
 | El bot no pudo responder | Falla técnica: el cliente quedó esperando |
+| El bot anotó algo en una reserva | El bot dejó una nota en el historial de una reserva. **Arranca sin destinatarios**: es el único que puede llegar varias veces en la misma conversación, así que lo prendés vos si lo querés |
 
 Para cada uno:
 

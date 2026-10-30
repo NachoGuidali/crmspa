@@ -196,6 +196,7 @@ class AvisoInterno(models.Model):
         RESERVA_CANCELADA = 'reserva_cancelada', 'Reserva cancelada'
         ATENCION_HUMANA = 'atencion_humana', 'Conversación que necesita a una persona'
         BOT_CAIDO = 'bot_caido', 'El bot no pudo responder (falla técnica)'
+        NOTA_EN_RESERVA = 'nota_en_reserva', 'El bot anotó algo en una reserva'
 
     # Variables que puede usar el texto de cada motivo. Se muestran en el formulario.
     VARIABLES = {
@@ -209,6 +210,7 @@ class AvisoInterno(models.Model):
                               'motivo', 'destino_sena', 'link'],
         'atencion_humana': ['cliente', 'telefono', 'motivo', 'link'],
         'bot_caido': ['cliente', 'telefono', 'motivo', 'link'],
+        'nota_en_reserva': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'nota', 'link'],
     }
 
     evento = models.CharField(max_length=40, choices=Evento.choices, unique=True)

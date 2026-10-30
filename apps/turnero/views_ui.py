@@ -16,15 +16,32 @@ from .services import dia_habilitado, disponibilidad_circuito
 
 def _resumen_dia(dia, turnos_activos, reservas_por_dia, bloqueos_por_dia=None):
     """Devuelve un dict con métricas rápidas de un día para pintar la celda del calendario."""
-    reservas = reservas_por_dia.get(dia, {'count': 0, 'personas': 0})
-    slots = sum(1 for t in turnos_activos if t.aplica_en(dia))
+    reservas = reservas_por_dia.get(dia, {'count': 0, 'personas': 0, 'turnos': set()})
+    del_dia = [t for t in turnos_activos if t.aplica_en(dia)]
+    slots = len(del_dia)
     bloqueos = (bloqueos_por_dia or {}).get(dia, [])
     # Un bloqueo sin turno tapa el día entero; con turno, solo ese.
     dia_completo = any(b.turno_id is None for b in bloqueos)
+
+    # Cuánto del día está tomado, y cuál. Con dos turnos (mañana y tarde) alcanza con saber
+    # si está completo o si queda uno libre, y cuál: eso se pinta en la celda.
+    tomados = reservas.get('turnos') or set()
+    libres = [t for t in del_dia if t.id not in tomados]
+    if del_dia and not libres:
+        ocupacion = 'completo'
+    elif tomados:
+        # El primer turno del día es el de la mañana (vienen ordenados por hora): si ese está
+        # tomado, el verde va arriba.
+        ocupacion = 'manana' if del_dia[0].id in tomados else 'tarde'
+    else:
+        ocupacion = ''
+
     return {
         'reservas': reservas['count'],
         'personas': reservas['personas'],
         'slots': slots,
+        'ocupacion': ocupacion,
+        'libres': len(libres),
         'habilitado': dia_habilitado(dia),
         'bloqueado_todo_el_dia': dia_completo,
         'bloqueos': bloqueos,
@@ -47,13 +64,18 @@ def calendario(request):
     ultimo = date(anio, mes, dias_en_mes)
     mes_siguiente = (ultimo + timedelta(days=1))
 
-    turnos_activos = list(Turno.objects.filter(activo=True))
+    turnos_activos = list(Turno.objects.filter(activo=True).order_by("hora_inicio"))
 
     reservas_qs = (
         Reserva.objects.ocupando_cupo().filter(fecha__gte=primero, fecha__lte=ultimo)
-        .values('fecha').annotate(count=Count('id'), personas=Sum('cantidad_personas'))
+        .values('fecha', 'turno_id').annotate(count=Count('id'), personas=Sum('cantidad_personas'))
     )
-    reservas_por_dia = {r['fecha']: {'count': r['count'], 'personas': r['personas'] or 0} for r in reservas_qs}
+    reservas_por_dia = {}
+    for r in reservas_qs:
+        d = reservas_por_dia.setdefault(r['fecha'], {'count': 0, 'personas': 0, 'turnos': set()})
+        d['count'] += r['count']
+        d['personas'] += r['personas'] or 0
+        d['turnos'].add(r['turno_id'])
     feriados = {
         f.fecha: f
         for f in Feriado.objects.filter(recurrente_anual=False, fecha__gte=primero, fecha__lte=ultimo)

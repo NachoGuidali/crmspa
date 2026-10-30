@@ -45,6 +45,17 @@
 }
 .cal-cell.bloqueado .cal-daynum .n { color: #6b655c; }
 
+/* Días con reserva. El verde ocupa la parte del día que está tomada: entero si no queda
+   ningún turno, la mitad de arriba si es la mañana, la de abajo si es la tarde. Así se ve
+   qué queda libre sin abrir el día. */
+.cal-cell.ocupado-completo { background: #dbe6d3; }
+.cal-cell.ocupado-manana {
+  background: linear-gradient(to bottom, #dbe6d3 0, #dbe6d3 50%, #fff 50%, #fff 100%);
+}
+.cal-cell.ocupado-tarde {
+  background: linear-gradient(to bottom, #fff 0, #fff 50%, #dbe6d3 50%, #dbe6d3 100%);
+}
+
 .cal-daynum {
   font-weight: 600;
   font-size: .82rem;
