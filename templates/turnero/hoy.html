@@ -22,6 +22,19 @@
   <div class="card metric-card"><div class="value">${{ total_a_cobrar|floatformat:0 }}</div><div class="label">Falta cobrar hoy</div></div>
 </div>
 
+{% if bloqueos %}
+<div class="card" style="border-left:4px solid #8a8378; background:rgba(138,131,120,.08); margin-bottom:16px;">
+  {% for b in bloqueos %}
+  <div style="font-size:.88rem;">
+    <strong>{% if b.turno %}{{ b.turno.nombre }} bloqueado{% else %}Día bloqueado{% endif %}</strong>
+    {% if b.motivo %} · {{ b.motivo }}{% endif %}
+  </div>
+  {% endfor %}
+  <div style="color:var(--text-muted); font-size:.78rem; margin-top:4px;">
+    No se pueden tomar reservas nuevas en lo bloqueado. Se saca desde Configuración → Bloqueos.
+  </div>
+</div>
+{% endif %}
 {% for bloque in bloques %}
 <div class="card" style="margin-bottom:16px;">
   <h3>{{ bloque.turno.nombre }} <span style="color:var(--text-muted); font-weight:400; font-size:.82rem;">· {{ bloque.turno.hora_inicio|time:"H:i" }}–{{ bloque.turno.hora_fin|time:"H:i" }}</span></h3>

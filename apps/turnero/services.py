@@ -82,12 +82,15 @@ def turnos_bloqueados(circuito, fecha):
     )
     bloqueados = set()
     dia_completo = False
+    motivos = {}
     for b in bloqueos:
         if b.turno_id is None:
             dia_completo = True
+            motivos.setdefault(None, b.motivo)
         else:
             bloqueados.add(b.turno_id)
-    return bloqueados, dia_completo
+            motivos.setdefault(b.turno_id, b.motivo)
+    return bloqueados, dia_completo, motivos
 
 
 def disponibilidad_circuito(circuito, fecha):
@@ -113,7 +116,7 @@ def disponibilidad_circuito(circuito, fecha):
     from apps.reservas.models import Reserva
 
     exclusivo = ConfiguracionNegocio.get_solo().reserva_exclusiva_por_turno
-    bloqueados_ids, dia_completo_bloqueado = turnos_bloqueados(circuito, fecha)
+    bloqueados_ids, dia_completo_bloqueado, motivos_bloqueo = turnos_bloqueados(circuito, fecha)
 
     turnos_qs = Turno.objects.filter(activo=True)
     resultado = []
@@ -153,6 +156,7 @@ def disponibilidad_circuito(circuito, fecha):
             'cupo_ocupado': cupo_ocupado,
             'cupo_disponible': cupo_disponible,
             'bloqueado': bloqueado,
+            'motivo_bloqueo': (motivos_bloqueo.get(turno.id) or motivos_bloqueo.get(None) or '') if bloqueado else '',
             'ocupado_por_otro_circuito': ocupado_por_otro_circuito,
         })
 

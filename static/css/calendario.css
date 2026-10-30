@@ -65,6 +65,9 @@
 
 .cal-chip.ocup { background: #dbe6d3; color: var(--color-verde-oliva); }
 .cal-chip.feriado { background: #f0d9c4; color: var(--color-marron); }
+/* Bloqueo manual (limpieza, 'no reservar'): gris, para que se lea como 'acá no se
+   trabaja' y no se confunda con un día ocupado por reservas. */
+.cal-chip.bloqueado { background: #d8d6d0; color: #555048; }
 
 .cal-slotcount {
   font-size: .66rem;

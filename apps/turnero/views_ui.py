@@ -10,19 +10,25 @@ from apps.circuitos.models import Circuito
 from apps.dashboard import services as dashboard_services
 from apps.reservas.models import Reserva
 
-from .models import Feriado, Turno
+from .models import BloqueoManual, Feriado, Turno
 from .services import dia_habilitado, disponibilidad_circuito
 
 
-def _resumen_dia(dia, turnos_activos, reservas_por_dia):
+def _resumen_dia(dia, turnos_activos, reservas_por_dia, bloqueos_por_dia=None):
     """Devuelve un dict con métricas rápidas de un día para pintar la celda del calendario."""
     reservas = reservas_por_dia.get(dia, {'count': 0, 'personas': 0})
     slots = sum(1 for t in turnos_activos if t.aplica_en(dia))
+    bloqueos = (bloqueos_por_dia or {}).get(dia, [])
+    # Un bloqueo sin turno tapa el día entero; con turno, solo ese.
+    dia_completo = any(b.turno_id is None for b in bloqueos)
     return {
         'reservas': reservas['count'],
         'personas': reservas['personas'],
         'slots': slots,
         'habilitado': dia_habilitado(dia),
+        'bloqueado_todo_el_dia': dia_completo,
+        'bloqueos': bloqueos,
+        'motivo_bloqueo': bloqueos[0].motivo if bloqueos else '',
     }
 
 
@@ -54,6 +60,10 @@ def calendario(request):
     }
     feriados_rec = list(Feriado.objects.filter(recurrente_anual=True))
 
+    bloqueos_por_dia = {}
+    for b in BloqueoManual.objects.filter(fecha__gte=primero, fecha__lte=ultimo).select_related('turno'):
+        bloqueos_por_dia.setdefault(b.fecha, []).append(b)
+
     # Armar la grilla del calendario (semanas de lunes a domingo)
     cal = calendar.Calendar(firstweekday=0)
     semanas = []
@@ -75,7 +85,7 @@ def calendario(request):
                 'feriado_abre': abre,
                 # El recargo que se cobra ese día, para verlo en el calendario sin entrar a nada.
                 'feriado_recargo': feriado.porcentaje_efectivo if abre else None,
-                'resumen': _resumen_dia(dia, turnos_activos, reservas_por_dia),
+                'resumen': _resumen_dia(dia, turnos_activos, reservas_por_dia, bloqueos_por_dia),
             })
         semanas.append(fila)
 
@@ -118,6 +128,9 @@ def hoy(request):
         # Transferencias esperando verificación: recepción vive en esta pantalla, así que el
         # aviso va también acá y no solo en el dashboard del dueño.
         'por_verificar': dashboard_services.transferencias_por_verificar(),
+        # Si el día está bloqueado (limpieza, "no reservar"), la agenda vacía no alcanza:
+        # hay que decir por qué está vacía.
+        'bloqueos': list(BloqueoManual.objects.filter(fecha=fecha).select_related('turno')),
         'fecha': fecha,
         'es_hoy': fecha == timezone.localdate(),
         'fecha_anterior': fecha - timedelta(days=1),

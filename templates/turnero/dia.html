@@ -26,7 +26,7 @@
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span style="font-size:.82rem;">Cupo {{ t.cupo_ocupado }}/{{ t.cupo_total }}</span>
-        {% if t.bloqueado %}<span class="badge badge-cancelado">bloqueado</span>
+        {% if t.bloqueado %}<span class="badge badge-cancelado">bloqueado{% if t.motivo_bloqueo %} · {{ t.motivo_bloqueo }}{% endif %}</span>
         {% elif t.ocupado_por_otro_circuito %}<span class="badge badge-requiere_atencion_humana">reservado (otro circuito)</span>
         {% elif t.cupo_disponible == 0 %}<span class="badge badge-requiere_atencion_humana">completo</span>
         {% elif t.cupo_disponible == 1 %}<span class="badge badge-pendiente_sena">último lugar</span>

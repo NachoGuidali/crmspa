@@ -97,7 +97,7 @@ def crear_reserva(
     if not dia_habilitado(fecha):
         raise ReservaError('dia_no_habilitado')
 
-    bloqueados_ids, dia_completo = turnos_bloqueados(circuito, fecha)
+    bloqueados_ids, dia_completo, _ = turnos_bloqueados(circuito, fecha)
     if dia_completo or turno.id in bloqueados_ids:
         raise ReservaError('turno_bloqueado')
 
@@ -480,7 +480,7 @@ def reprogramar_reserva(reserva, *, nueva_fecha, nuevo_turno_id):
     from apps.turnero.services import dia_habilitado, turnos_bloqueados
     if not dia_habilitado(nueva_fecha):
         raise ReservaError('dia_no_habilitado')
-    bloqueados_ids, dia_completo = turnos_bloqueados(reserva.circuito, nueva_fecha)
+    bloqueados_ids, dia_completo, _ = turnos_bloqueados(reserva.circuito, nueva_fecha)
     if dia_completo or turno.id in bloqueados_ids:
         raise ReservaError('turno_bloqueado')
 
