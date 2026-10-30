@@ -77,6 +77,18 @@ Sin eso, un dato mal cargado recién se descubre cuando falta un aviso important
 > La contraseña no se vuelve a mostrar. Si dejás el campo vacío al guardar, queda la que ya
 > estaba; solo se reemplaza si escribís una nueva.
 
+### Historial de una reserva
+
+En la ficha de cada reserva hay un **Historial**: lo que fue pasando con esa reserva, con fecha
+y de quién salió. Sirve para que recepción y el dueño vean lo mismo sin releer el WhatsApp.
+
+- **A mano**: escribís en el casillero de arriba y queda firmado con tu usuario. Ej: *"llamó para
+  avisar que llega 20 minutos tarde"*, *"pidió cambiar el menú de una persona"*.
+- **El bot** también puede dejar notas, y aparecen marcadas como *Bot de WhatsApp*.
+
+Es distinto del campo **Notas** de la reserva, que es el detalle fijo de la carga (qué incluye,
+aclaraciones). El historial es lo que va pasando.
+
 ### Avisos al equipo (quién se entera de qué)
 
 En *Configuración → Avisos internos* hay **seis motivos**, y cada uno se configura por

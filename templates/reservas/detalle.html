@@ -145,4 +145,28 @@
   <p style="color:var(--text-muted); font-size:.82rem; margin-top:10px;">No hay extras configurados. Cargalos en <a href="{% url 'configuracion:extras' %}">Configuración → Extras</a>.</p>
   {% endif %}
 </div>
+
+<div class="card" style="margin-top:16px;">
+  <h3 style="margin-top:0;">Historial de la reserva</h3>
+  <p style="color:var(--text-muted); font-size:.8rem; margin-top:-6px;">
+    Lo que va pasando con esta reserva: lo que anota el equipo y lo que deja el bot.
+  </p>
+  <form method="post" action="{% url 'reservas:agregar_nota' reserva.pk %}"
+        style="display:flex; gap:8px; margin:12px 0 16px;">
+    {% csrf_token %}
+    <input type="text" name="texto" required style="flex:1;"
+           placeholder="Ej: volvió a escribir preguntando si puede llegar 30 min más tarde">
+    <button class="btn" type="submit">Agregar</button>
+  </form>
+  {% for n in historial %}
+  <div style="border-left:3px solid {% if n.origen == 'bot' %}var(--color-verde-oliva){% else %}var(--color-tan){% endif %}; padding:6px 12px; margin-bottom:8px;">
+    <div style="font-size:.88rem; white-space:pre-line;">{{ n.texto }}</div>
+    <div style="font-size:.72rem; color:var(--text-muted);">
+      {{ n.quien }} · {{ n.created_at|date:"d/m/Y H:i" }}
+    </div>
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:.85rem;">Todavía no hay movimientos anotados.</p>
+  {% endfor %}
+</div>
 {% endblock %}

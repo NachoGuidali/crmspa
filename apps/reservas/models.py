@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -300,3 +301,38 @@ class ListaEspera(models.Model):
 
     def __str__(self):
         return f'{self.contacto.nombre} espera {self.circuito.nombre} el {self.fecha_deseada}'
+
+class NotaReserva(models.Model):
+    """Lo que fue pasando con una reserva, en orden: lo que escribe el staff y lo que deja el bot.
+
+    El campo `notas` de la reserva es el detalle fijo (qué incluye, aclaraciones de la carga).
+    Esto es el historial: "volvió a escribir preguntando por el horario", "pidió cambiar el
+    menú", "avisó que llega tarde". Cada una con fecha y de quién salió.
+    """
+
+    class Origen(models.TextChoices):
+        STAFF = 'staff', 'Equipo'
+        BOT = 'bot', 'Bot de WhatsApp'
+        SISTEMA = 'sistema', 'Sistema'
+
+    reserva = models.ForeignKey(Reserva, on_delete=models.CASCADE, related_name='historial')
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        help_text='Vacío cuando la dejó el bot o el sistema.',
+    )
+    origen = models.CharField(max_length=10, choices=Origen.choices, default=Origen.STAFF)
+    texto = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Nota de reserva'
+        verbose_name_plural = 'Notas de reserva'
+
+    def __str__(self):
+        return f'Nota de {self.reserva} ({self.created_at:%Y-%m-%d %H:%M})'
+
+    def quien(self):
+        if self.autor:
+            return self.autor.get_full_name() or self.autor.username
+        return dict(self.Origen.choices).get(self.origen, self.origen)

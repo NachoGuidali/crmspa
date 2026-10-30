@@ -13,5 +13,6 @@ urlpatterns = [
     path('<int:pk>/', views.ReservaDetalleView.as_view(), name='detalle'),
     path('<int:pk>/confirmar-sena/', views.ReservaConfirmarSenaView.as_view(), name='confirmar_sena'),
     path('<int:pk>/cancelar/', views.ReservaCancelarView.as_view(), name='cancelar'),
+    path('<int:pk>/notas/', views.ReservaNotaView.as_view(), name='nota'),
     path('<int:pk>/reprogramar/', views.ReservaReprogramarView.as_view(), name='reprogramar'),
 ]

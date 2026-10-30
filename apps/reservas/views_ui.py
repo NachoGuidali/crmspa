@@ -12,7 +12,7 @@ from apps.contactos.models import Contacto
 from apps.turnero.models import Turno
 
 from . import services
-from .models import ListaEspera, Reserva
+from .models import ListaEspera, NotaReserva, Reserva
 
 
 @login_required
@@ -136,8 +136,24 @@ def detalle(request, pk):
         'turnos': Turno.objects.filter(activo=True),
         'extras_disponibles': extras_disponibles,
         'extras_reserva': reserva.extras.all(),
+        'historial': reserva.historial.select_related('autor'),
         'horas_reembolso': ConfiguracionNegocio.get_solo().horas_reembolso_desde_pago,
     })
+
+
+@login_required
+def agregar_nota(request, pk):
+    """Suma una nota al historial de la reserva ("volvió a escribir preguntando por...")."""
+    from django.contrib import messages
+
+    reserva = get_object_or_404(Reserva, pk=pk)
+    texto = (request.POST.get('texto') or '').strip()
+    if texto:
+        NotaReserva.objects.create(
+            reserva=reserva, autor=request.user, origen=NotaReserva.Origen.STAFF, texto=texto,
+        )
+        messages.success(request, 'Nota agregada.')
+    return redirect('reservas:detalle', pk=pk)
 
 
 @login_required

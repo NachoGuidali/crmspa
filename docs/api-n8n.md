@@ -532,6 +532,24 @@ o `comprobante_demasiado_grande`.
 >
 > Sirven para contestar "¿si cancelo me devuelven la seña?" **antes** de cancelar.
 
+### Dejar una nota en la reserva
+`POST /api/v1/reservas/<id>/notas/`
+```json
+{"texto": "Volvió a escribir preguntando si puede sumar una persona."}
+```
+Anota en la reserva algo que pasó, para que el equipo lo vea en la ficha sin leer toda la
+conversación. Queda firmado como **Bot de WhatsApp**, con fecha y hora.
+
+Cuándo conviene usarlo: el cliente avisa que llega tarde, pregunta por un cambio que no
+resuelve el bot, pide algo puntual para el día del circuito, o la charla se deriva a una
+persona estando la reserva ya hecha.
+
+**201** → `{"ok": true, "nota_id": 12, "reserva_id": 34}`
+**400** sin `texto` · **404** si no existe esa reserva.
+
+> El `id` de la reserva sale de `GET /api/v1/reservas/por-telefono/`, que el bot ya usa para
+> responder "¿qué reserva tengo?".
+
 ### Historial de un contacto
 `GET /api/v1/reservas/por-telefono/?telefono=3815551234`
 

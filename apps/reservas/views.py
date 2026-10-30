@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from apps.integraciones.mixins import ApiKeyLoggedView
 
 from . import services
-from .models import Reserva
+from .models import NotaReserva, Reserva
 from .serializers import (
     CancelarReservaSerializer,
     ConfirmarSenaSerializer,
@@ -253,3 +253,26 @@ class ReservasPorContactoView(ApiKeyLoggedView, APIView):
 
         reservas = Reserva.objects.filter(contacto__telefono=telefono).order_by('-fecha')
         return Response(ReservaSerializer(reservas, many=True).data)
+
+class ReservaNotaView(ApiKeyLoggedView, APIView):
+    """POST /api/v1/reservas/<id>/notas/ — el bot deja anotado algo que pasó con la reserva.
+
+    Body: {"texto": "Volvió a escribir preguntando si puede llegar más tarde"}.
+    Queda en el historial de la reserva, firmado como "Bot de WhatsApp", para que el equipo
+    vea lo que pasó sin tener que leer toda la conversación.
+    """
+
+    def post(self, request, pk):
+        texto = (request.data.get('texto') or '').strip()
+        if not texto:
+            return Response({'error': 'texto_requerido'}, status=400)
+        reserva = Reserva.objects.filter(pk=pk).select_related('contacto').first()
+        if reserva is None:
+            return Response({'error': 'reserva_not_found'}, status=404)
+
+        origen = request.data.get('origen') or NotaReserva.Origen.BOT
+        if origen not in NotaReserva.Origen.values:
+            origen = NotaReserva.Origen.BOT
+        nota = NotaReserva.objects.create(reserva=reserva, origen=origen, texto=texto[:2000])
+        self._contacto_relacionado = reserva.contacto
+        return Response({'ok': True, 'nota_id': nota.id, 'reserva_id': reserva.id}, status=201)
