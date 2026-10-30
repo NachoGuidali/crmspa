@@ -36,6 +36,14 @@
 .cal-cell.otro-mes:hover { background: #f2ede4; }
 .cal-cell.feriado { background: #f6ece0; }
 .cal-cell.no-hab { background: #f4f3f0; }
+/* Bloqueado a mano (limpieza, "no reservar"): rayado, para distinguirlo de un día
+   simplemente no laborable y para que se note sin leer el cartelito. */
+.cal-cell.bloqueado {
+  background: repeating-linear-gradient(
+    -45deg, #f1efea, #f1efea 6px, #e6e2da 6px, #e6e2da 12px
+  );
+}
+.cal-cell.bloqueado .cal-daynum .n { color: #6b655c; }
 
 .cal-daynum {
   font-weight: 600;
@@ -77,4 +85,15 @@
 @media (max-width: 700px) {
   .cal-cell { min-height: 64px; }
   .cal-chip { display: none; }
+  /* En el celular se ocultan los carteles por espacio, pero el de bloqueado tiene que
+     quedar: si no, un día de limpieza se ve igual que uno libre. Va recortado. */
+  .cal-chip.bloqueado {
+    display: inline-block;
+    font-size: .6rem;
+    padding: 1px 4px;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }

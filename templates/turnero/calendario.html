@@ -29,7 +29,7 @@
   {% for dow in dias_semana %}<div class="cal-dow">{{ dow }}</div>{% endfor %}
   {% for semana in semanas %}
     {% for celda in semana %}
-    <a class="cal-cell {% if not celda.es_del_mes %}otro-mes{% endif %} {% if celda.es_hoy %}hoy{% endif %} {% if celda.es_feriado and not celda.feriado_abre %}feriado{% elif celda.resumen.bloqueado_todo_el_dia %}no-hab{% elif not celda.resumen.habilitado %}no-hab{% endif %}"
+    <a class="cal-cell {% if not celda.es_del_mes %}otro-mes{% endif %} {% if celda.es_hoy %}hoy{% endif %} {% if celda.es_feriado and not celda.feriado_abre %}feriado{% elif celda.resumen.bloqueado_todo_el_dia %}bloqueado{% elif not celda.resumen.habilitado %}no-hab{% endif %}"
        href="{% url 'turnero:dia' celda.fecha|date:'Y-m-d' %}">
       <div class="cal-daynum"><span class="n">{{ celda.fecha.day }}</span></div>
       {% if celda.es_feriado %}
