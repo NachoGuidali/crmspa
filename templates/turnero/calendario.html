@@ -36,8 +36,6 @@
         <span class="cal-chip feriado">{% if celda.feriado_abre %}Feriado · +{{ celda.feriado_recargo|floatformat:"-2" }}%{% else %}Feriado · cerrado{% endif %}</span>
       {% endif %}
       {% if celda.resumen.bloqueos %}
-        {# Los bloqueos manuales (limpieza, "no reservar"): antes solo se veían entrando al
-           día, así que en el mes el día parecía libre. #}
         <span class="cal-chip bloqueado">
           {% if celda.resumen.bloqueado_todo_el_dia %}Bloqueado{% else %}Turno bloqueado{% endif %}
           {% if celda.resumen.motivo_bloqueo %} · {{ celda.resumen.motivo_bloqueo }}{% endif %}
