@@ -44,9 +44,6 @@
       {% if celda.resumen.reservas and not celda.es_feriado %}
         <span class="cal-chip ocup">{{ celda.resumen.reservas }} reserva{{ celda.resumen.reservas|pluralize }} · {{ celda.resumen.personas }}p</span>
       {% endif %}
-      {% if celda.es_del_mes and celda.resumen.slots %}
-        <span class="cal-slotcount">{{ celda.resumen.slots }} turno{{ celda.resumen.slots|pluralize }}</span>
-      {% endif %}
     </a>
     {% endfor %}
   {% endfor %}
