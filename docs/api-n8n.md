@@ -243,11 +243,15 @@ devuelve los **globales** (aplican a cualquier circuito) más los **propios** de
 ```json
 {
   "extras": [
-    {"id": 5, "nombre": "Menú sin TACC", "descripcion": "Opción apta celíacos", "precio": "5000.00", "por_persona": true, "circuito_id": null},
-    {"id": 8, "nombre": "Tina finlandesa", "descripcion": "", "precio": "15000.00", "por_persona": false, "circuito_id": 2}
+    {"id": 5, "nombre": "Menú sin TACC", "descripcion": "Opción apta celíacos", "precio": "5000.00", "por_persona": true, "circuito_id": null, "circuito_nombre": ""},
+    {"id": 8, "nombre": "Tina finlandesa", "descripcion": "", "precio": "15000.00", "por_persona": false, "circuito_id": 2, "circuito_nombre": "Spa de Parejas Clásico"}
   ]
 }
 ```
+> **Al crear una reserva, pedí el catálogo con `circuito_id`.** Si se manda un `extra_id` que
+> pertenece a otro circuito, `POST /reservas/bot/` rechaza **toda la reserva** con
+> `extra_no_aplica_al_circuito`.
+
 - `circuito_id: null` → extra global (disponible en cualquier circuito).
 - `por_persona` es informativo (para armar la conversación); el precio final que se suma es
   `precio × cantidad` que mandes en `extras` al crear la reserva (ver §5).

@@ -4,9 +4,14 @@ from .models import Circuito, Extra, TarifaCircuito
 
 
 class ExtraSerializer(serializers.ModelSerializer):
+    # El nombre del circuito, para que el bot pueda aclarar "solo en Spa de Parejas Clásico"
+    # en vez de ofrecer algo que después no va a poder cobrar.
+    circuito_nombre = serializers.CharField(source='circuito.nombre', read_only=True, default='')
+
     class Meta:
         model = Extra
-        fields = ['id', 'nombre', 'descripcion', 'precio', 'por_persona', 'circuito_id']
+        fields = ['id', 'nombre', 'descripcion', 'precio', 'por_persona', 'circuito_id',
+                  'circuito_nombre']
 
 
 class TarifaCircuitoSerializer(serializers.ModelSerializer):
