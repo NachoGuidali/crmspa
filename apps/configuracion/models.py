@@ -81,6 +81,14 @@ class ConfiguracionNegocio(models.Model):
                   'para que el cliente las tenga a mano desde el principio.',
     )
 
+    # El número que la web pública usa en todos los botones de WhatsApp. Está acá y no
+    # escrito en el HTML para que cambiarlo no necesite tocar código ni desplegar.
+    telefono_whatsapp = models.CharField(
+        max_length=30, blank=True, verbose_name='WhatsApp de la web',
+        help_text='El número al que escriben desde la web. Como se marca, sin el +54 9 '
+                  '(ej. 1151587091). Vacío = queda el que está escrito en la página.',
+    )
+
     # ── Salida de mails (SMTP) ───────────────────────────────────────────────
     # Se configura acá y no en el .env para no tener que entrar al servidor cada vez que
     # cambia una casilla. Si queda vacío, se usa lo que haya configurado el servidor.

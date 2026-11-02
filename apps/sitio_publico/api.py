@@ -90,3 +90,31 @@ class PopupPublicoView(APIView):
             'cta_url': popup.cta_url,
             'repetir_horas': popup.repetir_horas,
         }})
+
+class ContactoPublicoView(APIView):
+    """GET /api/v1/publico/contacto/ — los datos de contacto que muestra la web.
+
+    Hoy, el WhatsApp. La web trae de acá el número de todos sus botones, así cambiarlo es
+    editar un campo en el CRM y no tocar siete archivos y desplegar.
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from utils.phone import normalize_ar_phone
+
+        from apps.configuracion.models import ConfiguracionNegocio
+
+        config = ConfiguracionNegocio.get_solo()
+        crudo = (config.telefono_whatsapp or '').strip()
+        if not crudo:
+            return Response({'whatsapp': None})
+
+        internacional = normalize_ar_phone(crudo)          # +5491151587091
+        return Response({
+            # Para los links wa.me, que van sin el "+".
+            'whatsapp': internacional.lstrip('+'),
+            # Para mostrarlo escrito, como lo lee una persona.
+            'whatsapp_visible': config.telefono_whatsapp.strip(),
+        })

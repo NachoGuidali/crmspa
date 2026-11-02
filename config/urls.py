@@ -41,7 +41,7 @@ def robots_txt(_request):
     return HttpResponse(contenido, content_type='text/plain; charset=utf-8')
 
 from apps.circuitos.views import ExtraListView
-from apps.sitio_publico.api import CircuitosPublicosView, PopupPublicoView
+from apps.sitio_publico.api import CircuitosPublicosView, ContactoPublicoView, PopupPublicoView
 from apps.turnero.views import TurneroCrudoView
 from apps.whatsapp.views import (
     ConversacionDetalleView,
@@ -65,6 +65,7 @@ urlpatterns = [
     path('api/v1/vouchers/', include('apps.vouchers.urls_api')),
     path('api/v1/publico/circuitos/', CircuitosPublicosView.as_view(), name='publico_circuitos'),
     path('api/v1/publico/popup/', PopupPublicoView.as_view(), name='publico_popup'),
+    path('api/v1/publico/contacto/', ContactoPublicoView.as_view(), name='publico_contacto'),
 
     path('whatsapp/', include(('apps.whatsapp.urls', 'whatsapp'), namespace='whatsapp_api')),
 

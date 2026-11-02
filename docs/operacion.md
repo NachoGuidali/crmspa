@@ -65,6 +65,21 @@ Al final del día, en el `Turnero` del día, marcá cada reserva:
 Todo esto es automático. El plazo se cambia en *Configuración → Configuración del negocio* →
 **Horas de reembolso desde el pago**.
 
+### El WhatsApp que muestra la web
+
+*Configuración → Negocio → **WhatsApp de la web***. Se escribe como se marca, sin el +54 9
+(ej. `1151587091`).
+
+Todos los botones de la web y el número que se ve arriba de cada página salen de ahí: cambiarlo
+es editar ese campo, sin tocar la página ni esperar un despliegue. Tarda lo que tarde el
+navegador en recargar (Ctrl+F5 para verlo al toque).
+
+> Si el campo queda **vacío**, la web usa el número que trae escrito. O sea que vaciarlo no
+> rompe nada: deja el último que se publicó.
+
+> Ojo que esto es el número de los **botones de la web**. El número desde el que contesta el
+> bot es otro tema: ese es el que está vinculado en *Configuración → WhatsApp*.
+
 ### Desde qué casilla salen los mails
 
 *Configuración → Negocio → Envío de mails*: servidor, puerto, usuario y contraseña. Con Gmail
