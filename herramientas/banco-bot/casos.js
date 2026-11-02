@@ -61,6 +61,27 @@ module.exports = [
     conversacion: conv('turno_fecha'), ia: {},
     espera: { tipo_propuesta: 'pareja', fallback_dias_por_no_entendido: false } },
 
+  // ── Saludos y primer contacto (conversación del 02/11: tiró los 5 flyers de una) ──
+  { nombre: 'el mensaje del botón de la web no dispara el catálogo',
+    texto: 'Hola! Quiero consultar por una experiencia en Cuatro Raíces',
+    conversacion: conv('nuevo', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'catalogo', entendido: true },
+    espera: { apertura_vaga: true, solicita_info: null } },
+  { nombre: '"Hola María" en el menú no es un fallo de comprensión',
+    texto: 'Hola María',
+    conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { entendido: false },
+    espera: { apertura_vaga: true, entendido: true } },
+  { nombre: 'pero un saludo CON pedido concreto sigue yendo al catálogo',
+    texto: 'hola, cuanto sale el spa de parejas?',
+    conversacion: conv('nuevo', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'catalogo', tipo_propuesta: 'parejas', entendido: true },
+    espera: { apertura_vaga: false, solicita_info: 'catalogo', tipo_propuesta: 'parejas' } },
+  { nombre: 'un saludo en medio de una reserva la retoma, no la reinicia',
+    texto: 'hola',
+    conversacion: conv('turno_datos_email'), ia: { entendido: false },
+    espera: { apertura_vaga: false, retoma_con_saludo: true } },
+
   // ── Derivar a una persona ──
   { nombre: 'tercer fallo seguido en el mismo paso → deriva', texto: 'ninguni',
     conversacion: conv('turno_fecha', { fallos_consecutivos: 'turno_fecha:2' }), ia: {},
