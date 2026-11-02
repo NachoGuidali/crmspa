@@ -133,6 +133,11 @@
       <label>Agregar extra</label>
       <select name="extra_id" required>
         {% for x in extras_disponibles %}<option value="{{ x.id }}">{{ x.nombre }} — ${{ x.precio|floatformat:0 }}{% if x.por_persona %}/persona{% endif %}</option>{% endfor %}
+        {% if extras_otros %}
+        <optgroup label="De otros circuitos">
+          {% for x in extras_otros %}<option value="{{ x.id }}">{{ x.nombre }} — ${{ x.precio|floatformat:0 }}{% if x.por_persona %}/persona{% endif %} ({{ x.circuito.nombre }})</option>{% endfor %}
+        </optgroup>
+        {% endif %}
       </select>
     </div>
     <div class="form-row" style="margin:0;">

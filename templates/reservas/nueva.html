@@ -56,7 +56,8 @@
       <label>Extras</label>
       <div style="display:flex; flex-direction:column; gap:6px;">
         {% for e in extras_disponibles %}
-        <label style="display:flex; align-items:center; gap:8px; font-weight:400; font-size:.88rem;">
+        <label data-circuito="{{ e.circuito_id|default:'' }}"
+               style="display:flex; align-items:center; gap:8px; font-weight:400; font-size:.88rem;">
           <input type="checkbox" name="extras" value="{{ e.pk }}">
           <span>{{ e.nombre }} · ${{ e.precio|floatformat:0 }}{% if e.por_persona %} por persona{% endif %}
             {% if e.circuito %}<span style="color:var(--text-muted);">(solo {{ e.circuito.nombre }})</span>{% endif %}
@@ -68,6 +69,9 @@
       </div>
       <div style="font-size:.74rem; color:var(--text-muted); margin-top:4px;">
         Se suman al total y a la seña. También se pueden agregar después desde la ficha.
+      </div>
+      <div id="sin-extras" style="font-size:.8rem; color:var(--text-muted); display:none;">
+        Este circuito no tiene extras configurados.
       </div>
     </div>
     {% endif %}
@@ -111,6 +115,31 @@
   telField.addEventListener('input', function () {
     if (!telField.readOnly) idField.value = '';
   });
+})();
+</script>
+<script>
+// Cada extra puede ser de un circuito puntual o de todos. Se muestran solo los que aplican al
+// circuito elegido: si no, al guardar explota con "extra_no_aplica_al_circuito".
+(function () {
+  var selectCircuito = document.querySelector('select[name="circuito_id"]');
+  var filas = document.querySelectorAll('label[data-circuito]');
+  var aviso = document.getElementById('sin-extras');
+  if (!selectCircuito || !filas.length) return;
+
+  function filtrar() {
+    var elegido = selectCircuito.value;
+    var visibles = 0;
+    for (var i = 0; i < filas.length; i++) {
+      var de = filas[i].getAttribute('data-circuito');
+      var aplica = !de || de === elegido;
+      filas[i].style.display = aplica ? '' : 'none';
+      if (!aplica) filas[i].querySelector('input[type=checkbox]').checked = false;
+      if (aplica) visibles++;
+    }
+    if (aviso) aviso.style.display = visibles ? 'none' : '';
+  }
+  selectCircuito.addEventListener('change', filtrar);
+  filtrar();
 })();
 </script>
 {% endblock %}

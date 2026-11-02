@@ -147,11 +147,17 @@ def detalle(request, pk):
     extras_disponibles = Extra.objects.filter(activo=True).filter(
         Q(circuito__isnull=True) | Q(circuito=reserva.circuito)
     )
+    # Los que son de otro circuito no se ofrecen primero, pero tampoco se esconden: el equipo
+    # puede querer cobrarle a una clienta algo que normalmente va con otra experiencia.
+    extras_otros = Extra.objects.filter(activo=True).exclude(
+        Q(circuito__isnull=True) | Q(circuito=reserva.circuito)
+    ).select_related('circuito')
     from apps.configuracion.models import ConfiguracionNegocio
     return render(request, 'reservas/detalle.html', {
         'reserva': reserva,
         'turnos': Turno.objects.filter(activo=True),
         'extras_disponibles': extras_disponibles,
+        'extras_otros': extras_otros,
         'extras_reserva': reserva.extras.all(),
         'historial': reserva.historial.select_related('autor'),
         'horas_reembolso': ConfiguracionNegocio.get_solo().horas_reembolso_desde_pago,

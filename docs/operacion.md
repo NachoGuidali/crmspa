@@ -65,6 +65,22 @@ Al final del día, en el `Turnero` del día, marcá cada reserva:
 Todo esto es automático. El plazo se cambia en *Configuración → Configuración del negocio* →
 **Horas de reembolso desde el pago**.
 
+### Extras: por qué a veces aparecen pocos
+
+En *Configuración → Extras*, cada extra tiene un campo **Circuito**:
+
+- **Vacío** = disponible en **todos** los circuitos. Es lo que conviene para el menú sin TACC,
+  el vegetariano o cualquier cosa que se pueda sumar a cualquier experiencia.
+- **Con un circuito elegido** = solo se ofrece en ese. Si la tina finlandesa está atada a
+  "Spa de Parejas Clásico", en una reserva grupal no va a aparecer entre los sugeridos.
+
+Eso explica que al agregar un extra a una reserva veas menos opciones de las que cargaste. Si
+querés que uno esté disponible siempre, entrá a editarlo y **dejá el circuito vacío**.
+
+Igual, en la ficha de la reserva están **todos**: los que no son de ese circuito aparecen al
+final del desplegable, bajo *"De otros circuitos"*, con el nombre del circuito al lado. Se
+pueden agregar igual.
+
 ### El WhatsApp que muestra la web
 
 *Configuración → Negocio → **WhatsApp de la web***. Se escribe como se marca, sin el +54 9
