@@ -51,6 +51,26 @@
       <label>Cantidad de personas</label>
       <input type="number" name="cantidad_personas" value="1" min="1" required>
     </div>
+    {% if extras_disponibles %}
+    <div class="form-row">
+      <label>Extras</label>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        {% for e in extras_disponibles %}
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400; font-size:.88rem;">
+          <input type="checkbox" name="extras" value="{{ e.pk }}">
+          <span>{{ e.nombre }} · ${{ e.precio|floatformat:0 }}{% if e.por_persona %} por persona{% endif %}
+            {% if e.circuito %}<span style="color:var(--text-muted);">(solo {{ e.circuito.nombre }})</span>{% endif %}
+          </span>
+          <input type="number" name="cantidad_extra_{{ e.pk }}" value="1" min="1"
+                 style="width:62px; margin-left:auto;" aria-label="Cantidad de {{ e.nombre }}">
+        </label>
+        {% endfor %}
+      </div>
+      <div style="font-size:.74rem; color:var(--text-muted); margin-top:4px;">
+        Se suman al total y a la seña. También se pueden agregar después desde la ficha.
+      </div>
+    </div>
+    {% endif %}
     <div class="form-row">
       <label>Notas</label>
       <textarea name="notas" rows="3"></textarea>

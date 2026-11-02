@@ -75,14 +75,30 @@ def kanban_move(request, pk):
 
 
 def _nueva_reserva_context(extra=None):
+    from apps.circuitos.models import Extra
+
     ctx = {
         'circuitos': Circuito.objects.filter(activo=True),
         'turnos': Turno.objects.filter(activo=True),
         'contactos': list(Contacto.objects.order_by('nombre').values('id', 'nombre', 'telefono')),
+        # Se ofrecen todos los activos; crear_reserva descarta los que no apliquen al circuito.
+        'extras_disponibles': Extra.objects.filter(activo=True).select_related('circuito'),
     }
     if extra:
         ctx.update(extra)
     return ctx
+
+
+def _extras_del_formulario(request):
+    """Los extras tildados, con su cantidad. Formato que espera `crear_reserva`."""
+    elegidos = []
+    for extra_id in request.POST.getlist('extras'):
+        try:
+            cantidad = max(int(request.POST.get(f'cantidad_extra_{extra_id}', 1) or 1), 1)
+        except ValueError:
+            cantidad = 1
+        elegidos.append({'extra_id': int(extra_id), 'cantidad': cantidad})
+    return elegidos
 
 
 @login_required
@@ -114,6 +130,7 @@ def nueva_reserva(request):
                 fecha=date.fromisoformat(request.POST['fecha']),
                 cantidad_personas=int(request.POST.get('cantidad_personas', 1)),
                 notas=request.POST.get('notas', ''),
+                extras=_extras_del_formulario(request),
             )
         except services.ReservaError as e:
             return render(request, 'reservas/nueva.html', _nueva_reserva_context({'error': str(e)}))
