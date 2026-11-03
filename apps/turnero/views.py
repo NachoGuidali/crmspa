@@ -90,3 +90,50 @@ class DisponibilidadRangoView(ApiKeyLoggedView, APIView):
             'hasta': hasta.isoformat(),
             'dias': dias,
         })
+
+
+class FeriadosView(ApiKeyLoggedView, APIView):
+    """GET /api/v1/feriados/?dias=120 — los feriados que vienen, para el bot.
+
+    El bot necesita saber cuáles son para entender "el finde largo": sin esta lista, el modelo
+    lo interpretaba como "el fin de semana que viene" y ofrecía días equivocados. También le
+    sirve para avisar del recargo antes de que el cliente se entere al final.
+    """
+
+    def get(self, request):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from .models import Feriado
+
+        try:
+            dias = max(1, min(400, int(request.query_params.get('dias', 120))))
+        except (TypeError, ValueError):
+            dias = 120
+
+        hoy = timezone.localdate()
+        hasta = hoy + timedelta(days=dias)
+
+        salida = []
+        for f in Feriado.objects.all().order_by('fecha'):
+            # Los recurrentes están guardados con el año en que se cargaron: se proyectan al
+            # año que corresponda para que no desaparezcan del calendario.
+            fechas = [f.fecha]
+            if f.recurrente_anual:
+                fechas = []
+                for anio in (hoy.year, hoy.year + 1):
+                    try:
+                        fechas.append(f.fecha.replace(year=anio))
+                    except ValueError:
+                        pass            # 29 de febrero en un año no bisiesto
+            for fecha in fechas:
+                if hoy <= fecha <= hasta:
+                    salida.append({
+                        'fecha': fecha.isoformat(),
+                        'descripcion': f.descripcion,
+                        'modo': f.modo,
+                        'cerrado': f.modo == Feriado.Modo.CERRADO,
+                    })
+        salida.sort(key=lambda x: x['fecha'])
+        return Response({'feriados': salida})

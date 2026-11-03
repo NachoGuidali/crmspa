@@ -206,6 +206,22 @@ module.exports = [
     conversacion: conv('turno_nivel'), ia: { solicita_info: 'catalogo' },
     espera: { pide_disponibilidad: false } },
 
+  // ── El finde largo sale de los feriados del CRM, no de lo que adivine el modelo ──
+  { nombre: '"finde largo" usa el feriado real (23/10/2026 es viernes)',
+    texto: 'quiero ir el finde largo',
+    conversacion: conv('turno_fecha'), ia: {},
+    feriados: [{ fecha: '2026-10-23', descripcion: 'feriado viernes', cerrado: false }],
+    espera: { rango_desde: '2026-10-23', rango_hasta: '2026-10-25' } },
+  { nombre: 'sin feriados cargados, cae al finde que viene',
+    texto: 'quiero ir el finde largo',
+    conversacion: conv('turno_fecha'), ia: {}, feriados: [],
+    revisar: (r) => r.rango_desde ? null : 'tenía que proponer algún finde' },
+  { nombre: 'un feriado CERRADO no arma finde largo',
+    texto: 'quiero ir el finde largo',
+    conversacion: conv('turno_fecha'), ia: {},
+    feriados: [{ fecha: '2026-10-19', descripcion: 'cerrado', cerrado: true }],
+    revisar: (r) => (r.rango_desde === '2026-10-17' ? 'usó un feriado cerrado' : null) },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',

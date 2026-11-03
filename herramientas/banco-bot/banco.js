@@ -22,6 +22,8 @@ function correr(codigo, caso, hoy = '2026-10-13T14:30:00-03:00') {
       texto_lower: (caso.texto || '').toLowerCase(), nombre_contacto: caso.contacto || 'Cliente',
     },
     'Code: MEDIOS DE PAGO HABILITADOS (editar aca)': caso.conversacion,
+    // Los feriados que el bot trae del CRM. El caso puede traer los suyos; si no, ninguno.
+    'GET feriados (para el contexto)': { feriados: caso.feriados || [] },
     'Code: armar historial para IA': { ultimo_mensaje_bot: caso.ultimo_mensaje_bot || '', contexto_ia: '' },
     'POST Groq: interpretar mensaje del cliente': respuestaIA,
     'Config CRM': {},

@@ -926,3 +926,28 @@ No hace falta usar Redis como base de datos: **todo el estado del flujo vive en 
 (`/api/v1/conversaciones/`), para no tener dos fuentes de verdad. Si más adelante aparecen
 mensajes pisados por llegar muy seguido del mismo contacto, se puede sumar un lock corto por
 teléfono; no es necesario para el volumen actual.
+
+## GET /api/v1/disponibilidad/feriados/
+
+Los feriados que vienen, para el contexto del bot.
+
+```
+GET /api/v1/disponibilidad/feriados/?dias=150
+X-Api-Key: <clave>
+```
+
+```json
+{"feriados": [
+  {"fecha": "2026-11-23", "descripcion": "Día de la Soberanía", "modo": "recargo", "cerrado": false},
+  {"fecha": "2026-12-25", "descripcion": "Navidad", "modo": "cerrado", "cerrado": true}
+]}
+```
+
+Los feriados recurrentes se proyectan al año que corresponda, así no desaparecen del
+calendario al cambiar de año. `dias` acepta de 1 a 400 (por defecto 150).
+
+**Para qué lo usa el bot:** sin esta lista, "el finde largo" se interpretaba como "el finde que
+viene" — el modelo no conoce el calendario argentino. Ahora el nodo *Code: parsear
+interpretacion IA* calcula el rango con el feriado real (si cae lunes, sábado a lunes; si cae
+viernes, viernes a domingo; martes y jueves con el puente), y los feriados `cerrado` no cuentan.
+Si el endpoint falla, el bot sigue andando y "finde largo" vuelve a ser el finde que viene.
