@@ -222,6 +222,24 @@ module.exports = [
     feriados: [{ fecha: '2026-10-19', descripcion: 'cerrado', cerrado: true }],
     revisar: (r) => (r.rango_desde === '2026-10-17' ? 'usó un feriado cerrado' : null) },
 
+  // ── Pedir fecha no es repreguntar por la versión (charla del 2/11 23:36) ──
+  { nombre: '"un finde de noviembre, tenes disponible?" NO manda el catálogo',
+    texto: 'un finde de noviembre, tenes disponible ?',
+    conversacion: conv('turno_fecha', { nivel: 'clasico' }),
+    // El modelo completaba el nivel por contexto y eso se leía como repregunta del catálogo.
+    ia: { solicita_info: 'catalogo', nivel: 'clasico', tipo_rango: 'mes', fecha: 'rango', mes_mencionado: 11 },
+    espera: { solicita_info: null } },
+  { nombre: '"que disponibilidad tenes para ir?" tampoco',
+    texto: 'que disponibilidad tenes para ir ?',
+    conversacion: conv('turno_fecha', { nivel: 'clasico' }),
+    ia: { solicita_info: 'catalogo', nivel: 'clasico' },
+    espera: { solicita_info: null, pide_disponibilidad: true } },
+  { nombre: 'pero "y el premium cuanto sale?" SÍ es repregunta del catálogo',
+    texto: 'y el premium cuanto sale?',
+    conversacion: conv('turno_fecha', { nivel: 'clasico' }),
+    ia: { nivel: 'premium' },
+    espera: { solicita_info: 'catalogo' } },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',
