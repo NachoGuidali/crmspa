@@ -192,6 +192,20 @@ module.exports = [
     conversacion: conv('turno_pago'), ia: { medio_pago: 'MP' },
     espera: { medio_pago: 'mercado_pago' } },
 
+  // ── Preguntar si hay lugar, en el medio de la reserva (charla del 2/11 23:14) ──
+  { nombre: '"que disponibilidad tenes?" en el paso del nivel',
+    texto: 'que disponibilidad tenes?',
+    conversacion: conv('turno_nivel', { nivel: null }), ia: { solicita_info: 'anticipacion' },
+    espera: { pide_disponibilidad: true } },
+  { nombre: '"que dias tenes libres?" también',
+    texto: 'que dias tenes libres?',
+    conversacion: conv('menu'), ia: {},
+    espera: { pide_disponibilidad: true } },
+  { nombre: 'preguntar por el catálogo NO es pedir disponibilidad',
+    texto: 'que incluye la clasica?',
+    conversacion: conv('turno_nivel'), ia: { solicita_info: 'catalogo' },
+    espera: { pide_disponibilidad: false } },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',
