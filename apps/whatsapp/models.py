@@ -164,6 +164,10 @@ class Conversacion(models.Model):
         # El turno elegido, con su horario, para poder repetirlo en el resumen sin depender
         # de qué nodo del flujo corrió en esta pasada.
         'turno_nombre', 'turno_horario',
+        # Qué circuitos ya se describieron en esta charla. Sin esto el bot repetía la
+        # descripción completa cada vez que se mencionaba un circuito, aunque la acabara de
+        # mandar: 25 líneas de información que la persona ya tenía.
+        'catalogos_enviados',
     ]
 
     class Meta:

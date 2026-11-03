@@ -305,6 +305,25 @@ module.exports = [
     conversacion: conv('turno_fecha'), ia: {},
     espera: { prefiere_finde: true } },
 
+  // ── El catálogo no se repite (charla del 2/11 23:51) ──
+  { nombre: 'la primera vez que piden un circuito, va completo',
+    texto: 'que tiene el clasico?',
+    conversacion: conv('menu', { personas: 2, tipo_propuesta: 'pareja', nivel: null, catalogos_enviados: [] }),
+    ia: { solicita_info: 'catalogo', nivel: 'clasico' },
+    espera: { catalogo_ya_enviado: false },
+    revisar: (r) => (r.catalogos_enviados || []).includes('pareja|clasico')
+      ? null : 'tenía que anotarlo como enviado: ' + JSON.stringify(r.catalogos_enviados) },
+  { nombre: 'la segunda vez, el bot ya sabe que lo mandó',
+    texto: 'el clasico era 310 no?',
+    conversacion: conv('turno_fecha', { personas: 2, tipo_propuesta: 'pareja', nivel: 'clasico', catalogos_enviados: ['pareja|clasico'] }),
+    ia: { solicita_info: 'catalogo', nivel: 'clasico' },
+    espera: { catalogo_ya_enviado: true } },
+  { nombre: 'un circuito que todavía no vio va completo',
+    texto: 'y el premium?',
+    conversacion: conv('turno_fecha', { personas: 2, tipo_propuesta: 'pareja', nivel: 'clasico', catalogos_enviados: ['pareja|clasico'] }),
+    ia: { solicita_info: 'catalogo', nivel: 'premium' },
+    espera: { catalogo_ya_enviado: false } },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',
