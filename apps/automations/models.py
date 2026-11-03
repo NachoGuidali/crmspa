@@ -12,6 +12,9 @@ class Automatizacion(models.Model):
         LISTA_ESPERA = 'lista_espera', 'Oferta automática de lista de espera'
         CUMPLEANOS = 'cumpleanos', 'Recordatorio de cumpleaños con oferta'
         SEGUIMIENTO_CHARLA = 'seguimiento_charla', 'Seguimiento de conversación sin respuesta'
+        # Segundo intento, más tarde y con otro texto: el primero a las pocas horas puede
+        # pasar desapercibido, y una charla que se enfría del todo es una reserva perdida.
+        SEGUIMIENTO_CHARLA_2 = 'seguimiento_charla_2', 'Segundo seguimiento de conversación (al día siguiente)'
 
     tipo = models.CharField(max_length=30, choices=Tipo.choices, unique=True)
     activa = models.BooleanField(default=True)

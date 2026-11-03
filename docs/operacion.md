@@ -386,3 +386,31 @@ humana, así nadie queda sin respuesta.
 
 **¿Recepción puede ver cuánto factura el spa?**
 No. El dashboard de facturación es solo para el dueño.
+
+## Embudo del bot: dónde se caen las conversaciones
+
+*Inbox WhatsApp → Embudo* (o `/inbox/embudo/`).
+
+Cada vez que una charla cambia de paso queda una fila en `whatsapp_pasoconversacion`. Con eso
+la pantalla muestra dos números por paso:
+
+- **Llegaron**: cuántas charlas pisaron ese paso en el período.
+- **Se quedaron acá**: las que no avanzaron más — sin reserva y sin moverse hace más de un día.
+
+El paso con más "se quedaron acá" es por donde se está perdiendo plata, y es el que conviene
+arreglar primero. Antes esto se adivinaba mirando conversaciones a mano.
+
+Los datos arrancan de cero el día que se sube esta versión: no hay forma de reconstruir el
+recorrido de las charlas viejas, porque `estado_bot` guarda solo el paso actual.
+
+## Seguimiento de charlas: dos intentos
+
+En *Configuración → Automatizaciones* hay dos, las dos **apagadas** de fábrica:
+
+| Automatización | Cuándo escribe | Texto |
+|---|---|---|
+| Seguimiento de conversación | 2hs sin respuesta | Retoma el paso exacto donde quedó |
+| Segundo seguimiento | 24hs después del primero | Más corto, sin detalle, último intento |
+
+El segundo solo le escribe a quien ya recibió el primero y siguió sin contestar. Si el cliente
+responde cualquier cosa, los dos dejan de aplicar: el reloj arranca del último mensaje.

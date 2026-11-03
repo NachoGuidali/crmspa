@@ -344,6 +344,9 @@ def seguimiento_charla(automatizacion):
 
     horas = float(automatizacion.parametros.get('horas_sin_respuesta', 4))
     ventana = float(automatizacion.parametros.get('ventana_horas', 48))
+    # El segundo intento solo mira charlas a las que ya se les escribió una vez; el primero,
+    # solo las que no. Si no, los dos le escribirían a la misma persona el mismo día.
+    es_segundo = automatizacion.tipo == Automatizacion.Tipo.SEGUIMIENTO_CHARLA_2
     ahora = timezone.now()
     desde, hasta = ahora - timedelta(hours=ventana), ahora - timedelta(hours=horas)
 
@@ -372,11 +375,22 @@ def seguimiento_charla(automatizacion):
 
         contacto = conv.contacto
         # Una sola vez por charla: se mira si ya se escribió después del último mensaje.
-        ya_escrito = AutomatizacionLog.objects.filter(
-            automatizacion=automatizacion, resultado=AutomatizacionLog.Resultado.EXITOSO,
-            ejecutado_at__gte=conv.ultimo_mensaje_at,
-        ).filter(contacto=contacto).exists() if contacto else False
-        if ya_escrito:
+        # Una sola vez por charla y por tipo: se mira si ya se escribió desde el último
+        # mensaje. El segundo intento, además, necesita que el primero haya salido.
+        def ya_escribio(tipo):
+            if not contacto:
+                return False
+            return AutomatizacionLog.objects.filter(
+                automatizacion__tipo=tipo, resultado=AutomatizacionLog.Resultado.EXITOSO,
+                contacto=contacto, ejecutado_at__gte=conv.ultimo_mensaje_at,
+            ).exists()
+
+        if ya_escribio(automatizacion.tipo):
+            continue
+        primero_hecho = ya_escribio(Automatizacion.Tipo.SEGUIMIENTO_CHARLA)
+        if es_segundo and not primero_hecho:
+            continue        # todavía no le escribimos la primera vez
+        if not es_segundo and primero_hecho:
             continue
         if contacto and not _contacto_acepta(contacto, automatizacion):
             continue
@@ -408,6 +422,7 @@ HANDLERS = {
     Automatizacion.Tipo.LISTA_ESPERA: lista_espera,
     Automatizacion.Tipo.CUMPLEANOS: cumpleanos,
     Automatizacion.Tipo.SEGUIMIENTO_CHARLA: seguimiento_charla,
+    Automatizacion.Tipo.SEGUIMIENTO_CHARLA_2: seguimiento_charla,
 }
 
 

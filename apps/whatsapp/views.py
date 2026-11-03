@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from apps.integraciones.mixins import ApiKeyLoggedView
 
 from . import services, webhook, webhook_meta
-from .models import ConfiguracionWhatsApp, Conversacion, Mensaje
+from .models import ConfiguracionWhatsApp, Conversacion, Mensaje, PasoConversacion
 from .serializers import EnviarMensajeSerializer, HandoffSerializer
 from .tasks import forward_to_n8n
 
@@ -273,11 +273,25 @@ class ConversacionDetalleView(ApiKeyLoggedView, APIView):
         data = request.data if isinstance(request.data, dict) else {}
         estado = dict(conv.estado_bot or {})
 
+        paso_antes = estado.get('estado_flujo') or 'nuevo'
+
         # Solo aceptamos los campos conocidos del flujo; el resto se ignora.
         for campo in Conversacion.CAMPOS_FLUJO:
             if campo in data:
                 estado[campo] = data[campo]
         conv.estado_bot = estado
+
+        # Cada cambio de paso deja una fila: es la única forma de saber después dónde se
+        # cayeron las charlas (`estado_bot` guarda solo el paso actual). Si falla, no puede
+        # tumbar la respuesta al bot: es una métrica, no parte de la conversación.
+        paso_ahora = estado.get('estado_flujo') or 'nuevo'
+        if paso_ahora != paso_antes:
+            try:
+                PasoConversacion.objects.create(
+                    conversacion=conv, paso=paso_ahora, paso_anterior=paso_antes,
+                )
+            except Exception:
+                logger.exception('No se pudo registrar el paso %s de %s', paso_ahora, telefono)
 
         # Efectos automáticos: si se derivó o ya reservó, el bot queda bloqueado.
         derivado = estado.get('estado_flujo') == Conversacion.ESTADO_FLUJO_DERIVADO

@@ -4,7 +4,10 @@
 {% block content %}
 <div class="topbar">
   <h1>Inbox WhatsApp</h1>
-  <a href="{% url 'whatsapp:inbox' %}" class="btn btn-secondary">Ver como lista</a>
+  <div style="display:flex; gap:8px;">
+    <a href="{% url 'whatsapp:embudo' %}" class="btn btn-secondary">Embudo del bot</a>
+    <a href="{% url 'whatsapp:inbox' %}" class="btn btn-secondary">Ver como lista</a>
+  </div>
 </div>
 
 <div class="kanban">

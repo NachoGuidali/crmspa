@@ -191,6 +191,30 @@ class Conversacion(models.Model):
     def estado_flujo(self):
         return self.estado_bot.get('estado_flujo')
 
+    def _reservas_pasadas(self):
+        """Reservas que la persona ya disfrutó: sirven para reconocerla cuando vuelve."""
+        if not self.contacto_id:
+            return None
+        from apps.reservas.models import Reserva
+
+        return Reserva.objects.filter(
+            contacto_id=self.contacto_id,
+            estado__in=[Reserva.Estado.COMPLETADO, Reserva.Estado.CONFIRMADO],
+            fecha__lt=timezone.localdate(),
+        )
+
+    def ultima_visita(self):
+        """La fecha de la última vez que vino, o None si es la primera vez."""
+        qs = self._reservas_pasadas()
+        if qs is None:
+            return None
+        ultima = qs.order_by('-fecha').values_list('fecha', flat=True).first()
+        return ultima
+
+    def visitas_totales(self):
+        qs = self._reservas_pasadas()
+        return qs.count() if qs is not None else 0
+
     def estado_bot_publico(self):
         """El diccionario plano que consume el bot (mergea la bolsa con los campos derivados)."""
         data = {campo: self.estado_bot.get(campo) for campo in self.CAMPOS_FLUJO}
@@ -198,7 +222,13 @@ class Conversacion(models.Model):
         data['reserva_creada'] = self.reserva_creada
         data['override_regla'] = bool(self.estado_bot.get('override_regla'))
         data['catalogo_enviado'] = bool(self.estado_bot.get('catalogo_enviado'))
+        # Si ya vino al spa, el bot la saluda distinto: tratar de desconocido a alguien que
+        # estuvo el mes pasado es la clase de detalle que se nota.
+        visita = self.ultima_visita()
         data.update({
+            'cliente_recurrente': bool(visita),
+            'ultima_visita': visita.isoformat() if visita else None,
+            'visitas_totales': self.visitas_totales(),
             'telefono': self.telefono,
             'nombre': self.nombre_contacto,
             # bot_bloqueado es la cara pública de bot_activo: si el bot está apagado (handoff
@@ -391,3 +421,31 @@ class LogEnvioWhatsApp(models.Model):
 
     def __str__(self):
         return f'{self.endpoint} — {self.response_status}'
+
+class PasoConversacion(models.Model):
+    """Cada vez que una charla avanza (o retrocede) de paso en el flujo del bot.
+
+    Sin esto no hay forma de saber dónde se caen las conversaciones: `estado_bot` guarda solo
+    el paso ACTUAL, así que una charla que murió en "turno_pago" y otra que terminó en reserva
+    se ven igual una semana después. Con una fila por cambio de paso se puede ver el embudo
+    real: cuántas llegaron a cada paso y en cuál se quedaron.
+
+    Es una tabla de solo-agregar y de filas chicas. Se escribe una vez por paso, no por
+    mensaje: una charla completa son ~12 filas.
+    """
+
+    conversacion = models.ForeignKey(
+        'whatsapp.Conversacion', on_delete=models.CASCADE, related_name='pasos',
+    )
+    paso = models.CharField(max_length=40, db_index=True)
+    # El paso del que viene, para distinguir avances de vueltas atrás.
+    paso_anterior = models.CharField(max_length=40, blank=True)
+    creado_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'paso de conversación'
+        verbose_name_plural = 'pasos de conversación'
+        indexes = [models.Index(fields=['creado_at', 'paso'])]
+
+    def __str__(self):
+        return f'{self.conversacion_id}: {self.paso_anterior or "—"} → {self.paso}'

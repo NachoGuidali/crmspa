@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -6,6 +7,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from . import services
@@ -431,3 +433,109 @@ def config_logout(request):
         return JsonResponse({'ok': True})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+# Orden en el que el bot recorre los pasos. Es el esqueleto del embudo: sin un orden, los
+# pasos son una bolsa y no se ve dónde se cae la gente.
+PASOS_EMBUDO = [
+    ('nuevo', 'Escribió por primera vez'),
+    ('menu', 'Preguntó / vio el catálogo'),
+    ('turno_personas', 'Dijo cuántas personas'),
+    ('turno_nivel', 'Eligió la propuesta'),
+    ('turno_fecha', 'Pidió fecha'),
+    ('turno_fecha_elegir_turno', 'Eligió turno'),
+    ('turno_confirmar_fecha', 'Confirmó la fecha'),
+    ('turno_datos_nombre', 'Dio el nombre'),
+    ('turno_datos_telefono', 'Dio el teléfono'),
+    ('turno_datos_email', 'Dio el email'),
+    ('turno_datos_menu', 'Eligió el menú'),
+    ('turno_menu_especial_cantidad', 'Cantidad de menú especial'),
+    ('turno_confirmar_resumen', 'Confirmó el resumen'),
+    ('turno_pago', 'Eligió medio de pago'),
+    ('turno_pago_comprobante', 'Esperando comprobante'),
+]
+
+
+@login_required
+def embudo_bot(request):
+    """Dónde se caen las conversaciones del bot.
+
+    Hasta ahora el bot se mejoraba con anécdotas: alguien pasaba una charla que falló. Esto
+    responde con datos cuál es el paso que más gente pierde, que es por donde conviene
+    trabajar. Dos miradas distintas:
+
+      - *Llegaron*: cuántas charlas pisaron cada paso en el período (de la tabla de pasos).
+      - *Se quedaron acá*: charlas sin reserva y sin actividad reciente cuyo último paso es
+        ese. Ese número es la pérdida concreta de ese paso.
+    """
+    from django.db.models import Count, Max
+
+    from .models import PasoConversacion
+
+    try:
+        dias = max(1, min(365, int(request.GET.get('dias', 30))))
+    except (TypeError, ValueError):
+        dias = 30
+    desde = timezone.now() - timedelta(days=dias)
+    # Una charla se considera "abandonada" cuando no se movió en 24hs: antes de eso puede
+    # seguir viva y contarla como pérdida sería injusto con el bot.
+    corte_abandono = timezone.now() - timedelta(hours=24)
+
+    llegaron = dict(
+        PasoConversacion.objects.filter(creado_at__gte=desde)
+        .values_list('paso')
+        .annotate(n=Count('conversacion_id', distinct=True))
+    )
+
+    # El último paso de cada charla que tocó el bot en el período.
+    ultimos = (
+        PasoConversacion.objects.filter(creado_at__gte=desde)
+        .values('conversacion_id')
+        .annotate(ultimo=Max('creado_at'))
+    )
+    ids_por_paso = {}
+    if ultimos:
+        pares = {u['conversacion_id']: u['ultimo'] for u in ultimos}
+        filas = PasoConversacion.objects.filter(
+            conversacion_id__in=pares.keys(), creado_at__gte=desde,
+        ).values('conversacion_id', 'paso', 'creado_at')
+        for f in filas:
+            if f['creado_at'] == pares.get(f['conversacion_id']):
+                ids_por_paso.setdefault(f['paso'], []).append(f['conversacion_id'])
+
+    # De esas, las que quedaron frías y sin reserva: la pérdida real.
+    abandonadas = {}
+    for paso, ids in ids_por_paso.items():
+        abandonadas[paso] = Conversacion.objects.filter(
+            id__in=ids, ultimo_mensaje_at__lt=corte_abandono,
+        ).exclude(estado=Conversacion.Estado.RESERVA_CONFIRMADA).count()
+
+    arrancaron = llegaron.get('nuevo', 0) or max(llegaron.values() or [0])
+    filas = []
+    for paso, etiqueta in PASOS_EMBUDO:
+        n = llegaron.get(paso, 0)
+        filas.append({
+            'paso': paso, 'etiqueta': etiqueta, 'llegaron': n,
+            'abandonadas': abandonadas.get(paso, 0),
+            'porcentaje': round(n * 100 / arrancaron, 1) if arrancaron else 0,
+        })
+
+    # Pasos que aparecieron en los datos y no están en la lista de arriba (derivaciones,
+    # pasos nuevos que se agreguen al flujo más adelante).
+    conocidos = {p for p, _ in PASOS_EMBUDO}
+    otros = [
+        {'paso': p, 'etiqueta': p, 'llegaron': n, 'abandonadas': abandonadas.get(p, 0),
+         'porcentaje': round(n * 100 / arrancaron, 1) if arrancaron else 0}
+        for p, n in sorted(llegaron.items(), key=lambda kv: -kv[1]) if p not in conocidos
+    ]
+
+    reservaron = Conversacion.objects.filter(
+        pasos__creado_at__gte=desde, estado=Conversacion.Estado.RESERVA_CONFIRMADA,
+    ).distinct().count()
+
+    return render(request, 'whatsapp/embudo.html', {
+        'filas': filas, 'otros': otros, 'dias': dias,
+        'arrancaron': arrancaron, 'reservaron': reservaron,
+        'conversion': round(reservaron * 100 / arrancaron, 1) if arrancaron else 0,
+        'total_abandonadas': sum(abandonadas.values()),
+    })

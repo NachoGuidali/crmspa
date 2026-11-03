@@ -18,6 +18,7 @@
         {% if unread_total %}<span class="wa-unread">{{ unread_total }}</span>{% endif %}
         <a href="{% url 'whatsapp:nueva_conversacion' %}" class="wa-btn-sm" title="Nuevo mensaje">+ Nuevo</a>
         <a href="{% url 'whatsapp:kanban' %}" class="wa-btn-sm" title="Ver como kanban">Kanban</a>
+        <a href="{% url 'whatsapp:embudo' %}" class="wa-btn-sm" title="Dónde se caen las conversaciones del bot">Embudo</a>
       </div>
     </div>
     <form method="get" class="wa-filters">

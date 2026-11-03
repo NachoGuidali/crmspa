@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Embudo del bot{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <h1>Embudo del bot</h1>
+    <p style="color:var(--text-muted); margin:0;">Dónde se caen las conversaciones · últimos {{ dias }} días</p>
+  </div>
+  <div style="display:flex; gap:8px; align-items:end;">
+    <a href="{% url 'whatsapp:inbox' %}" class="btn btn-secondary">Inbox</a>
+    <a href="?dias=7" class="btn {% if dias != 7 %}btn-secondary{% endif %}">7 días</a>
+    <a href="?dias=30" class="btn {% if dias != 30 %}btn-secondary{% endif %}">30 días</a>
+    <a href="?dias=90" class="btn {% if dias != 90 %}btn-secondary{% endif %}">90 días</a>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:24px;">
+  <div class="card metric-card">
+    <div class="value">{{ arrancaron }}</div>
+    <div class="label">Charlas con el bot</div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">{{ reservaron }}</div>
+    <div class="label">Terminaron en reserva</div>
+    <div style="font-size:.72rem; color:var(--text-muted); margin-top:4px;">{{ conversion }}% de las charlas</div>
+  </div>
+  <div class="card metric-card">
+    <div class="value">{{ total_abandonadas }}</div>
+    <div class="label">Se enfriaron</div>
+    <div style="font-size:.72rem; color:var(--text-muted); margin-top:4px;">
+      Sin reserva y sin moverse hace más de un día.
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <p style="color:var(--text-muted); font-size:.82rem; margin-top:0;">
+    <strong>Llegaron</strong>: cuántas charlas pisaron ese paso.
+    <strong>Se quedaron acá</strong>: las que no avanzaron más — sin reserva y sin moverse hace
+    más de un día. El paso con más "se quedaron acá" es el que conviene mirar primero.
+  </p>
+  <table class="simple">
+    <thead>
+      <tr><th>Paso</th><th style="text-align:right;">Llegaron</th><th>% de las charlas</th><th style="text-align:right;">Se quedaron acá</th></tr>
+    </thead>
+    <tbody>
+      {% for f in filas %}
+      <tr>
+        <td>{{ f.etiqueta }}<br><span style="font-size:.72rem; color:var(--text-muted);">{{ f.paso }}</span></td>
+        <td style="text-align:right;">{{ f.llegaron }}</td>
+        <td>
+          <div style="background:var(--color-crema-2); border-radius:4px; height:8px; width:140px; display:inline-block; vertical-align:middle; margin-right:8px;">
+            <div style="background:var(--color-naranja); border-radius:4px; height:8px; width:{{ f.porcentaje }}%;"></div>
+          </div>
+          <span style="font-size:.78rem; color:var(--text-muted);">{{ f.porcentaje }}%</span>
+        </td>
+        <td style="text-align:right;">
+          {% if f.abandonadas %}<strong>{{ f.abandonadas }}</strong>{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if otros %}
+<div class="card" style="margin-top:24px;">
+  <h2 style="margin-top:0;">Otros pasos</h2>
+  <p style="color:var(--text-muted); font-size:.82rem;">
+    Pasos que aparecieron en los datos y no son parte del camino principal (derivaciones a una
+    persona, o pasos agregados al flujo después de esta pantalla).
+  </p>
+  <table class="simple">
+    <thead><tr><th>Paso</th><th style="text-align:right;">Llegaron</th><th style="text-align:right;">Se quedaron acá</th></tr></thead>
+    <tbody>
+      {% for f in otros %}
+      <tr><td>{{ f.paso }}</td><td style="text-align:right;">{{ f.llegaron }}</td><td style="text-align:right;">{{ f.abandonadas|default:"—" }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if not arrancaron %}
+<div class="card" style="margin-top:24px;">
+  <p style="margin:0; color:var(--text-muted);">
+    Todavía no hay datos. Los pasos se empiezan a registrar con esta versión: en un par de días
+    de charlas reales la tabla ya dice algo.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

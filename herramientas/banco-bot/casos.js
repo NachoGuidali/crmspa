@@ -192,6 +192,24 @@ module.exports = [
     conversacion: conv('turno_pago'), ia: { medio_pago: 'MP' },
     espera: { medio_pago: 'mercado_pago' } },
 
+  // ── Fotos del lugar ──
+  { nombre: '"me mandas fotos?" tiene su propia respuesta',
+    texto: 'me mandas fotos del lugar?',
+    conversacion: conv('menu'), ia: { solicita_info: 'catalogo' },
+    espera: { solicita_info: 'fotos' } },
+
+  // ── Saludo según si ya vino ──
+  { nombre: 'la primera vez se presenta',
+    texto: 'hola',
+    conversacion: conv('nuevo', { nombre: 'Ana Perez', cliente_recurrente: false }), ia: {},
+    revisar: (r) => /Soy María/.test(r.saludo_inicial) ? null : 'esperaba la presentación: ' + r.saludo_inicial },
+  { nombre: 'si ya vino, se la saluda como quien vuelve',
+    texto: 'hola',
+    conversacion: conv('nuevo', { nombre: 'Ana Perez', cliente_recurrente: true, ultima_visita: '2026-09-12' }),
+    ia: {},
+    revisar: (r) => /de vuelta/.test(r.saludo_inicial) && /septiembre/.test(r.saludo_inicial)
+      ? null : 'esperaba saludo de clienta que vuelve: ' + r.saludo_inicial },
+
   // ── Derivar a una persona ──
   { nombre: 'tercer fallo seguido en el mismo paso → deriva', texto: 'ninguni',
     conversacion: conv('turno_fecha', { fallos_consecutivos: 'turno_fecha:2' }), ia: {},
