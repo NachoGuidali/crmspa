@@ -108,6 +108,34 @@ Sin eso, un dato mal cargado recién se descubre cuando falta un aviso important
 > La contraseña no se vuelve a mostrar. Si dejás el campo vacío al guardar, queda la que ya
 > estaba; solo se reemplaza si escribís una nueva.
 
+### Volver a escribirle a quien no contestó
+
+*Configuración → Automatizaciones → **Seguimiento de conversación sin respuesta***.
+
+Cuando alguien escribe, el bot le contesta y la charla queda ahí, a las **2 horas** (editable)
+le escribe **una vez** retomando donde quedó:
+
+- Si estaba armando una reserva: *"Quedamos por la mitad: me faltaba saber qué día estabas
+  buscando."*
+- Si solo preguntó y no siguió: *"¿Te quedó alguna duda? Si querés te paso info de las
+  experiencias, precios o te ayudo a reservar."*
+
+Siempre cierra con *"Si ya no te interesa no hay problema, avisame y no te escribo más"*. El
+texto se edita en *Configuración → Plantillas → Seguimiento de conversación*.
+
+**Cuándo NO escribe**, para no ser molesto:
+
+- Si el último mensaje es del cliente (ahí el que debe contestar es el bot).
+- Si la charla pasó a una persona, o el bot está apagado para ese contacto.
+- Si ya hay reserva hecha.
+- Si está esperando el comprobante: de eso se ocupa el reclamo de seña, que además libera el cupo.
+- Fuera del horario de atención.
+- Si ya se le escribió por esta misma charla: **es uno solo**, no insiste.
+- Si la charla quedó hace más de 48 horas (`ventana_horas`), para que al prenderla no salga
+  a escribirle a gente de hace semanas.
+
+> **Arranca apagada.** Prendela en Automatizaciones cuando quieras que empiece.
+
 ### Historial de una reserva
 
 En la ficha de cada reserva hay un **Historial**: lo que fue pasando con esa reserva, con fecha

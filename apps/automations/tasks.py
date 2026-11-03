@@ -23,6 +23,7 @@ CATEGORIA = {
     Automatizacion.Tipo.LISTA_ESPERA: 'recordatorio',
     Automatizacion.Tipo.REACTIVACION_INACTIVOS: 'promo',
     Automatizacion.Tipo.CUMPLEANOS: 'promo',
+    Automatizacion.Tipo.SEGUIMIENTO_CHARLA: 'recordatorio',
 }
 
 
@@ -299,6 +300,104 @@ def cumpleanos(automatizacion):
             _log(automatizacion, AutomatizacionLog.Resultado.ERROR, str(exc), contacto=contacto)
 
 
+# Qué decirle según dónde quedó la charla. Es una oración entera y no una palabra suelta,
+# porque el caso más común no es una reserva a medio armar: es alguien que preguntó algo,
+# recibió la respuesta y no contestó más.
+PENDIENTE_POR_PASO = {
+    # Preguntó o saludó, pero nunca arrancó una reserva.
+    'nuevo': '¿Te quedó alguna duda? Si querés te paso info de las experiencias, precios o te ayudo a reservar.',
+    'menu': '¿Te quedó alguna duda? Si querés te paso info de las experiencias, precios o te ayudo a reservar.',
+    # Reserva a medio armar: se retoma por el dato que faltaba.
+    'turno_personas': 'Quedamos por la mitad: me faltaba saber cuántas personas vienen y qué experiencia te interesa.',
+    'turno_nivel': 'Quedamos por la mitad: me faltaba saber si preferís la versión Clásica o la Premium.',
+    'turno_fecha': 'Quedamos por la mitad: me faltaba saber qué día estabas buscando.',
+    'turno_fecha_elegir_turno': 'Quedamos por la mitad: me faltaba saber si preferís el turno de la mañana o el de la tarde.',
+    'turno_confirmar_fecha': 'Quedamos por la mitad: me faltaba que me confirmes el día y el turno.',
+    'turno_datos_nombre': 'Quedamos por la mitad: me faltaba tu nombre y apellido.',
+    'turno_datos_telefono': 'Quedamos por la mitad: me faltaba tu teléfono de contacto.',
+    'turno_datos_email': 'Quedamos por la mitad: me faltaba tu email.',
+    'turno_datos_menu': 'Quedamos por la mitad: me faltaba saber si necesitás menú apto celíaco o vegetariano.',
+    'turno_menu_especial_cantidad': 'Quedamos por la mitad: me faltaba saber para cuántas personas era el menú especial.',
+    'turno_confirmar_resumen': 'Quedamos por la mitad: me faltaba que me confirmes la reserva.',
+    'turno_pago': 'Quedamos por la mitad: me faltaba saber cómo vas a abonar la seña.',
+    # turno_pago_comprobante queda afuera a propósito: de ese se encarga el reclamo de seña,
+    # que además libera el cupo. Dos mensajes por lo mismo es acoso.
+}
+
+
+def seguimiento_charla(automatizacion):
+    """Vuelve a escribirle a quien dejó la charla por la mitad.
+
+    Alguien que preguntó precios y no contestó más es una reserva que se está por perder, y
+    hoy nadie se entera. Se le escribe UNA vez, retomando el paso donde quedó.
+
+    Condiciones para escribir, todas necesarias:
+      - el último mensaje lo mandó el bot (si escribió el cliente, le toca responder al bot);
+      - la charla sigue en manos del bot (no derivada a una persona ni archivada);
+      - no hay reserva hecha todavía;
+      - pasaron las horas configuradas, pero no muchísimas (nadie quiere un mensaje de una
+        charla de hace tres semanas apenas se prende la automatización);
+      - estamos en horario de atención.
+    """
+    from apps.configuracion.models import ConfiguracionNegocio
+    from apps.whatsapp.models import Conversacion, Mensaje
+
+    horas = float(automatizacion.parametros.get('horas_sin_respuesta', 4))
+    ventana = float(automatizacion.parametros.get('ventana_horas', 48))
+    ahora = timezone.now()
+    desde, hasta = ahora - timedelta(hours=ventana), ahora - timedelta(hours=horas)
+
+    if not ConfiguracionNegocio.get_solo().esta_en_horario_atencion():
+        _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO, 'Fuera del horario de atención')
+        return
+
+    candidatas = (
+        Conversacion.objects.filter(
+            bot_activo=True, archivada=False,
+            ultimo_mensaje_at__gte=desde, ultimo_mensaje_at__lte=hasta,
+        )
+        .exclude(estado=Conversacion.Estado.REQUIERE_ATENCION_HUMANA)
+        .select_related('contacto')
+    )
+    for conv in candidatas:
+        if conv.reserva_creada:
+            continue
+        paso = (conv.estado_bot or {}).get('estado_flujo') or 'nuevo'
+        if paso not in PENDIENTE_POR_PASO:
+            continue        # pasos que ya tienen su propio recordatorio (ej. el comprobante)
+
+        ultimo = conv.mensajes.order_by('-timestamp').first()
+        if ultimo is None or ultimo.direccion != Mensaje.Direccion.SALIENTE:
+            continue        # si el último mensaje es del cliente, el que debe contestar es el bot
+
+        contacto = conv.contacto
+        # Una sola vez por charla: se mira si ya se escribió después del último mensaje.
+        ya_escrito = AutomatizacionLog.objects.filter(
+            automatizacion=automatizacion, resultado=AutomatizacionLog.Resultado.EXITOSO,
+            ejecutado_at__gte=conv.ultimo_mensaje_at,
+        ).filter(contacto=contacto).exists() if contacto else False
+        if ya_escrito:
+            continue
+        if contacto and not _contacto_acepta(contacto, automatizacion):
+            continue
+
+        plantilla = automatizacion.plantilla
+        contexto = {
+            'nombre': (conv.get_display_name() or '').split(' ')[0],
+            'pendiente': PENDIENTE_POR_PASO[paso],
+        }
+        mensaje = plantilla.render(contexto) if plantilla else None
+        if not mensaje:
+            _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO, 'Sin plantilla configurada',
+                 contacto=contacto)
+            return      # sin plantilla no tiene sentido recorrer el resto
+        try:
+            enviar_automatico(telefono=conv.telefono, plantilla=plantilla, contexto=contexto)
+            _log(automatizacion, AutomatizacionLog.Resultado.EXITOSO, mensaje, contacto=contacto)
+        except Exception as exc:
+            logger.exception('Error en seguimiento_charla para %s', conv.telefono)
+            _log(automatizacion, AutomatizacionLog.Resultado.ERROR, str(exc), contacto=contacto)
+
 HANDLERS = {
     Automatizacion.Tipo.RECORDATORIO_24H: recordatorio_24h,
     Automatizacion.Tipo.RECORDATORIO_2H: recordatorio_2h,
@@ -308,6 +407,7 @@ HANDLERS = {
     Automatizacion.Tipo.ALERTA_CUPO: alerta_cupo,
     Automatizacion.Tipo.LISTA_ESPERA: lista_espera,
     Automatizacion.Tipo.CUMPLEANOS: cumpleanos,
+    Automatizacion.Tipo.SEGUIMIENTO_CHARLA: seguimiento_charla,
 }
 
 

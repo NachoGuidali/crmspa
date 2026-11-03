@@ -11,6 +11,7 @@ class Automatizacion(models.Model):
         ALERTA_CUPO = 'alerta_cupo', 'Alerta interna de cupo completo / último lugar'
         LISTA_ESPERA = 'lista_espera', 'Oferta automática de lista de espera'
         CUMPLEANOS = 'cumpleanos', 'Recordatorio de cumpleaños con oferta'
+        SEGUIMIENTO_CHARLA = 'seguimiento_charla', 'Seguimiento de conversación sin respuesta'
 
     tipo = models.CharField(max_length=30, choices=Tipo.choices, unique=True)
     activa = models.BooleanField(default=True)

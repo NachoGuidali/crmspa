@@ -279,6 +279,7 @@ class PlantillaMensaje(models.Model):
         REACTIVACION = 'reactivacion', 'Reactivación de inactivos'
         CUMPLEANOS = 'cumpleanos', 'Cumpleaños'
         LISTA_ESPERA = 'lista_espera', 'Lista de espera'
+        SEGUIMIENTO_CHARLA = 'seguimiento_charla', 'Seguimiento de conversación sin respuesta'
         OTRO = 'otro', 'Otro'
 
     class MetaCategoria(models.TextChoices):
