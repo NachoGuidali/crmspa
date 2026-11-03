@@ -255,6 +255,32 @@ module.exports = [
     conversacion: conv('turno_fecha'), ia: { tipo_rango: 'finde_de_mes', fecha: 'rango' },
     espera: { fecha_solicitada: '2026-10-14' } },
 
+  // ── Audio y archivos: no se interpretan como texto ──
+  { nombre: 'un audio no dispara la lista de días',
+    texto: '[Audio]',
+    conversacion: conv('turno_fecha', { nivel: 'clasico' }), ia: {},
+    espera: { entendido: false, solicita_info: null } },
+
+  // ── Elegir un nivel en un mensaje que además pregunta precio ──
+  { nombre: '"mejor el clasico, sale menos no?" guarda el cambio',
+    texto: 'mejor el clasico, sale menos no?',
+    conversacion: conv('turno_fecha', { nivel: 'premium' }), ia: { nivel: 'clasico', solicita_info: 'catalogo' },
+    espera: { nivel_elegido: 'clasico' } },
+  { nombre: 'pero "y el premium cuanto sale?" no cambia la reserva',
+    texto: 'y el premium cuanto sale?',
+    conversacion: conv('turno_fecha', { nivel: 'clasico' }), ia: { nivel: 'premium' },
+    espera: { nivel_elegido: null } },
+
+  // ── Una pregunta concreta no se contesta con "¿sobre qué querés info?" ──
+  { nombre: '"se puede fumar ahi?" va a la respuesta libre',
+    texto: 'una duda, se puede fumar ahi?',
+    conversacion: conv('menu'), ia: { solicita_info: 'info_generica' },
+    espera: { info_sin_precisar: false } },
+  { nombre: '"quiero info" sí pregunta sobre qué',
+    texto: 'quiero info',
+    conversacion: conv('menu'), ia: { solicita_info: 'info_generica' },
+    espera: { info_sin_precisar: true } },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',
