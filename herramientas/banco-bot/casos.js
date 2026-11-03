@@ -240,6 +240,21 @@ module.exports = [
     ia: { nivel: 'premium' },
     espera: { solicita_info: 'catalogo' } },
 
+  // ── La fecha ya elegida no se pisa (charla del 2/11 23:38) ──
+  { nombre: 'con fecha guardada, un mensaje sin fecha NO tira la lista de días',
+    texto: 'si quiero el clasico',
+    conversacion: conv('turno_fecha', { fecha_solicitada: '2026-10-17', nivel: null }),
+    ia: { nivel: 'clasico' },
+    espera: { fecha_solicitada: '2026-10-17' } },
+  { nombre: 'sin fecha guardada y sin nada nuevo, ofrece la lista de días',
+    texto: 'ahi veo',
+    conversacion: conv('turno_fecha', { nivel: 'clasico' }), ia: {},
+    espera: { fecha_solicitada: 'rango' } },
+  { nombre: '"el finde semana del 14, tenes libre?" agarra el 14',
+    texto: 'el finde semana del 14 , tenes libre ?',
+    conversacion: conv('turno_fecha'), ia: { tipo_rango: 'finde_de_mes', fecha: 'rango' },
+    espera: { fecha_solicitada: '2026-10-14' } },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',
