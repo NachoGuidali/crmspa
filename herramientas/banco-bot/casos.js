@@ -26,7 +26,7 @@ module.exports = [
     conversacion: conv('turno_fecha_elegir_turno'), ia: {}, espera: { turno_pedido: 'tarde' } },
   { nombre: 'turno: "mañana" acá es el turno, no el día', texto: 'mañana',
     conversacion: conv('turno_fecha_elegir_turno'), ia: {},
-    espera: { turno_pedido: 'mañana', fecha_solicitada: undefined } },
+    espera: { turno_pedido: 'mañana', fecha_solicitada: null } },
   { nombre: 'confirma fecha: "si dale"', texto: 'si dale',
     conversacion: conv('turno_confirmar_fecha'), ia: {}, espera: { confirma_fecha: true } },
   { nombre: 'nombre: "Fiorella Adimari"', texto: 'Fiorella Adimari',
@@ -141,6 +141,56 @@ module.exports = [
     conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
     ia: { solicita_info: 'precios', entendido: true },
     espera: { solicita_info: 'catalogo' } },
+
+  // ── Fechas que no coinciden (día de semana vs número) ──
+  // El banco corre siempre el martes 13/10/2026: ese mes el 17 es sábado y el 18, domingo.
+  { nombre: '"sabado 18" con el 18 en domingo: pregunta, no adivina',
+    texto: 'quiero el sabado 18',
+    conversacion: conv('turno_fecha'), ia: {},
+    espera: { fecha_solicitada: null },
+    revisar: (r) => {
+      const t = (r.pregunta_aclaracion || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return /domingo 18 de octubre/.test(t) && /sabado 17 de octubre/.test(t)
+        ? null : 'tenía que preguntar entre el domingo 18 y el sábado 17, dijo: ' + t;
+    } },
+  { nombre: 'cuando coinciden, reserva sin preguntar',
+    texto: 'el sabado 17',
+    conversacion: conv('turno_fecha'), ia: {},
+    espera: { fecha_solicitada: '2026-10-17', pregunta_aclaracion: null } },
+  { nombre: 'la fecha también sale en palabras, para los mensajes',
+    texto: 'el domingo 18',
+    conversacion: conv('turno_fecha'), ia: {},
+    espera: { fecha_en_palabras: 'domingo 18 de octubre' } },
+
+  // ── El paso del nombre no guarda cualquier cosa ──
+  { nombre: '"cuanto sale" no es un nombre',
+    texto: 'cuanto sale',
+    conversacion: conv('turno_datos_nombre'), ia: {},
+    revisar: (r) => r.nombre_cliente ? 'guardó "' + r.nombre_cliente + '" como nombre' : null },
+  { nombre: 'un nombre de verdad sí se guarda',
+    texto: 'Maria Jose Perez',
+    conversacion: conv('turno_datos_nombre'), ia: {},
+    espera: { nombre_cliente: 'Maria Jose Perez' } },
+
+  // ── Preguntar si es un bot no despierta a nadie ──
+  { nombre: '"sos un bot?" no deriva',
+    texto: 'sos un bot?',
+    conversacion: conv('menu'), ia: { requiere_humano: true },
+    espera: { requiere_humano: false } },
+  { nombre: 'pedir una persona sí deriva',
+    texto: 'quiero hablar con alguien del equipo',
+    conversacion: conv('menu'), ia: { requiere_humano: true },
+    espera: { requiere_humano: true } },
+
+  // ── El control de salida: el modelo no puede inventar valores ──
+  { nombre: 'un medio de pago inventado se descarta',
+    texto: 'dale',
+    conversacion: conv('turno_pago'), ia: { medio_pago: 'efectivo' },
+    espera: { medio_pago: null } },
+  { nombre: '"MP" se normaliza a mercado_pago',
+    texto: 'dale',
+    conversacion: conv('turno_pago'), ia: { medio_pago: 'MP' },
+    espera: { medio_pago: 'mercado_pago' } },
 
   // ── Derivar a una persona ──
   { nombre: 'tercer fallo seguido en el mismo paso → deriva', texto: 'ninguni',

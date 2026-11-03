@@ -79,3 +79,19 @@ Antes de dar por buena una corrida con un modelo nuevo:
    que el modelo devuelva un valor fuera de la lista: no puede inventar categorías.
 3. Correr `comparar-modelos.js`, que pega contra la API de verdad. El banco de `probar.js`
    simula la IA, así que **no** detecta este tipo de problema.
+
+## Probar la forma en que llegan los datos, no la que uno imagina
+
+El nodo `juntar mensajes` nunca juntó nada en producción, y el banco lo daba por bueno: el
+banco simulaba `$json = {mensajes: [...]}`, pero el endpoint devuelve un **array pelado** y n8n
+lo parte en **un item por mensaje**, así que `$json` era solo el primero. Lo mismo pasó con
+`IF existe conversacion`, que comparaba un `statusCode` que ese GET no trae: la condición era
+`undefined != 404`, siempre verdadera, y nunca se creaba la conversación.
+
+Cuando un nodo lee de un HTTP:
+
+- Si el endpoint devuelve una lista → `$input.all()`, nunca `$json`.
+- Si se compara el código de estado → hay que prender *Full Response* en el nodo; si no, en el
+  cuerpo no hay `statusCode`.
+- El caso del banco se escribe con **la forma real de la respuesta**. Un caso que pasa con una
+  forma inventada es peor que no tener caso.

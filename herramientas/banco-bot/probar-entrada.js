@@ -4,11 +4,15 @@
 //   node probar-entrada.js "<flujo .json>"
 const { codigoDelFlujo } = require('./banco.js');
 const cod = codigoDelFlujo(process.argv[2], 'juntar mensajes');
-function correr(body, mensajes) {
+// IMPORTANTE: el endpoint de mensajes devuelve un ARRAY pelado y n8n lo parte en un item por
+// mensaje. El banco simulaba `$json = {mensajes: [...]}`, una forma que n8n nunca manda: por eso
+// no detectó que el nodo leía solo el primer item y no juntaba nunca. Se prueba como llega.
+function correr(body, mensajes, envuelto) {
   const hook = { body };
   const $ = (n) => ({ item: { json: n.includes('Webhook') ? hook : {} } });
-  const $json = { mensajes };
-  return new Function('$', '$json', cod)($, $json);
+  const items = envuelto ? [{ mensajes }] : mensajes;
+  const $input = { all: () => items.map(j => ({ json: j })) };
+  return new Function('$', '$json', '$input', cod)($, items[0] || {}, $input);
 }
 const M = (id, de, texto, tipo = 'texto') => ({ id, de, texto, tipo });
 const CASOS = [
@@ -32,13 +36,17 @@ const CASOS = [
    { phone: '1', message: '', mensaje_id: 12 },
    [M(10, 'nosotros', 'Mandame el comprobante'), M(12, 'cliente', '', 'image')],
    'el comprobante pasa tal cual', ''],
+  ['si el CRM envolviera la lista en {mensajes:[...]}',
+   { phone: '1', message: 'para el sabado', mensaje_id: 12 },
+   [M(10, 'cliente', 'hola'), M(12, 'cliente', 'para el sabado')],
+   'junta igual', 'hola\npara el sabado', true],
   ['el CRM no responde (lista vacía)',
    { phone: '1', message: 'hola', mensaje_id: 10 }, [],
    'nunca deja sin respuesta', 'hola'],
 ];
 let fallaron = 0;
-for (const [nombre, body, mensajes, esperado, espera] of CASOS) {
-  const r = correr(body, mensajes);
+for (const [nombre, body, mensajes, esperado, espera, envuelto] of CASOS) {
+  const r = correr(body, mensajes, envuelto);
   const salida = r.length === 0 ? null : r[0].json.body.message;
   const bien = JSON.stringify(salida) === JSON.stringify(espera);
   if (!bien) fallaron++;
