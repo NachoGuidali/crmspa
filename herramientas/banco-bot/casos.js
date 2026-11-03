@@ -99,6 +99,23 @@ module.exports = [
     ia: { solicita_info: 'disponibilidad', entendido: true },
     espera: { solicita_info: null } },
 
+  // ── Preguntas que el texto resuelve solo (el modelo las venía errando) ──
+  { nombre: 'preguntar por dormir/alojamiento no es pedir precios',
+    texto: 'Hola! Quería averiguar para ir a pasar el día spa y dormir una noche. Precios y disponibilidad por favor',
+    conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'precios', entendido: true },
+    espera: { solicita_info: 'no_alojamiento' } },
+  { nombre: '"tienen cabañas?" tampoco',
+    texto: 'tienen cabañas para quedarse?',
+    conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'precios', entendido: true },
+    espera: { solicita_info: 'no_alojamiento' } },
+  { nombre: '"donde quedan?" va a ubicación aunque el modelo diga otra cosa',
+    texto: 'donde quedan?',
+    conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'precios', entendido: true },
+    espera: { solicita_info: 'ubicacion' } },
+
   // ── Derivar a una persona ──
   { nombre: 'tercer fallo seguido en el mismo paso → deriva', texto: 'ninguni',
     conversacion: conv('turno_fecha', { fallos_consecutivos: 'turno_fecha:2' }), ia: {},
