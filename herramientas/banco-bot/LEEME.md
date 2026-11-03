@@ -62,3 +62,20 @@ decir; el script no "corrige" solo, porque no hay una única respuesta correcta.
 > **Gasta plata de verdad**: cada corrida son unas 8 llamadas por modelo (centavos). Y consume
 > del límite por minuto de la cuenta: con el plan gratis de Groq (8.000 tokens por minuto) la
 > corrida completa se corta por rate limit a mitad de camino.
+
+## Si cambiás de modelo, revisá esto primero
+
+Los tres bugs de la salida a producción salieron del mismo lugar: **el nodo de cada modelo
+tiene su propio prompt**, y el de OpenAI había quedado con una versión vieja y recortada (18
+claves contra 25). Faltaban `nivel`, las confirmaciones y la lista de categorías de
+`solicita_info`, así que el modelo improvisaba: devolvía `"precios"` donde va `"catalogo"` y
+nunca completaba el nivel.
+
+Antes de dar por buena una corrida con un modelo nuevo:
+
+1. Que el nodo use **el mismo prompt** que los demás (comparar los largos alcanza para
+   detectar el problema).
+2. Que el `response_format` sea **`json_schema` con `strict: true`**. Con eso la API no deja
+   que el modelo devuelva un valor fuera de la lista: no puede inventar categorías.
+3. Correr `comparar-modelos.js`, que pega contra la API de verdad. El banco de `probar.js`
+   simula la IA, así que **no** detecta este tipo de problema.
