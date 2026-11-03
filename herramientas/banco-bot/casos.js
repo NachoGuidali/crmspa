@@ -116,6 +116,32 @@ module.exports = [
     ia: { solicita_info: 'precios', entendido: true },
     espera: { solicita_info: 'ubicacion' } },
 
+  // ── "La clásica" en femenino (conversación del 02/11 21:54) ──
+  { nombre: '"quiero la propuesta clasica" se entiende',
+    texto: 'quiero la propuesta clasica',
+    conversacion: conv('turno_nivel', { nivel: null }), ia: {},
+    espera: { nivel: 'clasico' } },
+  { nombre: '"la clásica" con tilde también',
+    texto: 'la clásica',
+    conversacion: conv('turno_nivel', { nivel: null }), ia: {},
+    espera: { nivel: 'clasico' } },
+  { nombre: 'si el modelo devuelve "clasica" se normaliza',
+    texto: 'esa',
+    conversacion: conv('turno_nivel', { nivel: null }), ia: { nivel: 'clasica' },
+    espera: { nivel: 'clasico' } },
+
+  // ── Pedir disponibilidad arranca la reserva, no repite el menú ──
+  { nombre: '"quiero saber de disponibilidad" arranca la reserva',
+    texto: 'Quiero saber de disponibilidad',
+    conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'precios', entendido: true },
+    espera: { opcion: 1, solicita_info: null } },
+  { nombre: 'pero si además pide precios, primero el catálogo',
+    texto: 'precios y disponibilidad por favor',
+    conversacion: conv('menu', { personas: null, tipo_propuesta: null, nivel: null }),
+    ia: { solicita_info: 'precios', entendido: true },
+    espera: { solicita_info: 'catalogo' } },
+
   // ── Derivar a una persona ──
   { nombre: 'tercer fallo seguido en el mismo paso → deriva', texto: 'ninguni',
     conversacion: conv('turno_fecha', { fallos_consecutivos: 'turno_fecha:2' }), ia: {},
