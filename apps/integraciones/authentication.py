@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ValidationError
 from django.db.models import F
 from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication
@@ -23,7 +24,10 @@ class ApiKeyAuthentication(BaseAuthentication):
 
         try:
             api_key = ApiKey.objects.get(key=raw_key, activa=True)
-        except (ApiKey.DoesNotExist, ValueError, TypeError):
+        # ValidationError: `key` es un UUID, y una clave con cualquier otro formato la hacía
+        # explotar en el filtro. El endpoint es público, así que cualquiera podía provocar
+        # un 500 mandando basura en el header; ahora es un rechazo normal.
+        except (ApiKey.DoesNotExist, ValidationError, ValueError, TypeError):
             raise AuthenticationFailed('API key inválida o inactiva.')
 
         ApiKey.objects.filter(pk=api_key.pk).update(
