@@ -281,6 +281,30 @@ module.exports = [
     conversacion: conv('menu'), ia: { solicita_info: 'info_generica' },
     espera: { info_sin_precisar: true } },
 
+  // ── "Sábado o domingo" son dos días, no uno (charla del 2/11 23:50) ──
+  { nombre: '"para sabado o domingo" con fecha guardada pregunta cuál',
+    texto: 'la clasica, para sabado o domingo',
+    conversacion: conv('turno_nivel', { fecha_solicitada: '2026-10-17', nivel: null }),
+    ia: { nivel: 'clasico' },
+    revisar: (r) => {
+      const t = (r.pregunta_aclaracion || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return /sabado 17 de octubre/.test(t) && /domingo 18 de octubre/.test(t)
+        ? null : 'esperaba elegir entre el sábado 17 y el domingo 18, dijo: ' + t;
+    } },
+  { nombre: '"sabado o domingo" sin ninguna referencia pide la fecha',
+    texto: 'sabado o domingo',
+    conversacion: conv('turno_fecha'), ia: {},
+    revisar: (r) => /fin de semana te queda mejor/.test(r.pregunta_aclaracion || '')
+      ? null : 'esperaba que pregunte qué finde, dijo: ' + r.pregunta_aclaracion },
+  { nombre: 'un solo día sí se toma como elección',
+    texto: 'el sabado',
+    conversacion: conv('turno_fecha'), ia: {},
+    espera: { fecha_solicitada: '2026-10-17', pregunta_aclaracion: null } },
+  { nombre: 'pedir finde queda marcado para las alternativas',
+    texto: 'tenes algo el finde?',
+    conversacion: conv('turno_fecha'), ia: {},
+    espera: { prefiere_finde: true } },
+
   // ── Fotos del lugar ──
   { nombre: '"me mandas fotos?" tiene su propia respuesta',
     texto: 'me mandas fotos del lugar?',
