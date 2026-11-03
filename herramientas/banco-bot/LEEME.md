@@ -95,3 +95,16 @@ Cuando un nodo lee de un HTTP:
   cuerpo no hay `statusCode`.
 - El caso del banco se escribe con **la forma real de la respuesta**. Un caso que pasa con una
   forma inventada es peor que no tener caso.
+
+## Las tres herramientas, y qué ve cada una
+
+| | Qué prueba | Cuándo |
+|---|---|---|
+| `revisar-flujo.py` | Que el flujo no tenga nodos sueltos, lecturas inválidas ni campos fantasma | Siempre, es gratis |
+| `probar.js` + `probar-entrada.js` | El parser y el juntado de mensajes, con la IA **simulada** | Siempre, es gratis |
+| `probar-con-ia.js` | La cadena completa contra el **modelo real** | Antes de subir cambios del prompt |
+
+La diferencia importante: **el banco simula la IA, así que nunca la ve equivocarse.** Los bugs
+de la salida a producción salieron todos de ahí — el modelo devolviendo algo que el flujo no
+esperaba. `probar-con-ia.js` cuesta unos centavos por corrida y es lo único que los encuentra
+antes que un cliente.
