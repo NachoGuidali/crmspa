@@ -152,7 +152,8 @@ cobran por persona (ver abajo). El backend ya calcula **precio total** y **seña
   "circuitos": [
     {
       "id": 2, "nombre": "Grupal Clásica", "descripcion": "...",
-      "tipo": "grupal", "duracion_minutos": 120, "capacidad_maxima": 12,
+      "tipo": "grupal", "duracion_minutos": 120,
+      "capacidad_minima": 3, "capacidad_maxima": 12,
       "precio_semana": null, "precio_finde": null,
       "precio_persona_adicional_semana": "7000.00", "precio_persona_adicional_finde": "9000.00",
       "tarifas": [
@@ -227,6 +228,10 @@ Sirven para explicarle el precio al cliente en vez de tirarle un número suelto:
   (tramos por cantidad de personas). El precio por persona depende del tamaño del grupo:
   3–4 personas una tarifa, 5–6 otra, 7–8 otra. Pasando el último tramo, cada persona adicional
   paga `precio_persona_adicional_*`. El tope es `capacidad_maxima`.
+
+**Capacidad.** `capacidad_minima` y `capacidad_maxima` son los límites reales del circuito y la
+reserva los valida: con menos del mínimo, `POST /reservas/bot/` falla. Cuando los dos valores
+coinciden el cupo es **fijo** (ej. Pareja: siempre 2) y no hace falta preguntar la cantidad.
 
 > `precio` y `monto_sena` ya vienen **calculados** para `fecha` + `personas`, con el recargo
 > por feriado ya aplicado. Usalos, no recalcules. Si no mandaste `personas`, `precio` se calcula con una cantidad de referencia

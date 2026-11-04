@@ -36,7 +36,10 @@ class CircuitoSerializer(serializers.ModelSerializer):
         model = Circuito
         fields = [
             'id', 'nombre', 'descripcion', 'tipo', 'duracion_minutos',
-            'capacidad_maxima', 'precio_semana', 'precio_finde',
+            # Las dos capacidades: el bot necesita el mínimo para no ofrecer el circuito a un
+            # grupo más chico (la reserva lo valida y falla) y para saber cuándo el cupo es fijo
+            # (mínimo = máximo, ej. Pareja: siempre 2) y no preguntar la cantidad al vicio.
+            'capacidad_minima', 'capacidad_maxima', 'precio_semana', 'precio_finde',
             'precio_persona_adicional_semana', 'precio_persona_adicional_finde',
             'tarifas', 'precio', 'precio_base', 'recargo_feriado',
             'precio_semana_total', 'precio_finde_total',
