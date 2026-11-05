@@ -7,6 +7,7 @@ app_name = 'reservas'
 urlpatterns = [
     path('', views_ui.kanban, name='kanban'),
     path('nueva/', views_ui.nueva_reserva, name='nueva'),
+    path('nueva/calcular-sena/', views_ui.calcular_sena, name='calcular_sena'),
     path('lista-espera/', views_ui.lista_espera, name='lista_espera'),
     path('lista-espera/<int:pk>/quitar/', views_ui.quitar_espera, name='quitar_espera'),
     path('<int:pk>/', views_ui.detalle, name='detalle'),

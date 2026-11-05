@@ -72,10 +72,28 @@ def _resolver_extras(circuito, extras_data):
     return resueltos
 
 
+def calcular_totales(*, circuito_id, fecha, cantidad_personas=1, extras=None):
+    """Cuánto saldría una reserva con estos datos, sin crearla.
+
+    Es la misma cuenta que hace `crear_reserva`, para que el formulario de carga manual pueda
+    mostrar el total y la seña antes de guardar. Si se calculara aparte en la vista, los dos
+    números se irían separando con el tiempo.
+    """
+    circuito = Circuito.objects.get(pk=circuito_id, activo=True)
+    extras_resueltos = _resolver_extras(circuito, extras)
+    extras_total = sum((e.precio * cant for e, cant in extras_resueltos), Decimal('0'))
+    total = circuito.precio_para(fecha, cantidad_personas) + extras_total
+    return {
+        'total': total,
+        'sena': circuito.monto_sena_para(fecha, cantidad_personas, monto_adicional=extras_total),
+        'extras': extras_total,
+    }
+
+
 @transaction.atomic
 def crear_reserva(
     *, telefono, nombre_contacto, circuito_id, turno_id, fecha,
-    cantidad_personas=1, acompanantes=None, notas='', extras=None,
+    cantidad_personas=1, acompanantes=None, notas='', extras=None, medio_pago='',
 ):
     from apps.turnero.services import dia_habilitado, turnos_bloqueados
 
@@ -132,6 +150,10 @@ def crear_reserva(
         monto_sena=monto_sena,
         vencimiento_sena=timezone.now() + timedelta(hours=config.plazo_pago_sena_horas),
         notas=notas,
+        # Si ya se sabe cómo va a pagar (carga manual), queda asentado desde el principio:
+        # así, cuando la seña se acredite, el `Pago` sale con el medio real y no como "Otro".
+        # El bot no lo manda acá: lo pone después, porque de él depende el estado inicial.
+        medio_pago=medio_pago or '',
     )
     try:
         reserva.full_clean()

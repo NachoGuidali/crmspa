@@ -75,11 +75,45 @@
       </div>
     </div>
     {% endif %}
+    <div class="form-row" style="border-top:1px solid var(--border); padding-top:14px;">
+      <label>Seña</label>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+        <input type="checkbox" name="sena_abonada" id="sena_abonada" value="1">
+        <span>Ya abonó la seña</span>
+      </label>
+      <small style="color:var(--text-muted);">
+        Tildado, la reserva queda <strong>confirmada</strong> y le sale el mensaje de
+        confirmación al cliente. Sin tildar, queda en “pendiente de seña”.
+      </small>
+
+      <div id="bloque-sena" style="display:none; margin-top:10px; padding-left:12px;
+           border-left:2px solid var(--border);">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+          <input type="radio" name="monto_sena_opcion" value="calculada" checked>
+          <span>La seña calculada <span id="sena-calculada" style="color:var(--text-muted);">(elegí circuito y fecha)</span></span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-top:6px;">
+          <input type="radio" name="monto_sena_opcion" value="otro">
+          <span>Otro monto</span>
+          <input type="number" name="monto_sena" id="monto_sena" min="1" step="1"
+                 placeholder="$" style="width:120px;" disabled>
+        </label>
+
+        <div class="form-row" style="margin-top:10px;">
+          <label for="medio_pago">¿Cómo la pagó?</label>
+          <select name="medio_pago" id="medio_pago">
+            <option value="">Elegí un medio…</option>
+            {% for value, label in medios_pago %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
     <div class="form-row">
       <label>Notas</label>
       <textarea name="notas" rows="3"></textarea>
     </div>
-    <button type="submit" class="btn">Crear reserva</button>
+    <button type="submit" class="btn" id="btn-crear">Crear reserva</button>
   </form>
 </div>
 
@@ -140,6 +174,94 @@
   }
   selectCircuito.addEventListener('change', filtrar);
   filtrar();
+})();
+</script>
+<script>
+// Bloque de seña. El monto del 50% no se escribe a mano: se pide al servidor con la misma
+// cuenta que hace crear_reserva, así los dos numeros no se separan nunca.
+(function () {
+  var tilde = document.getElementById('sena_abonada');
+  var bloque = document.getElementById('bloque-sena');
+  var medio = document.getElementById('medio_pago');
+  var montoOtro = document.getElementById('monto_sena');
+  var etiqueta = document.getElementById('sena-calculada');
+  var form = document.getElementById('form-reserva');
+  if (!tilde || !bloque) return;
+
+  var selCircuito = form.querySelector('[name="circuito_id"]');
+  var inpFecha = form.querySelector('[name="fecha"]');
+  var inpPersonas = form.querySelector('[name="cantidad_personas"]');
+  var URL_CALC = '{% url "reservas:calcular_sena" %}';
+  var senaCalculada = null;
+
+  function pesos(n) { return '$' + Number(n).toLocaleString('es-AR'); }
+
+  function extrasElegidos() {
+    return Array.prototype.map.call(
+      form.querySelectorAll('input[name="extras"]:checked'),
+      function (cb) {
+        var cant = form.querySelector('[name="cantidad_extra_' + cb.value + '"]');
+        return { extra_id: Number(cb.value), cantidad: Math.max(Number(cant && cant.value) || 1, 1) };
+      });
+  }
+
+  function refrescarMonto() {
+    if (!selCircuito.value || !inpFecha.value) {
+      senaCalculada = null;
+      etiqueta.textContent = '(elegí circuito y fecha)';
+      return;
+    }
+    var q = new URLSearchParams({
+      circuito_id: selCircuito.value,
+      fecha: inpFecha.value,
+      cantidad_personas: inpPersonas.value || '1',
+      extras: JSON.stringify(extrasElegidos()),
+    });
+    etiqueta.textContent = '(calculando…)';
+    fetch(URL_CALC + '?' + q.toString())
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) { senaCalculada = null; etiqueta.textContent = '(no se pudo calcular)'; return; }
+        senaCalculada = res.d.sena;
+        etiqueta.textContent = pesos(res.d.sena) + ' · total ' + pesos(res.d.total);
+      })
+      .catch(function () { senaCalculada = null; etiqueta.textContent = '(no se pudo calcular)'; });
+  }
+
+  function sincronizar() {
+    var abono = tilde.checked;
+    bloque.style.display = abono ? 'block' : 'none';
+    medio.required = abono;
+    var otro = form.querySelector('[name="monto_sena_opcion"][value="otro"]').checked;
+    montoOtro.disabled = !(abono && otro);
+    montoOtro.required = abono && otro;
+    if (abono) refrescarMonto();
+  }
+
+  tilde.addEventListener('change', sincronizar);
+  Array.prototype.forEach.call(form.querySelectorAll('[name="monto_sena_opcion"]'), function (r) {
+    r.addEventListener('change', sincronizar);
+  });
+  [selCircuito, inpFecha, inpPersonas].forEach(function (el) {
+    el.addEventListener('change', function () { if (tilde.checked) refrescarMonto(); });
+  });
+  form.addEventListener('change', function (e) {
+    if (!tilde.checked) return;
+    if (e.target.name === 'extras' || /^cantidad_extra_/.test(e.target.name || '')) refrescarMonto();
+  });
+
+  // Si eligió "la seña calculada" pero el servidor no la pudo calcular, no lo dejamos
+  // confirmar a ciegas: el back la recalcula igual, pero conviene avisar antes.
+  form.addEventListener('submit', function (e) {
+    if (!tilde.checked) return;
+    var otro = form.querySelector('[name="monto_sena_opcion"][value="otro"]').checked;
+    if (!otro && senaCalculada === null) {
+      e.preventDefault();
+      alert('Todavía no pude calcular la seña. Revisá el circuito y la fecha, o elegí "Otro monto".');
+    }
+  });
+
+  sincronizar();
 })();
 </script>
 {% endblock %}

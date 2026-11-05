@@ -1,5 +1,6 @@
 import json
 from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -83,6 +84,7 @@ def _nueva_reserva_context(extra=None):
         'contactos': list(Contacto.objects.order_by('nombre').values('id', 'nombre', 'telefono')),
         # Se ofrecen todos los activos; crear_reserva descarta los que no apliquen al circuito.
         'extras_disponibles': Extra.objects.filter(activo=True).select_related('circuito'),
+        'medios_pago': Reserva.MedioPago.choices,
     }
     if extra:
         ctx.update(extra)
@@ -121,8 +123,31 @@ def nueva_reserva(request):
                 'error': 'Elegí un contacto existente o ingresá teléfono y nombre del cliente.',
             }))
 
+        # La seña: si la persona ya pagó, la reserva nace confirmada y le sale el mensaje de
+        # confirmación. Si no, queda en "pendiente de seña" como siempre, pero igual se guarda
+        # el medio para que después el `Pago` no entre como "Otro".
+        ya_abono = request.POST.get('sena_abonada') == '1'
+        medio_pago = request.POST.get('medio_pago', '').strip()
+        monto_sena = None
+
+        def _error(msg):
+            return render(request, 'reservas/nueva.html', _nueva_reserva_context({'error': msg}))
+
+        if medio_pago and medio_pago not in dict(Reserva.MedioPago.choices):
+            return _error('El medio de pago elegido no es válido.')
+        if ya_abono:
+            if not medio_pago:
+                return _error('Marcaste que ya abonó la seña: elegí con qué medio la pagó.')
+            if request.POST.get('monto_sena_opcion') == 'otro':
+                try:
+                    monto_sena = Decimal(request.POST.get('monto_sena', '').strip())
+                except (InvalidOperation, ValueError):
+                    return _error('El monto de la seña no es un número válido.')
+                if monto_sena <= 0:
+                    return _error('El monto de la seña tiene que ser mayor a cero.')
+
         try:
-            services.crear_reserva(
+            reserva = services.crear_reserva(
                 telefono=telefono,
                 nombre_contacto=nombre,
                 circuito_id=request.POST['circuito_id'],
@@ -131,12 +156,63 @@ def nueva_reserva(request):
                 cantidad_personas=int(request.POST.get('cantidad_personas', 1)),
                 notas=request.POST.get('notas', ''),
                 extras=_extras_del_formulario(request),
+                medio_pago=medio_pago,
             )
         except services.ReservaError as e:
-            return render(request, 'reservas/nueva.html', _nueva_reserva_context({'error': str(e)}))
-        return redirect('reservas:kanban')
+            return _error(str(e))
+
+        if not ya_abono:
+            return redirect('reservas:kanban')
+
+        # Cobrar la seña confirma la reserva, deja el Pago en la caja con el medio real,
+        # arranca la ventana de reembolso y le manda la confirmación al cliente.
+        from django.contrib import messages
+        try:
+            services.confirmar_sena(
+                reserva, monto_sena if monto_sena is not None else reserva.monto_sena, medio_pago,
+            )
+            messages.success(
+                request,
+                'Reserva creada y confirmada. Se registró la seña y se le mandó la '
+                'confirmación al cliente.',
+            )
+        except services.ReservaError as e:
+            # La reserva ya existe: no se pierde. Queda en "pendiente de seña" para resolverla
+            # a mano, y por eso vamos a la ficha en vez de volver al kanban.
+            messages.error(
+                request,
+                f'La reserva se creó, pero no se pudo registrar la seña: {e} '
+                f'Quedó en "pendiente de seña".',
+            )
+        return redirect('reservas:detalle', pk=reserva.pk)
 
     return render(request, 'reservas/nueva.html', _nueva_reserva_context())
+
+
+@login_required
+def calcular_sena(request):
+    """Total y seña para lo que hay cargado en el formulario, sin crear la reserva.
+
+    Lo usa el JS de "Nueva reserva" para mostrar el monto del 50% ya calculado, así no hay
+    que adivinarlo ni escribirlo a mano.
+    """
+    try:
+        fecha = date.fromisoformat(request.GET.get('fecha', ''))
+    except ValueError:
+        return JsonResponse({'error': 'fecha_invalida'}, status=400)
+    try:
+        personas = max(int(request.GET.get('cantidad_personas') or 1), 1)
+        datos = services.calcular_totales(
+            circuito_id=request.GET.get('circuito_id'),
+            fecha=fecha,
+            cantidad_personas=personas,
+            extras=json.loads(request.GET.get('extras') or '[]'),
+        )
+    except Circuito.DoesNotExist:
+        return JsonResponse({'error': 'circuito_not_found'}, status=400)
+    except (services.ReservaError, ValueError, TypeError, json.JSONDecodeError) as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({k: int(v) for k, v in datos.items()})
 
 
 @login_required
