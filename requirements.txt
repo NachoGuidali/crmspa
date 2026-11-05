@@ -3,6 +3,12 @@ djangorestframework==3.15.2
 psycopg2-binary==2.9.9
 redis==5.0.7
 celery==5.4.0
+# kombu va pinneado a mano porque celery 5.4.0 la acepta hasta la <6.0 y la 5.7.0 subio el
+# piso del transporte a redis-py >= 6.1.0. Sin este pin, cualquier `docker compose build`
+# se trae la ultima y el worker muere en loop con VersionMismatch contra redis==5.0.7.
+# Paso el 05/11/2026: dejo al bot sin contestar (web tampoco podia encolar la tarea).
+# Para subirla hay que subir redis-py junto, no sola.
+kombu==5.6.2
 django-celery-beat==2.7.0
 django-celery-results==2.6.0
 gunicorn==22.0.0
