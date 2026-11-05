@@ -190,6 +190,39 @@ def enviar_mensaje(*, telefono, mensaje='', media_url='', media_type='', usuario
     }
 
 
+def borrar_mensaje(*, mensaje, usuario=None):
+    """Le pide a WhatsApp borrar "para todos" un mensaje que mandamos nosotros.
+
+    No borra la fila: marca el mensaje como eliminado y conserva el texto, para que en el
+    historial interno se siga sabiendo qué se había mandado y quién lo bajó.
+    """
+    if mensaje.eliminado:
+        return {'ok': True, 'ya_estaba': True}
+    if mensaje.direccion != Mensaje.Direccion.SALIENTE:
+        raise EnvioError('Solo se pueden borrar mensajes que mandamos nosotros.')
+    if not mensaje.whatsapp_message_id:
+        raise EnvioError(
+            'Ese mensaje no tiene id de WhatsApp (no se llegó a enviar o falló), '
+            'así que no hay nada que borrar del lado de la otra persona.'
+        )
+
+    try:
+        sender.delete_message(mensaje.conversacion.telefono, mensaje.whatsapp_message_id)
+    except NotImplementedError as exc:
+        raise EnvioError(str(exc)) from exc
+    except Exception as exc:
+        raise EnvioError(
+            f'WhatsApp rechazó el borrado ({exc}). Suele pasar cuando pasó demasiado tiempo '
+            f'desde que se envió.'
+        ) from exc
+
+    mensaje.eliminado = True
+    mensaje.eliminado_at = timezone.now()
+    mensaje.eliminado_por = usuario
+    mensaje.save(update_fields=['eliminado', 'eliminado_at', 'eliminado_por'])
+    return {'ok': True}
+
+
 class EnvioError(Exception):
     """El mensaje no pudo enviarse (proveedor no configurado, caído, etc.)."""
 

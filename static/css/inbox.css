@@ -183,3 +183,36 @@
   .wa-wrap.has-selected .wa-sidebar { display: none; }
   .wa-wrap:not(.has-selected) .wa-main { display: none; }
 }
+
+/* El campo de escribir es un textarea (antes era un input de una línea, que borraba los
+   saltos al pegar). Crece solo hasta 160px y después scrollea. */
+.wa-composer textarea {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: .88rem;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+  max-height: 160px;
+}
+/* Con el textarea creciendo, los botones se quedan abajo en vez de estirarse. */
+.wa-composer-row { align-items: flex-end; }
+
+/* Borrar para todos: el botón vive en la línea de la hora y aparece al pasar el mouse. */
+.wa-bubble .ts { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.wa-borrar { display: inline; line-height: 1; }
+.wa-borrar button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: .8rem;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.wa-bubble:hover .wa-borrar button, .wa-borrar button:focus { opacity: .75; }
+.wa-borrar button:hover { opacity: 1; }
+.wa-bubble.eliminado .wa-eliminado-txt { font-style: italic; opacity: .6; }

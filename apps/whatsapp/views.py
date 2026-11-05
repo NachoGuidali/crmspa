@@ -333,7 +333,9 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
         except (TypeError, ValueError):
             limit = 100
 
-        mensajes = list(conv.mensajes.order_by('-timestamp')[:limit])
+        # Los borrados para todos quedan afuera: la clienta ya no los ve, así que el bot
+        # tampoco los tiene que leer ni dar por dicho lo que decían.
+        mensajes = list(conv.mensajes.filter(eliminado=False).order_by('-timestamp')[:limit])
         mensajes.reverse()
         data = [
             {

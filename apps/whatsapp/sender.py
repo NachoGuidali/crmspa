@@ -39,6 +39,11 @@ def send_text_message(to, body):
     return _backend().send_text_message(to, body)
 
 
+def delete_message(to, message_id):
+    """Borra para todos un mensaje que mandamos. Evolution lo soporta; Meta no."""
+    return _backend().delete_message(to, message_id)
+
+
 def send_media_message(to, media_url, mediatype, filename='', caption=''):
     return _backend().send_media_message(to, media_url, mediatype, filename=filename, caption=caption)
 

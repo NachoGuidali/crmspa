@@ -121,16 +121,32 @@
 
     <div class="wa-chat" id="waChat" data-conv="{{ selected.pk }}" data-last="{{ last_msg_id }}">
       {% for m in mensajes %}
-      <div class="wa-bubble {{ m.direccion }}">
-        {% if m.media_url %}
-          {% if m.tipo == 'image' %}<a href="{{ m.media_url }}" target="_blank"><img src="{{ m.media_url }}" class="wa-media-img"></a>
-          {% elif m.tipo == 'audio' %}<audio controls preload="none" src="{{ m.media_url }}" class="wa-media-audio"></audio>
-          {% elif m.tipo == 'video' %}<video controls preload="none" src="{{ m.media_url }}" class="wa-media-video"></video>
-          {% else %}<a href="{{ m.media_url }}" target="_blank" class="wa-media-doc">📎 {{ m.media_filename|default:"Archivo" }}</a>
+      <div class="wa-bubble {{ m.direccion }}{% if m.eliminado %} eliminado{% endif %}">
+        {% if m.eliminado %}
+        <div class="wa-bubble-text wa-eliminado-txt">🚫 Mensaje eliminado</div>
+        {% else %}
+          {% if m.media_url %}
+            {% if m.tipo == 'image' %}<a href="{{ m.media_url }}" target="_blank"><img src="{{ m.media_url }}" class="wa-media-img"></a>
+            {% elif m.tipo == 'audio' %}<audio controls preload="none" src="{{ m.media_url }}" class="wa-media-audio"></audio>
+            {% elif m.tipo == 'video' %}<video controls preload="none" src="{{ m.media_url }}" class="wa-media-video"></video>
+            {% else %}<a href="{{ m.media_url }}" target="_blank" class="wa-media-doc">📎 {{ m.media_filename|default:"Archivo" }}</a>
+            {% endif %}
           {% endif %}
+          {% if m.contenido %}<div class="wa-bubble-text">{{ m.contenido }}</div>{% endif %}
         {% endif %}
-        {% if m.contenido %}<div class="wa-bubble-text">{{ m.contenido }}</div>{% endif %}
-        <div class="ts">{{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}</div>
+        <div class="ts">
+          {{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}
+          {% if m.puede_borrarse %}
+          <form method="post" action="{% url 'whatsapp:accion' %}" class="wa-borrar"
+                onsubmit="return confirm('¿Borrar este mensaje para todos?\n\nEn el chat de la otra persona va a quedar «se eliminó este mensaje». Si pasó demasiado tiempo desde que se envió, WhatsApp no lo va a permitir.');">
+            {% csrf_token %}
+            <input type="hidden" name="conv_pk" value="{{ selected.pk }}">
+            <input type="hidden" name="accion" value="borrar_mensaje">
+            <input type="hidden" name="mensaje_pk" value="{{ m.pk }}">
+            <button type="submit" title="Borrar para todos">🗑</button>
+          </form>
+          {% endif %}
+        </div>
       </div>
       {% empty %}
       <p style="color:var(--text-muted); text-align:center;">Sin mensajes todavía.</p>
@@ -158,7 +174,8 @@
         <button type="button" class="btn btn-secondary" id="btnAdjuntar" title="Adjuntar foto, audio o documento" style="padding:6px 10px;">📎</button>
         <button type="button" class="btn btn-secondary" id="btnGrabar" title="Grabar nota de voz" style="padding:6px 10px;">🎤</button>
         <button type="button" class="btn btn-secondary" id="btnCancelarGrab" title="Cancelar grabación" style="padding:6px 10px; display:none; color:#a33; border-color:#a33;">✕</button>
-        <input type="text" name="mensaje" id="waMensajeInput" placeholder="Escribí un mensaje..." autocomplete="off">
+        <textarea name="mensaje" id="waMensajeInput" rows="1" autocomplete="off"
+                  placeholder="Escribí un mensaje…  (Enter envía · Shift+Enter salto de línea)"></textarea>
         <button type="submit" class="btn">Enviar</button>
       </form>
       <input type="file" id="fileAdjunto" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none;"
@@ -191,10 +208,15 @@
 </style>
 <script>
 const CSRF = '{{ csrf_token }}';
+const ACCION_URL = '{% url "whatsapp:accion" %}';
 
 function rellenarMensaje(texto) {
   const input = document.getElementById('waMensajeInput');
-  if (input) { input.value = texto; input.focus(); }
+  if (input) {
+    input.value = texto;
+    input.focus();
+    input.dispatchEvent(new Event('input'));  // para que crezca si el texto tiene varias líneas
+  }
 }
 
 function esc(s) { return (s || '').replace(/</g, '&lt;'); }
@@ -208,12 +230,26 @@ function mediaHtml(m) {
   return `<a href="${u}" target="_blank" class="wa-media-doc">📎 ${esc(m.media_filename) || 'Archivo'}</a>`;
 }
 
+function borrarForm(chat, m) {
+  if (!m.puede_borrarse) return '';
+  return `<form method="post" action="${ACCION_URL}" class="wa-borrar"
+      onsubmit="return confirm('¿Borrar este mensaje para todos? En el chat de la otra persona va a quedar «se eliminó este mensaje».');">
+    <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+    <input type="hidden" name="conv_pk" value="${chat.dataset.conv}">
+    <input type="hidden" name="accion" value="borrar_mensaje">
+    <input type="hidden" name="mensaje_pk" value="${m.id}">
+    <button type="submit" title="Borrar para todos">🗑</button>
+  </form>`;
+}
+
 function appendBubble(chat, m) {
   const div = document.createElement('div');
-  div.className = 'wa-bubble ' + m.direccion;
-  div.innerHTML = mediaHtml(m) +
-    (m.contenido ? `<div class="wa-bubble-text">${esc(m.contenido)}</div>` : '') +
-    `<div class="ts">${m.timestamp} · ${m.status}</div>`;
+  div.className = 'wa-bubble ' + m.direccion + (m.eliminado ? ' eliminado' : '');
+  const cuerpo = m.eliminado
+    ? '<div class="wa-bubble-text wa-eliminado-txt">🚫 Mensaje eliminado</div>'
+    : mediaHtml(m) + (m.contenido ? `<div class="wa-bubble-text">${esc(m.contenido)}</div>` : '');
+  div.innerHTML = cuerpo +
+    `<div class="ts">${m.timestamp} · ${m.status}${borrarForm(chat, m)}</div>`;
   chat.appendChild(div);
 }
 
@@ -226,6 +262,26 @@ function appendBubble(chat, m) {
   const estado = document.getElementById('uploadEstado');
   const fileInput = document.getElementById('fileAdjunto');
   const msgInput = document.getElementById('waMensajeInput');
+
+  // ── Caja de texto de varias líneas ──
+  // Era un <input type="text">, que por especificación le BORRA los saltos de línea al
+  // pegar: un mensaje con formato (precios, listas) salía todo derecho y no había forma de
+  // notarlo antes de enviarlo. Con textarea el salto se conserva; Enter sigue enviando para
+  // que escribir rápido no cambie, y Shift+Enter hace el salto, como en WhatsApp.
+  if (msgInput) {
+    const crecer = () => {
+      msgInput.style.height = 'auto';
+      msgInput.style.height = Math.min(msgInput.scrollHeight, 160) + 'px';
+    };
+    msgInput.addEventListener('input', crecer);
+    msgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        if (msgInput.value.trim()) msgInput.form.requestSubmit();
+      }
+    });
+    crecer();
+  }
 
   // ── Adjuntar archivo ──
   document.getElementById('btnAdjuntar').onclick = () => fileInput.click();

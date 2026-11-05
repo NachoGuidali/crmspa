@@ -268,3 +268,36 @@ def logout_instance() -> None:
         requests.post(_evo_url(f'/instance/restart/{instance}'), headers=_evo_headers(), timeout=10)
     except Exception as e:
         logger.error('Error en logout/restart de instancia: %s', e)
+
+
+def delete_message(to: str, message_id: str) -> dict:
+    """Borra "para todos" un mensaje que mandamos nosotros.
+
+    WhatsApp solo lo acepta dentro de una ventana de tiempo desde el envío (un par de días);
+    pasada esa ventana la API puede responder OK pero del lado de la otra persona el mensaje
+    queda. En el chat de ella queda el cartel "se eliminó este mensaje": no desaparece sin
+    dejar rastro.
+
+    Evolution expone esto como DELETE; algunas versiones solo aceptan POST en la misma ruta,
+    así que si el método no está permitido se reintenta antes de dar error.
+    """
+    url = _evo_url(f'/chat/deleteMessageForEveryone/{_instance()}')
+    payload = {
+        'id': message_id,
+        'remoteJid': f'{_normalize_phone(to)}@s.whatsapp.net',
+        'fromMe': True,
+    }
+    start = time.monotonic()
+    response = None
+    try:
+        response = requests.delete(url, json=payload, headers=_evo_headers(), timeout=15)
+        if response.status_code in (404, 405):
+            response = requests.post(url, json=payload, headers=_evo_headers(), timeout=15)
+        response.raise_for_status()
+        logger.info('Mensaje %s borrado para todos (%s)', message_id, to)
+        return {'ok': True}
+    except requests.RequestException:
+        logger.exception('Error borrando el mensaje %s de %s', message_id, to)
+        raise
+    finally:
+        _log_request(url, 'DELETE', payload, response, int((time.monotonic() - start) * 1000))

@@ -215,35 +215,39 @@ def inbox_accion(request):
             conv.bot_activo = False
             conv.save(update_fields=['bot_activo'])
         else:
-            # Prender el bot es más que poner el flag en True, y por eso el botón "no hacía
-            # nada" justo cuando más se lo necesitaba:
-            #   1. Lo que se le manda a n8n es `bot_n8n_activo`, que es
-            #      `bot_activo AND estado != requiere_atencion_humana`. Con la conversación
-            #      derivada, el bot quedaba prendido en la UI pero mudo en la práctica.
-            #   2. Si `reserva_creada` sigue en True, el PATCH de conversaciones vuelve a
-            #      apagarlo en la siguiente llamada del bot.
-            estado_bot = dict(conv.estado_bot or {})
-            estado_bot['reserva_creada'] = False
-            if estado_bot.get('estado_flujo') == Conversacion.ESTADO_FLUJO_DERIVADO:
-                estado_bot['estado_flujo'] = 'menu'
-            conv.estado_bot = estado_bot
-            conv.bot_activo = True
-            if conv.estado == Conversacion.Estado.REQUIERE_ATENCION_HUMANA:
-                conv.estado = Conversacion.Estado.EN_GESTION
+            # Prender el bot es más que poner el flag en True: ver Conversacion.reactivar_bot.
+            conv.reactivar_bot()
             conv.save(update_fields=['bot_activo', 'estado', 'estado_bot'])
 
     elif accion == 'cambiar_estado':
         nuevo = request.POST.get('estado')
         if nuevo in dict(Conversacion.Estado.choices):
             conv.estado = nuevo
-            conv.bot_activo = nuevo != Conversacion.Estado.REQUIERE_ATENCION_HUMANA
-            conv.save(update_fields=['estado', 'bot_activo'])
+            if nuevo == Conversacion.Estado.REQUIERE_ATENCION_HUMANA:
+                conv.bot_activo = False
+            else:
+                # Cambiar el estado a mano también prende el bot, así que pasa por la misma
+                # limpieza que el botón de prenderlo.
+                conv.reactivar_bot()
+                conv.estado = nuevo
+            conv.save(update_fields=['estado', 'bot_activo', 'estado_bot'])
 
     elif accion == 'handoff':
         conv.estado = Conversacion.Estado.REQUIERE_ATENCION_HUMANA
         conv.bot_activo = False
         conv.agente = request.user
         conv.save(update_fields=['estado', 'bot_activo', 'agente'])
+
+    elif accion == 'borrar_mensaje':
+        msg = conv.mensajes.filter(pk=request.POST.get('mensaje_pk')).first()
+        if msg is None:
+            messages.error(request, 'No encontré ese mensaje en esta conversación.')
+        else:
+            try:
+                services.borrar_mensaje(mensaje=msg, usuario=request.user)
+                messages.success(request, 'Mensaje borrado para todos.')
+            except services.EnvioError as exc:
+                messages.error(request, f'No se pudo borrar: {exc}')
 
     elif accion == 'archivar':
         conv.archivada = True
@@ -273,6 +277,8 @@ def inbox_mensajes(request, pk):
         'media_filename': m.media_filename,
         'timestamp': m.timestamp.strftime('%d/%m %H:%M'),
         'status': m.get_status_display(),
+        'eliminado': m.eliminado,
+        'puede_borrarse': m.puede_borrarse,
     } for m in qs]
     if data:
         Conversacion.objects.filter(pk=conv.pk).update(mensajes_no_leidos=0)
@@ -300,8 +306,14 @@ def kanban_move(request, pk):
     nuevo_estado = data.get('estado')
     if nuevo_estado not in dict(Conversacion.Estado.choices):
         return JsonResponse({'error': 'estado_invalido'}, status=400)
-    conversacion.estado = nuevo_estado
-    conversacion.bot_activo = nuevo_estado != Conversacion.Estado.REQUIERE_ATENCION_HUMANA
+    # Arrastrar una tarjeta en el kanban también prende o apaga el bot, así que pasa por la
+    # misma limpieza que el botón del inbox (ver Conversacion.reactivar_bot).
+    if nuevo_estado == Conversacion.Estado.REQUIERE_ATENCION_HUMANA:
+        conversacion.estado = nuevo_estado
+        conversacion.bot_activo = False
+    else:
+        conversacion.reactivar_bot()
+        conversacion.estado = nuevo_estado
     conversacion.save()
     return JsonResponse({'ok': True})
 

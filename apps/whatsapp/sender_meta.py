@@ -291,3 +291,11 @@ def get_connection_state() -> str:
     """Meta no usa QR/instancia: reportamos 'open' si hay token+número, si no 'close'."""
     info = get_phone_number_info() if (_access_token() and _phone_number_id()) else {}
     return 'open' if info and 'error' not in info else 'close'
+
+
+def delete_message(to: str, message_id: str) -> dict:
+    """Meta Cloud API no tiene borrado de mensajes enviados. No hay forma de emularlo."""
+    raise NotImplementedError(
+        'WhatsApp Cloud API (Meta) no permite borrar un mensaje ya enviado. '
+        'Esto solo funciona con Evolution API.'
+    )

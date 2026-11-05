@@ -219,6 +219,46 @@ class Conversacion(models.Model):
         qs = self._reservas_pasadas()
         return qs.count() if qs is not None else 0
 
+    # Datos de UNA reserva concreta. Al prender el bot sobre una reserva ya hecha hay que
+    # limpiarlos; el nombre y el email no, que sirven igual para la próxima.
+    CAMPOS_DE_LA_RESERVA = [
+        'tipo_propuesta', 'nivel', 'personas', 'fecha_solicitada', 'turno_nombre',
+        'horario_confirmado', 'menu_especial', 'menu_especial_cantidad', 'extras_pedidos',
+        'medio_pago', 'dias_ofrecidos',
+    ]
+
+    def reactivar_bot(self):
+        """Prende el bot de n8n y deja el estado en algo que el bot pueda retomar.
+
+        No alcanza con poner el flag en True:
+
+        1. Lo que se le manda a n8n es `bot_n8n_activo`, que es
+           `bot_activo AND estado != requiere_atencion_humana`. Con la conversación derivada,
+           el bot quedaba prendido en la UI pero mudo en la práctica.
+        2. Si `reserva_creada` sigue en True, el PATCH de conversaciones vuelve a apagarlo en
+           la siguiente llamada del bot.
+        3. Y si esa reserva ya estaba hecha, bajar solo `reserva_creada` dejaba puestos la
+           experiencia, la fecha, el turno y el nombre. El bot reconstruye la ficha de esos
+           campos y las marcas de "confirmado" se derivan de `estado_flujo` (que queda en
+           'menu'), así que leía una reserva a medio armar y le pedía confirmar la fecha y la
+           seña a alguien que ya había pagado. Por eso se limpian acá.
+
+        Si el bot se había apagado en medio de una reserva SIN terminar, no se toca nada: ahí
+        tiene que retomar donde iba.
+        """
+        estado_bot = dict(self.estado_bot or {})
+        if estado_bot.get('reserva_creada'):
+            estado_bot['reserva_creada'] = False
+            for campo in self.CAMPOS_DE_LA_RESERVA:
+                estado_bot[campo] = [] if campo == 'extras_pedidos' else None
+            estado_bot['estado_flujo'] = 'menu'
+        if estado_bot.get('estado_flujo') == self.ESTADO_FLUJO_DERIVADO:
+            estado_bot['estado_flujo'] = 'menu'
+        self.estado_bot = estado_bot
+        self.bot_activo = True
+        if self.estado == self.Estado.REQUIERE_ATENCION_HUMANA:
+            self.estado = self.Estado.EN_GESTION
+
     def estado_bot_publico(self):
         """El diccionario plano que consume el bot (mergea la bolsa con los campos derivados)."""
         data = {campo: self.estado_bot.get(campo) for campo in self.CAMPOS_FLUJO}
@@ -283,6 +323,15 @@ class Mensaje(models.Model):
     )
     timestamp = models.DateTimeField()
     error_detalle = models.TextField(blank=True)
+    # Borrado "para todos" por WhatsApp. El texto se conserva acá a propósito: en el chat de
+    # la otra persona queda "se eliminó este mensaje", pero internamente hay que poder saber
+    # qué se había mandado y quién lo bajó.
+    eliminado = models.BooleanField(default=False, verbose_name='Borrado para todos')
+    eliminado_at = models.DateTimeField(null=True, blank=True)
+    eliminado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='mensajes_whatsapp_eliminados',
+    )
 
     class Meta:
         ordering = ['timestamp']
@@ -296,6 +345,16 @@ class Mensaje(models.Model):
                 name='uniq_mensaje_entrante_wamid',
             ),
         ]
+
+    @property
+    def puede_borrarse(self):
+        """Solo se puede pedir el borrado de un mensaje nuestro, que el proveedor haya
+        aceptado (tiene id de WhatsApp) y que no esté ya borrado."""
+        return bool(
+            self.direccion == self.Direccion.SALIENTE
+            and self.whatsapp_message_id
+            and not self.eliminado
+        )
 
     def __str__(self):
         return f'[{self.get_direccion_display()}] {self.conversacion} — {self.timestamp}'
