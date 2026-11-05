@@ -1,9 +1,12 @@
 import base64
 import binascii
+import re
+import unicodedata
 from datetime import date
 
 from django.core.files.base import ContentFile
 from django.db import IntegrityError
+from django.utils.dateparse import parse_date
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -253,6 +256,73 @@ class ReservasPorContactoView(ApiKeyLoggedView, APIView):
 
         reservas = Reserva.objects.filter(contacto__telefono=telefono).order_by('-fecha')
         return Response(ReservaSerializer(reservas, many=True).data)
+
+
+class ReservaBuscarView(ApiKeyLoggedView, APIView):
+    """GET /api/v1/reservas/buscar/?nombre=...&fecha=YYYY-MM-DD[&turno=mañana|tarde]
+
+    Para cuando quien escribe NO es quien reservó: en un grupo la reserva la hace una sola
+    persona y desde un solo teléfono, así que `por-telefono` no encuentra nada aunque la
+    reserva exista. Acá se busca por nombre de la titular más la fecha.
+
+    El nombre y la fecha son los dos obligatorios a propósito. Con la fecha sola se
+    listarían las reservas de terceros de ese día, y con el nombre solo alcanzaría probar
+    nombres comunes. Y se devuelve lo mínimo para confirmar que la reserva está —sin
+    teléfono, sin email, sin montos y sin notas— porque no sabemos si habla la titular.
+    """
+
+    MAX_RESULTADOS = 5
+
+    @staticmethod
+    def _sin_tildes(texto):
+        base = unicodedata.normalize('NFD', str(texto or '').lower())
+        return ''.join(ch for ch in base if unicodedata.category(ch) != 'Mn')
+
+    @classmethod
+    def _coincide_nombre(cls, buscado, nombre):
+        """Tolerante con cómo lo escriba la clienta: sin tildes, en otro orden y con el
+        apellido suelto. Pide palabras de 3 letras o más para que un "de" no matchee todo."""
+        b, n = cls._sin_tildes(buscado), cls._sin_tildes(nombre)
+        if not b or not n:
+            return False
+        if b in n or n in b:
+            return True
+        palabras = [p for p in re.split(r'[^a-z0-9]+', b) if len(p) >= 3]
+        return bool(palabras) and all(p in n for p in palabras)
+
+    def get(self, request):
+        nombre = (request.query_params.get('nombre') or '').strip()
+        fecha_txt = (request.query_params.get('fecha') or '').strip()
+        if not nombre or not fecha_txt:
+            return Response({'error': 'nombre_y_fecha_requeridos'}, status=400)
+        fecha = parse_date(fecha_txt)
+        if fecha is None:
+            return Response({'error': 'fecha_invalida'}, status=400)
+
+        reservas = (Reserva.objects
+                    .filter(fecha=fecha, estado__in=Reserva.ESTADOS_QUE_OCUPAN_CUPO)
+                    .select_related('contacto', 'circuito', 'turno')
+                    .order_by('turno__hora_inicio'))
+        encontradas = [r for r in reservas if self._coincide_nombre(nombre, r.contacto.nombre)]
+
+        # El turno solo afina: si no coincide ninguna, se devuelven igual las del nombre y la
+        # fecha, para poder decir "la tengo en el turno tarde" en vez de "no existe".
+        turno = self._sin_tildes(request.query_params.get('turno') or '')
+        if turno:
+            encontradas = [r for r in encontradas
+                           if turno in self._sin_tildes(r.turno.nombre)] or encontradas
+
+        return Response({'reservas': [{
+            'id': r.id,
+            'fecha': r.fecha.isoformat(),
+            'turno_nombre': r.turno.nombre,
+            'hora_inicio': r.turno.hora_inicio.strftime('%H:%M'),
+            'hora_fin': r.turno.hora_fin.strftime('%H:%M'),
+            'circuito_nombre': r.circuito.nombre,
+            'cantidad_personas': r.cantidad_personas,
+            'contacto_nombre': r.contacto.nombre,
+            'estado': r.estado,
+        } for r in encontradas[:self.MAX_RESULTADOS]]})
 
 class ReservaNotaView(ApiKeyLoggedView, APIView):
     """POST /api/v1/reservas/<id>/notas/ — el bot deja anotado algo que pasó con la reserva.

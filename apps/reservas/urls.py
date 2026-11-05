@@ -10,6 +10,7 @@ urlpatterns = [
     path('confirmar-pago/', views.ReservaConfirmarPagoView.as_view(), name='confirmar_pago'),
     path('agenda/', views.ReservasAgendaView.as_view(), name='agenda'),
     path('por-telefono/', views.ReservasPorContactoView.as_view(), name='por_telefono'),
+    path('buscar/', views.ReservaBuscarView.as_view(), name='buscar'),
     path('<int:pk>/', views.ReservaDetalleView.as_view(), name='detalle'),
     path('<int:pk>/confirmar-sena/', views.ReservaConfirmarSenaView.as_view(), name='confirmar_sena'),
     path('<int:pk>/cancelar/', views.ReservaCancelarView.as_view(), name='cancelar'),
