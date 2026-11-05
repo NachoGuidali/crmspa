@@ -316,8 +316,9 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
     """
     GET  /api/v1/conversaciones/<telefono>/mensajes/?limit=100 — historial de mensajes de la
     conversación (más viejo primero), para que el bot pueda releer el contexto de la charla.
-    POST /api/v1/conversaciones/<telefono>/mensajes/ — guarda un mensaje entrante aunque el bot
-    esté bloqueado, para que el staff lo vea en el inbox. Body: {"texto": "...", "de": "cliente"}.
+    POST /api/v1/conversaciones/<telefono>/mensajes/ — deja constancia de un mensaje en el
+    inbox. Body: {"texto": "...", "de": "cliente"|"nosotros"}. Para los entrantes es solo una
+    red: la fuente real es el webhook del proveedor, así que las copias se descartan.
     """
 
     def get(self, request, telefono):
@@ -359,10 +360,10 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
         direccion = Mensaje.Direccion.ENTRANTE if de == 'cliente' else Mensaje.Direccion.SALIENTE
         ahora = timezone.now()
 
-        # Anti-duplicado: el webhook del proveedor YA guarda todo mensaje entrante. Si n8n
-        # además llama a este endpoint con el mismo texto que entró hace segundos, no lo
-        # duplicamos (devolvemos el que ya está).
+        # El webhook del proveedor YA guarda todo mensaje entrante, así que acá solo pueden
+        # llegar copias. Dos frenos, porque uno solo no alcanzó:
         if direccion == Mensaje.Direccion.ENTRANTE and texto:
+            # 1. El mismo texto exacto que entró hace segundos: devolvemos el que ya está.
             ya = (
                 Mensaje.objects.filter(
                     conversacion=conv, direccion=Mensaje.Direccion.ENTRANTE, contenido=texto,
@@ -373,6 +374,28 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
             if ya is not None:
                 return Response({'ok': True, 'mensaje_id': ya.id, 'conversacion_id': conv.id,
                                  'duplicado': True}, status=200)
+
+            # 2. Reinyección: un texto de varias líneas donde CADA línea ya es, por sí sola, un
+            #    mensaje entrante anterior. Eso no lo escribe una persona: es el pegote de
+            #    mensajes que arma el bot cuando junta varias tandas. Guardarlo era un bucle
+            #    exponencial — el pegote entraba como mensaje del cliente, la tanda siguiente lo
+            #    volvía a pegar, y el texto se duplicaba con cada mensaje. El antiduplicado de
+            #    arriba no lo frenaba porque el texto es distinto cada vez.
+            lineas = [l.strip() for l in texto.splitlines() if l.strip()]
+            if len(lineas) > 1:
+                previos = set(
+                    Mensaje.objects.filter(
+                        conversacion=conv, direccion=Mensaje.Direccion.ENTRANTE,
+                    ).order_by('-id').values_list('contenido', flat=True)[:60]
+                )
+                previos = {c.strip() for c in previos if c and c.strip()}
+                if all(l in previos for l in lineas):
+                    logger.warning(
+                        'Reinyección de mensajes descartada en %s (%s líneas, %s chars)',
+                        telefono, len(lineas), len(texto),
+                    )
+                    return Response({'ok': True, 'conversacion_id': conv.id,
+                                     'ignorado': 'reinyeccion'}, status=200)
 
         msg = Mensaje.objects.create(
             conversacion=conv,
