@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Cerrar reserva #{{ reserva.id }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <p style="margin:0;"><a href="{{ next }}" style="color:var(--text-muted); font-size:.8rem;">← Volver</a></p>
+    <h1>Cerrar la reserva de {{ reserva.contacto.nombre }}</h1>
+  </div>
+</div>
+
+<div class="card" style="max-width:520px;">
+  {% if error %}<p style="color:#a33;">{{ error }}</p>{% endif %}
+
+  <p style="font-size:.88rem; margin-top:0;">
+    {{ reserva.circuito.nombre }} · {{ reserva.fecha|date:"d/m/Y" }}
+    {% if reserva.turno %}· {{ reserva.turno.nombre }}{% endif %}
+    · {{ reserva.cantidad_personas }} persona{{ reserva.cantidad_personas|pluralize }}
+  </p>
+
+  <table class="simple" style="margin-bottom:16px;">
+    <tbody>
+      <tr><td>Total</td><td style="text-align:right;">${{ reserva.total|floatformat:0 }}</td></tr>
+      <tr><td>Ya pagó</td><td style="text-align:right;">${{ reserva.monto_pagado|floatformat:0 }}</td></tr>
+      <tr><td><strong>Falta cobrar</strong></td>
+          <td style="text-align:right;"><strong style="color:{% if reserva.saldo > 0 %}#a33{% else %}#3c7a3c{% endif %};">${{ reserva.saldo|floatformat:0 }}</strong></td></tr>
+    </tbody>
+  </table>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <div class="form-row">
+      <label for="monto">¿Cuánto pagó ahora?</label>
+      <input type="number" name="monto" id="monto" min="0" step="1"
+             value="{{ reserva.saldo|floatformat:0 }}" autofocus>
+      <small style="color:var(--text-muted);">
+        Viene cargado con lo que faltaba. Si pagó menos, cambialo: el resto queda como saldo.
+      </small>
+    </div>
+
+    <div class="form-row">
+      <label for="medio_pago">¿Cómo pagó?</label>
+      <select name="medio_pago" id="medio_pago">
+        {% for value, label in medios_pago %}
+        <option value="{{ value }}" {% if value == 'efectivo' %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <small style="color:var(--text-muted);">Entra en la caja del día con este medio.</small>
+    </div>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+      <button type="submit" class="btn">Cobrar y marcar asistió</button>
+      <button type="submit" name="sin_cobrar" value="1" class="btn btn-secondary"
+              onclick="return confirm('¿Marcar que asistió sin registrar ningún pago? La reserva va a seguir figurando con saldo pendiente.');">
+        Marcar asistió sin cobrar
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tempfile
@@ -12,7 +13,7 @@ from django.utils import timezone
 from apps.circuitos.models import Circuito
 from apps.contactos.models import Contacto
 from apps.reservas import services
-from apps.reservas.models import NotaReserva, Reserva
+from apps.reservas.models import NotaReserva, Pago, Reserva
 from apps.turnero.models import Turno
 from apps.whatsapp.models import Conversacion, Mensaje
 
@@ -144,3 +145,168 @@ class ComprobanteTest(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(TMP, ignore_errors=True)
+
+
+@override_settings(MEDIA_ROOT=TMP, MEDIA_URL='/media/')
+class AsistioCobraElSaldoTest(TestCase):
+    """Marcar "asistió" tiene que cobrar lo que falta, no solo cambiar el estado.
+
+    Antes solo pasaba la reserva a completado: una reserva atendida y cobrada en el mostrador
+    seguía figurando con saldo pendiente y contando en "por cobrar" del dashboard.
+    """
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='reca', password='x', rol='recepcion')
+        self.client.force_login(self.user)
+        self.contacto = Contacto.objects.create(nombre='Ana', telefono='+5493815551234')
+        self.circuito = Circuito.objects.create(
+            nombre='Spa Pareja', capacidad_maxima=2, sena_valor=50,
+            precio_semana=40000, precio_finde=50000)
+        self.turno = Turno.objects.create(
+            nombre='Mañana', hora_inicio=time(10), hora_fin=time(12),
+            dias_aplicables=[0, 1, 2, 3, 4, 5, 6])
+
+    def _reserva(self, total=40000, pagado=20000, estado=Reserva.Estado.CONFIRMADO):
+        return Reserva.objects.create(
+            contacto=self.contacto, circuito=self.circuito, turno=self.turno,
+            fecha=date.today(), cantidad_personas=2, precio_total=total,
+            monto_sena=total / 2, monto_pagado=pagado, estado=estado,
+            medio_pago=Reserva.MedioPago.TRANSFERENCIA)
+
+    # ── 1. con saldo, el botón del día lleva a la pantalla de cobro ──────────
+    def test_get_muestra_la_pantalla_con_el_saldo_precargado(self):
+        r = self._reserva()
+        resp = self.client.get(reverse('reservas:asistio', args=[r.pk]))
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('¿Cuánto pagó ahora?', html)
+        self.assertIn('value="20000"', html)       # lo que faltaba, precargado
+        # El GET no cambia nada.
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.CONFIRMADO)
+
+    # ── 2. el camino normal: cobra y cierra ─────────────────────────────────
+    def test_cobra_el_saldo_y_completa(self):
+        r = self._reserva()
+        resp = self.client.post(reverse('reservas:asistio', args=[r.pk]),
+                                {'monto': '20000', 'medio_pago': 'efectivo'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.COMPLETADO)
+        self.assertEqual(r.saldo, 0)
+        pago = Pago.objects.get(reserva=r)
+        self.assertEqual(pago.monto, 20000)
+        self.assertEqual(pago.tipo, Pago.Tipo.SALDO)
+        self.assertEqual(pago.medio_pago, 'efectivo')
+        self.assertTrue(NotaReserva.objects.filter(
+            reserva=r, texto__contains='Se cobró').exists())
+
+    # ── 3. el pago entra en la caja del día ─────────────────────────────────
+    def test_entra_en_la_caja_del_dia(self):
+        from apps.dashboard.services import caja_del_dia
+
+        r = self._reserva()
+        self.client.post(reverse('reservas:asistio', args=[r.pk]),
+                         {'monto': '20000', 'medio_pago': 'efectivo'})
+        caja = caja_del_dia(timezone.localdate())
+        self.assertEqual(caja['total'], 20000)
+        self.assertEqual(caja['por_medio'], {'Efectivo': 20000})
+
+    # ── 4. pago parcial: se cierra igual y queda el resto ───────────────────
+    def test_pago_parcial_deja_saldo(self):
+        r = self._reserva()
+        self.client.post(reverse('reservas:asistio', args=[r.pk]),
+                         {'monto': '5000', 'medio_pago': 'efectivo'})
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.COMPLETADO)
+        self.assertEqual(r.saldo, 15000)
+
+    # ── 5. cerrar sin cobrar sigue siendo posible, pero explícito ───────────
+    def test_sin_cobrar(self):
+        r = self._reserva()
+        self.client.post(reverse('reservas:asistio', args=[r.pk]), {'sin_cobrar': '1'})
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.COMPLETADO)
+        self.assertEqual(r.saldo, 20000)
+        self.assertFalse(Pago.objects.filter(reserva=r).exists())
+        self.assertTrue(NotaReserva.objects.filter(
+            reserva=r, texto__contains='sin cobrar').exists())
+
+    # ── 6. sin medio de pago no se cobra a ciegas ───────────────────────────
+    def test_monto_sin_medio_de_pago(self):
+        r = self._reserva()
+        resp = self.client.post(reverse('reservas:asistio', args=[r.pk]),
+                                {'monto': '20000', 'medio_pago': ''})
+        self.assertIn('Elegí con qué medio pagó', resp.content.decode())
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.CONFIRMADO)
+        self.assertFalse(Pago.objects.filter(reserva=r).exists())
+
+    # ── 7. ya paga: el botón cierra directo, sin preguntar ──────────────────
+    def test_sin_saldo_cierra_directo(self):
+        r = self._reserva(pagado=40000)
+        self.client.post(reverse('reservas:asistio', args=[r.pk]))
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.COMPLETADO)
+        self.assertFalse(Pago.objects.filter(reserva=r).exists())
+
+    # ── 8. el kanban no completa a ciegas: manda a cobrar ───────────────────
+    def test_kanban_con_saldo_redirige_a_cobrar(self):
+        r = self._reserva()
+        resp = self.client.post(
+            reverse('reservas:mover', args=[r.pk]),
+            data=json.dumps({'estado': Reserva.Estado.COMPLETADO}),
+            content_type='application/json')
+        datos = resp.json()
+        self.assertFalse(datos['ok'])
+        self.assertIn(reverse('reservas:asistio', args=[r.pk]), datos['redirigir'])
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.CONFIRMADO)
+
+    def test_kanban_sin_saldo_completa(self):
+        r = self._reserva(pagado=40000)
+        resp = self.client.post(
+            reverse('reservas:mover', args=[r.pk]),
+            data=json.dumps({'estado': Reserva.Estado.COMPLETADO}),
+            content_type='application/json')
+        self.assertTrue(resp.json()['ok'])
+        r.refresh_from_db()
+        self.assertEqual(r.estado, Reserva.Estado.COMPLETADO)
+
+    # ── 9. cobrar el saldo desde la ficha (las ya cerradas) ─────────────────
+    def test_cobrar_saldo_desde_la_ficha(self):
+        r = self._reserva(estado=Reserva.Estado.COMPLETADO)
+        resp = self.client.get(reverse('reservas:detalle', args=[r.pk]))
+        self.assertIn('Registrar cobro', resp.content.decode())
+        self.client.post(reverse('reservas:cobrar_saldo', args=[r.pk]),
+                         {'monto': '20000', 'medio_pago': 'efectivo'})
+        r.refresh_from_db()
+        self.assertEqual(r.saldo, 0)
+        self.assertEqual(r.estado, Reserva.Estado.COMPLETADO)   # no cambia el estado
+        self.assertEqual(Pago.objects.get(reserva=r).tipo, Pago.Tipo.SALDO)
+
+    def test_cobrar_saldo_monto_invalido(self):
+        r = self._reserva()
+        self.client.post(reverse('reservas:cobrar_saldo', args=[r.pk]),
+                         {'monto': '0', 'medio_pago': 'efectivo'})
+        r.refresh_from_db()
+        self.assertEqual(r.saldo, 20000)
+        self.assertFalse(Pago.objects.filter(reserva=r).exists())
+
+    # ── 10. el día ofrece el link de cobro cuando falta plata ───────────────
+    def test_el_dia_linkea_a_cobrar(self):
+        r = self._reserva()
+        resp = self.client.get(reverse('turnero:hoy'))
+        html = resp.content.decode()
+        self.assertIn(reverse('reservas:asistio', args=[r.pk]) + '?next=', html)
+
+    # ── 11. deja de contar en "por cobrar" del dashboard ────────────────────
+    def test_sale_de_los_saldos_por_cobrar(self):
+        from apps.dashboard.services import saldos_por_cobrar
+
+        r = self._reserva()
+        self.assertEqual(saldos_por_cobrar()['total'], 20000)
+        self.client.post(reverse('reservas:asistio', args=[r.pk]),
+                         {'monto': '20000', 'medio_pago': 'efectivo'})
+        self.assertEqual(saldos_por_cobrar()['total'], 0)

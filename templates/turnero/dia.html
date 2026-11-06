@@ -43,7 +43,7 @@
         <td>seña ${{ r.monto_sena|floatformat:0 }} / pagado ${{ r.monto_pagado|floatformat:0 }}</td>
         <td style="text-align:right; white-space:nowrap;">
           {% if r.estado == 'confirmado' or r.estado == 'pendiente_sena' %}
-          <form method="post" action="{% url 'reservas:asistio' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:dia' fecha|date:'Y-m-d' %}"><button class="btn" style="padding:3px 9px; font-size:.78rem;">Asistió</button></form>
+          {% if r.saldo > 0 %}<a class="btn" style="padding:3px 9px; font-size:.78rem;" href="{% url 'reservas:asistio' r.id %}?next={% url 'turnero:dia' fecha|date:'Y-m-d' %}">Asistió</a>{% else %}<form method="post" action="{% url 'reservas:asistio' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:dia' fecha|date:'Y-m-d' %}"><button class="btn" style="padding:3px 9px; font-size:.78rem;">Asistió</button></form>{% endif %}
           <form method="post" action="{% url 'reservas:no_show' r.id %}" style="display:inline;">{% csrf_token %}<input type="hidden" name="next" value="{% url 'turnero:dia' fecha|date:'Y-m-d' %}"><button class="btn btn-secondary" style="padding:3px 9px; font-size:.78rem;">No vino</button></form>
           {% endif %}
           <a href="{% url 'reservas:detalle' r.id %}" style="font-size:.78rem; color:var(--color-teal); margin-left:4px;">detalle</a>

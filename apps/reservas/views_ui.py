@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.circuitos.models import Circuito
@@ -53,6 +54,18 @@ def kanban_move(request, pk):
     anterior = reserva.estado
     if nuevo_estado == anterior:
         return JsonResponse({'ok': True, 'anterior': anterior})
+
+    # Arrastrar a "Completado" con saldo pendiente no cierra la reserva de una: eso es
+    # exactamente lo que dejaba reservas atendidas y cobradas figurando como impagas. La
+    # tarjeta se queda donde está y el navegador va a la pantalla de cobro, que la cierra
+    # al confirmar.
+    if nuevo_estado == Reserva.Estado.COMPLETADO and reserva.saldo > 0:
+        return JsonResponse({
+            'ok': False,
+            'error': f'Falta cobrar ${reserva.saldo:,.0f}.'.replace(',', '.'),
+            'redirigir': (reverse('reservas:asistio', args=[reserva.pk])
+                          + f'?next={reverse("reservas:kanban")}'),
+        })
 
     accion = MOVIMIENTOS_KANBAN.get(nuevo_estado)
     if accion is not None:
@@ -254,6 +267,7 @@ def detalle(request, pk):
         'extras_otros': extras_otros,
         'extras_reserva': reserva.extras.all(),
         'historial': reserva.historial.select_related('autor'),
+        'medios_pago': Reserva.MedioPago.choices,
         'horas_reembolso': ConfiguracionNegocio.get_solo().horas_reembolso_desde_pago,
     })
 
@@ -389,10 +403,91 @@ def _redirect_next(request, pk):
 
 
 @login_required
-@require_POST
 def marcar_asistio(request, pk):
-    services.marcar_asistio(get_object_or_404(Reserva, pk=pk))
+    """Cierra la reserva del día cobrando lo que falte.
+
+    Con saldo pendiente pregunta primero cuánto pagó (precargado con lo que faltaba): antes
+    marcaba asistió y nada más, así que una reserva atendida y cobrada en el mostrador
+    quedaba figurando con la mitad sin pagar. Sin saldo, cierra directo.
+    """
+    from django.contrib import messages
+
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('contacto', 'circuito', 'turno').prefetch_related('extras'),
+        pk=pk,
+    )
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+
+    def _pantalla(error=''):
+        return render(request, 'reservas/asistio.html', {
+            'reserva': reserva,
+            'medios_pago': Reserva.MedioPago.choices,
+            'next': next_url or reverse('reservas:detalle', args=[reserva.pk]),
+            'error': error,
+        })
+
+    # El GET nunca cambia nada: solo muestra la pantalla de cobro. Cerrar una reserva que
+    # ya está paga se hace con el POST del botón, que es lo que manda el día cuando no hay
+    # saldo (así un link visitado de más, o un prefetch del navegador, no cierra nada).
+    if request.method == 'GET':
+        return _pantalla()
+
+    monto = None
+    if not request.POST.get('sin_cobrar'):
+        crudo = (request.POST.get('monto') or '').strip()
+        if crudo:
+            try:
+                monto = Decimal(crudo)
+            except (InvalidOperation, ValueError):
+                return _pantalla('El monto no es un número válido.')
+
+    try:
+        services.marcar_asistio(
+            reserva, monto_cobrado=monto,
+            medio_pago=request.POST.get('medio_pago', '').strip(), autor=request.user,
+        )
+    except services.ReservaError as e:
+        return _pantalla(str(e))
+
+    if monto:
+        aviso = f'Cobrado ${monto:,.0f}'.replace(',', '.') + '. La reserva quedó completada.'
+        if reserva.saldo > 0:
+            aviso += f' Ojo: todavía queda un saldo de ${reserva.saldo:,.0f}.'.replace(',', '.')
+        messages.success(request, aviso)
+    else:
+        messages.success(request, 'Reserva completada sin registrar ningún pago.')
     return _redirect_next(request, pk)
+
+
+@login_required
+@require_POST
+def cobrar_saldo(request, pk):
+    """Cobra el saldo desde la ficha, sin tocar el estado.
+
+    Para las que ya se cerraron antes de que "Asistió" preguntara por la plata: hasta ahora
+    el único lugar para cobrar un saldo era la ficha del CONTACTO, que nadie encuentra.
+    """
+    from django.contrib import messages
+
+    reserva = get_object_or_404(Reserva, pk=pk)
+    try:
+        monto = Decimal((request.POST.get('monto') or '').strip())
+    except (InvalidOperation, ValueError):
+        messages.error(request, 'El monto no es un número válido.')
+        return redirect('reservas:detalle', pk=pk)
+
+    try:
+        services.registrar_pago_saldo(
+            reserva, monto, request.POST.get('medio_pago', '').strip(), autor=request.user)
+    except services.ReservaError as e:
+        messages.error(request, str(e))
+        return redirect('reservas:detalle', pk=pk)
+
+    aviso = f'Cobrado ${monto:,.0f}.'.replace(',', '.')
+    if reserva.saldo > 0:
+        aviso += f' Queda un saldo de ${reserva.saldo:,.0f}.'.replace(',', '.')
+    messages.success(request, aviso)
+    return redirect('reservas:detalle', pk=pk)
 
 
 @login_required

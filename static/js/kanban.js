@@ -33,6 +33,9 @@ function initKanban(moveUrlTemplate) {
         .then((data) => {
           if (data.ok) {
             col.querySelector('.kanban-cards').appendChild(card);
+          } else if (data.redirigir) {
+            // Falta cobrar: la tarjeta no se mueve sola, se va a la pantalla de cobro.
+            window.location = data.redirigir;
           } else {
             alert('No se pudo mover: ' + (data.error || 'error desconocido'));
           }

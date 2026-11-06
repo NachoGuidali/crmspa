@@ -66,6 +66,30 @@
     </form>
   </div>
 
+  {% if reserva.saldo > 0 %}
+  <div style="margin-top:14px; border-top:1px solid var(--border,#ddd); padding-top:12px;">
+    <p style="font-size:.88rem; margin:0 0 8px;">
+      <strong>Falta cobrar:</strong>
+      <span style="color:#a33;">${{ reserva.saldo|floatformat:0 }}</span>
+    </p>
+    <form method="post" action="{% url 'reservas:cobrar_saldo' reserva.pk %}"
+          style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <input type="number" name="monto" min="1" step="1" required
+             value="{{ reserva.saldo|floatformat:0 }}" style="width:120px;" aria-label="Monto">
+      <select name="medio_pago" aria-label="Medio de pago">
+        {% for value, label in medios_pago %}
+        <option value="{{ value }}" {% if value == 'efectivo' %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn">Registrar cobro</button>
+    </form>
+    <div style="font-size:.74rem; color:var(--text-muted); margin-top:4px;">
+      Entra en la caja del día. No cambia el estado de la reserva.
+    </div>
+  </div>
+  {% endif %}
+
   {% if reserva.estado == 'pendiente_aprobacion' or reserva.estado == 'pendiente_pago' %}
   <form method="post" action="{% url 'reservas:aprobar' reserva.pk %}" style="margin-top:14px;">
     {% csrf_token %}

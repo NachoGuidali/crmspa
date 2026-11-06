@@ -15,6 +15,7 @@ urlpatterns = [
     path('<int:pk>/cancelar/', views_ui.cancelar, name='cancelar'),
     path('<int:pk>/aprobar/', views_ui.aprobar, name='aprobar'),
     path('<int:pk>/asistio/', views_ui.marcar_asistio, name='asistio'),
+    path('<int:pk>/cobrar-saldo/', views_ui.cobrar_saldo, name='cobrar_saldo'),
     path('<int:pk>/no-show/', views_ui.marcar_no_show, name='no_show'),
     path('<int:pk>/comprobante/', views_ui.comprobante, name='comprobante'),
     # El de arriba es el comprobante que se le imprime al cliente; este es el

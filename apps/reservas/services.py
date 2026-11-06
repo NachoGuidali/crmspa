@@ -562,10 +562,27 @@ def confirmar_sena(reserva, monto, medio_pago):
 
 
 @transaction.atomic
-def registrar_pago_saldo(reserva, monto, medio_pago):
+def registrar_pago_saldo(reserva, monto, medio_pago, autor=None):
+    monto = Decimal(monto)
+    if monto <= 0:
+        raise ReservaError('El monto tiene que ser mayor a cero.')
+    if medio_pago not in dict(Reserva.MedioPago.choices):
+        raise ReservaError('El medio de pago elegido no es válido.')
+
     Pago.objects.create(reserva=reserva, monto=monto, medio_pago=medio_pago, tipo=Pago.Tipo.SALDO)
-    reserva.monto_pagado += monto
+    reserva.monto_pagado = (reserva.monto_pagado or 0) + monto
     reserva.save()
+
+    from .models import NotaReserva
+    texto = (f'Cobro del saldo: ${monto:,.0f}'.replace(',', '.')
+             + f' en {dict(Reserva.MedioPago.choices)[medio_pago]}.')
+    if reserva.saldo > 0:
+        texto += f' Queda ${reserva.saldo:,.0f}.'.replace(',', '.')
+    NotaReserva.objects.create(
+        reserva=reserva, autor=autor,
+        origen=NotaReserva.Origen.STAFF if autor else NotaReserva.Origen.SISTEMA,
+        texto=texto,
+    )
     return reserva
 
 
@@ -600,10 +617,53 @@ def reprogramar_reserva(reserva, *, nueva_fecha, nuevo_turno_id):
     return reserva
 
 
-def marcar_asistio(reserva):
-    """Cierre del día: el cliente asistió. Pasa la reserva a completado (habilita la encuesta)."""
+@transaction.atomic
+def marcar_asistio(reserva, *, monto_cobrado=None, medio_pago='', autor=None):
+    """Cierre del día: el cliente asistió. Cobra lo que falte y pasa a completado.
+
+    El cobro va acá y no en un paso aparte porque es el mismo momento real: la persona se
+    va del spa y paga el saldo en el mostrador. Antes esto solo cambiaba el estado, así que
+    una reserva atendida y cobrada seguía figurando con la mitad sin pagar — y por lo tanto
+    seguía contando en "por cobrar" del dashboard y en los saldos pendientes.
+
+    `monto_cobrado=None` o 0 cierra sin cobrar nada (el saldo queda y se ve en la ficha).
+    """
+    monto = Decimal(monto_cobrado or 0)
+    if monto < 0:
+        raise ReservaError('El monto cobrado no puede ser negativo.')
+    if monto > 0 and not medio_pago:
+        raise ReservaError('Elegí con qué medio pagó.')
+    if medio_pago and medio_pago not in dict(Reserva.MedioPago.choices):
+        raise ReservaError('El medio de pago elegido no es válido.')
+
+    saldo_antes = reserva.saldo
+    if monto > 0:
+        # Tipo SALDO siempre, incluso si la seña nunca se había cobrado: `confirmar_sena`
+        # le manda al cliente el WhatsApp de confirmación, y mandárselo cuando ya está
+        # pagando y yéndose del spa no tiene ningún sentido.
+        Pago.objects.create(
+            reserva=reserva, monto=monto, medio_pago=medio_pago, tipo=Pago.Tipo.SALDO,
+        )
+        reserva.monto_pagado = (reserva.monto_pagado or 0) + monto
+
     reserva.estado = Reserva.Estado.COMPLETADO
-    reserva.save(update_fields=['estado', 'updated_at'])
+    reserva.save()
+
+    from .models import NotaReserva
+    if monto > 0:
+        detalle = (f'Asistió. Se cobró ${monto:,.0f}'.replace(',', '.')
+                   + f' en {dict(Reserva.MedioPago.choices)[medio_pago]}.')
+        if reserva.saldo > 0:
+            detalle += f' Queda un saldo de ${reserva.saldo:,.0f}.'.replace(',', '.')
+    elif saldo_antes > 0:
+        detalle = f'Asistió. Quedó ${saldo_antes:,.0f} sin cobrar.'.replace(',', '.')
+    else:
+        detalle = 'Asistió. No quedaba nada por cobrar.'
+    NotaReserva.objects.create(
+        reserva=reserva, autor=autor,
+        origen=NotaReserva.Origen.STAFF if autor else NotaReserva.Origen.SISTEMA,
+        texto=detalle,
+    )
     return reserva
 
 
