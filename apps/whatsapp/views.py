@@ -56,6 +56,12 @@ class EvolutionWebhookView(APIView):
                 **payload,
                 'phone': extra['phone'],
                 'message': extra['message'],
+                # El id del mensaje es lo que le permite al bot saber cual de las ejecuciones
+                # en curso es la ultima y descartar las repetidas. Faltaba acá (el webhook de
+                # Meta sí lo mandaba), asi que n8n se quedaba con el unico desempate posible,
+                # comparar el texto: dos stickers seguidos tienen el MISMO texto, las dos
+                # corridas se creian la ultima y la clienta recibia todo duplicado.
+                'mensaje_id': extra['mensaje_id'],
                 'contact_name': extra['contact_name'],
                 'bot_n8n_activo': extra['bot_n8n_activo'],
                 'conversacion_id': extra['conversacion_id'],
