@@ -17,6 +17,10 @@ urlpatterns = [
     path('<int:pk>/asistio/', views_ui.marcar_asistio, name='asistio'),
     path('<int:pk>/no-show/', views_ui.marcar_no_show, name='no_show'),
     path('<int:pk>/comprobante/', views_ui.comprobante, name='comprobante'),
+    # El de arriba es el comprobante que se le imprime al cliente; este es el
+    # comprobante de la transferencia que manda el cliente.
+    path('<int:pk>/adjuntar-comprobante/', views_ui.adjuntar_comprobante,
+         name='adjuntar_comprobante'),
     path('<int:pk>/nota/', views_ui.agregar_nota, name='agregar_nota'),
     path('<int:pk>/extra/', views_ui.agregar_extra, name='agregar_extra'),
     path('<int:pk>/extra/<int:extra_id>/quitar/', views_ui.quitar_extra, name='quitar_extra'),

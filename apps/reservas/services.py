@@ -193,7 +193,59 @@ def _reserva_bot_duplicada(telefono, circuito_id, turno_id, fecha):
     )
 
 
-def _ultimo_comprobante_del_cliente(telefono, desde_hace_horas=6):
+# Cuánto para atrás se busca en el chat la imagen del comprobante. El bot la pide y le
+# llega en el acto (6 h es de sobra). Cuando la seña la sigue el equipo a mano pueden pasar
+# horas entre "mandame el comprobante" y el momento en que carga la reserva, así que esa
+# ventana es larga.
+HORAS_COMPROBANTE_BOT = 6
+HORAS_COMPROBANTE_MANUAL = 72
+
+# Mismo tope que el POST del bot (ReservaBotCrearView.COMPROBANTE_MAX_BYTES).
+COMPROBANTE_MAX_BYTES = 8 * 1024 * 1024
+
+
+def imagenes_del_chat(telefono, horas=HORAS_COMPROBANTE_MANUAL, limite=6):
+    """Las últimas imágenes que mandó el cliente por WhatsApp, de la más nueva a la más vieja.
+
+    Es para que el equipo elija cuál es el comprobante: quedarse con "la última" alcanza
+    para el bot (la pidió él y llegó al instante), pero en una charla seguida a mano la
+    última imagen puede ser cualquier otra cosa.
+
+    `horas=None` saca el filtro de tiempo: en la ficha el equipo ve la fecha de cada imagen
+    y elige con el ojo, así que una reserva vieja igual tiene de dónde elegir. La ventana
+    corta es para cuando el que elige es el código.
+    """
+    from apps.whatsapp.models import Mensaje
+
+    qs = Mensaje.objects.filter(
+        conversacion__telefono=normalize_ar_phone(telefono),
+        direccion=Mensaje.Direccion.ENTRANTE,
+        tipo=Mensaje.Tipo.IMAGEN,
+    ).exclude(media_url='')
+    if horas is not None:
+        qs = qs.filter(timestamp__gte=timezone.now() - timedelta(hours=horas))
+    return list(qs.order_by('-timestamp')[:limite])
+
+
+def _archivo_de_mensaje(mensaje):
+    """El archivo que el CRM ya bajó de un mensaje entrante, como ContentFile. None si no está."""
+    import os
+
+    from django.conf import settings
+    from django.core.files.base import ContentFile
+
+    if mensaje is None or not mensaje.media_url:
+        return None
+    # media_url es "/media/uploads/conv_N/archivo.jpg" → la ruta real en disco.
+    rel = mensaje.media_url.replace(settings.MEDIA_URL, '', 1).lstrip('/')
+    ruta = os.path.join(settings.MEDIA_ROOT, rel)
+    if not os.path.exists(ruta):
+        return None
+    with open(ruta, 'rb') as f:
+        return ContentFile(f.read(), name=os.path.basename(ruta))
+
+
+def _ultimo_comprobante_del_cliente(telefono, desde_hace_horas=HORAS_COMPROBANTE_BOT):
     """La última imagen que mandó ese cliente, para usarla de comprobante.
 
     El bot manda el comprobante en base64, pero lo saca del payload crudo de Evolution
@@ -204,35 +256,63 @@ def _ultimo_comprobante_del_cliente(telefono, desde_hace_horas=6):
     El CRM ya descarga y guarda toda imagen entrante por su cuenta (`download_and_save_media`),
     así que la tenemos igual: la enganchamos desde acá y el staff la ve en la ficha.
     """
-    import os
+    imagenes = imagenes_del_chat(telefono, horas=desde_hace_horas, limite=1)
+    return _archivo_de_mensaje(imagenes[0]) if imagenes else None
 
-    from django.conf import settings
-    from django.core.files.base import ContentFile
 
+def adjuntar_comprobante(reserva, *, archivo=None, mensaje_id=None, autor=None):
+    """Deja el comprobante de la seña pegado a la reserva y lo anota en el historial.
+
+    Tres puertas: un archivo que sube el equipo, una imagen puntual del chat (`mensaje_id`)
+    o la última que mandó el cliente. Hace falta porque el campo lo llenaba SOLO el bot
+    (`crear_reserva_bot`): la reserva que el equipo sigue y carga a mano quedaba sin
+    comprobante, la foto se quedaba suelta en el inbox y la seña no entraba ni en el informe
+    de comprobantes ni en el ZIP de contabilidad, que filtran por este campo.
+
+    Devuelve el texto de qué se adjuntó, o '' si no había ninguna imagen para enganchar.
+    """
     from apps.whatsapp.models import Mensaje
 
-    mensaje = (
-        Mensaje.objects
-        .filter(
-            conversacion__telefono=telefono,
-            direccion=Mensaje.Direccion.ENTRANTE,
-            tipo=Mensaje.Tipo.IMAGEN,
-            timestamp__gte=timezone.now() - timedelta(hours=desde_hace_horas),
-        )
-        .exclude(media_url='')
-        .order_by('-timestamp')
-        .first()
-    )
-    if mensaje is None:
-        return None
+    from .models import NotaReserva
 
-    # media_url es "/media/uploads/conv_N/archivo.jpg" → la ruta real en disco.
-    rel = mensaje.media_url.replace(settings.MEDIA_URL, '', 1).lstrip('/')
-    ruta = os.path.join(settings.MEDIA_ROOT, rel)
-    if not os.path.exists(ruta):
-        return None
-    with open(ruta, 'rb') as f:
-        return ContentFile(f.read(), name=os.path.basename(ruta))
+    if archivo is not None:
+        if archivo.size > COMPROBANTE_MAX_BYTES:
+            raise ReservaError(
+                f'El archivo pesa más de {COMPROBANTE_MAX_BYTES // (1024 * 1024)} MB.')
+        tipo = (getattr(archivo, 'content_type', '') or '').lower()
+        if tipo and not tipo.startswith('image/'):
+            raise ReservaError('El comprobante tiene que ser una imagen (JPG o PNG). Si te lo '
+                               'mandaron en PDF, subí una captura de pantalla.')
+        reserva.comprobante = archivo
+        detalle = f'archivo subido ({archivo.name})'
+    else:
+        if mensaje_id:
+            # Atado a la conversación de ESTE cliente: el id viene del formulario.
+            mensaje = Mensaje.objects.filter(
+                pk=mensaje_id,
+                conversacion__telefono=normalize_ar_phone(reserva.contacto.telefono),
+                direccion=Mensaje.Direccion.ENTRANTE,
+                tipo=Mensaje.Tipo.IMAGEN,
+            ).first()
+        else:
+            imagenes = imagenes_del_chat(reserva.contacto.telefono, limite=1)
+            mensaje = imagenes[0] if imagenes else None
+        contenido = _archivo_de_mensaje(mensaje)
+        if contenido is None:
+            return ''
+        reserva.comprobante = contenido
+        detalle = ('imagen que mandó el cliente el '
+                   f'{timezone.localtime(mensaje.timestamp):%d/%m a las %H:%M}')
+
+    # El archivo viejo no se borra del disco a propósito: si el adjunto anterior era el
+    # correcto y alguien se confundió, sigue estando.
+    reserva.save(update_fields=['comprobante', 'updated_at'])
+    NotaReserva.objects.create(
+        reserva=reserva, autor=autor,
+        origen=NotaReserva.Origen.STAFF if autor else NotaReserva.Origen.SISTEMA,
+        texto=f'Se adjuntó el comprobante de la seña: {detalle}.',
+    )
+    return detalle
 
 
 @transaction.atomic

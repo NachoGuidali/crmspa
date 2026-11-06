@@ -7,26 +7,64 @@
     <h1>Reserva de {{ reserva.contacto.nombre }}</h1>
   </div>
   <div style="display:flex; gap:8px; align-items:center;">
-    <a href="{% url 'reservas:comprobante' reserva.pk %}" target="_blank" class="btn btn-secondary">Comprobante</a>
+    <a href="{% url 'reservas:comprobante' reserva.pk %}" target="_blank" class="btn btn-secondary">Imprimir para el cliente</a>
     <span class="badge badge-{{ reserva.estado }}">{{ reserva.get_estado_display }}</span>
   </div>
 </div>
 
 {% if messages %}{% for m in messages %}<div class="card" style="margin-bottom:12px;">{{ m }}</div>{% endfor %}{% endif %}
 
-{% if reserva.origen == 'whatsapp_bot' or reserva.comprobante or reserva.link_pago or reserva.resumen %}
 <div class="card" style="margin-bottom:16px; border-left:4px solid var(--accent, #8a4b0e);">
   <h3 style="margin-top:0;">Pago / Aprobación</h3>
   {% if reserva.origen == 'whatsapp_bot' %}<p style="font-size:.82rem; color:var(--text-muted); margin-top:-6px;">Reserva generada por el bot de WhatsApp.</p>{% endif %}
   {% if reserva.medio_pago %}<p style="font-size:.88rem;"><strong>Medio de pago:</strong> {{ reserva.get_medio_pago_display }}</p>{% endif %}
   {% if reserva.resumen %}<p style="font-size:.88rem; white-space:pre-line;"><strong>Resumen del bot:</strong><br>{{ reserva.resumen }}</p>{% endif %}
   {% if reserva.link_pago %}<p style="font-size:.88rem;"><strong>Link de pago:</strong> <a href="{{ reserva.link_pago }}" target="_blank" rel="noopener">{{ reserva.link_pago }}</a></p>{% endif %}
-  {% if reserva.comprobante %}
-  <p style="font-size:.88rem;"><strong>Comprobante de transferencia:</strong></p>
-  <a href="{{ reserva.comprobante.url }}" target="_blank" rel="noopener">
-    <img src="{{ reserva.comprobante.url }}" alt="Comprobante" style="max-width:320px; max-height:420px; border:1px solid var(--border,#ddd); border-radius:8px;">
-  </a>
-  {% endif %}
+  <div style="margin-top:14px; border-top:1px solid var(--border,#ddd); padding-top:12px;">
+    <p style="font-size:.88rem; margin:0 0 8px;"><strong>Comprobante de la transferencia:</strong></p>
+    {% if reserva.comprobante %}
+    <a href="{{ reserva.comprobante.url }}" target="_blank" rel="noopener">
+      <img src="{{ reserva.comprobante.url }}" alt="Comprobante" style="max-width:320px; max-height:420px; border:1px solid var(--border,#ddd); border-radius:8px;">
+    </a>
+    {% else %}
+    <p style="font-size:.82rem; color:var(--text-muted); margin:0;">
+      No hay ninguno adjunto. Mientras no esté acá, esta seña no entra en
+      <strong>Informes → Comprobantes</strong> ni en el ZIP de contabilidad, aunque la foto
+      esté en el chat.
+    </p>
+    {% endif %}
+
+    {% if imagenes_chat %}
+    <p style="font-size:.82rem; color:var(--text-muted); margin:12px 0 6px;">
+      Últimas imágenes que mandó el cliente por WhatsApp — elegí cuál es el comprobante:
+    </p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      {% for m in imagenes_chat %}
+      <form method="post" action="{% url 'reservas:adjuntar_comprobante' reserva.pk %}"
+            style="text-align:center; max-width:110px;">
+        {% csrf_token %}
+        <input type="hidden" name="mensaje_id" value="{{ m.pk }}">
+        <a href="{{ m.media_url }}" target="_blank" rel="noopener">
+          <img src="{{ m.media_url }}" alt="Imagen del {{ m.timestamp|date:'d/m H:i' }}" loading="lazy"
+               style="height:90px; width:auto; border:1px solid var(--border,#ddd); border-radius:6px; display:block; margin:0 auto;">
+        </a>
+        <div style="font-size:.72rem; color:var(--text-muted); margin:3px 0;">{{ m.timestamp|date:"d/m H:i" }}</div>
+        <button type="submit" class="btn btn-secondary" style="font-size:.74rem; padding:3px 8px;">Usar esta</button>
+      </form>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'reservas:adjuntar_comprobante' reserva.pk %}"
+          enctype="multipart/form-data"
+          style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <input type="file" name="archivo" accept="image/*" required style="font-size:.82rem;">
+      <button type="submit" class="btn btn-secondary">
+        {% if reserva.comprobante %}Reemplazar{% else %}Subir{% endif %} comprobante
+      </button>
+    </form>
+  </div>
 
   {% if reserva.estado == 'pendiente_aprobacion' or reserva.estado == 'pendiente_pago' %}
   <form method="post" action="{% url 'reservas:aprobar' reserva.pk %}" style="margin-top:14px;">
@@ -35,7 +73,6 @@
   </form>
   {% endif %}
 </div>
-{% endif %}
 
 <div class="grid grid-3" style="align-items:start;">
   <div class="card">

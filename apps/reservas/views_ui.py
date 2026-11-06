@@ -161,6 +161,16 @@ def nueva_reserva(request):
         except services.ReservaError as e:
             return _error(str(e))
 
+        # El comprobante: si la seña se siguió a mano por WhatsApp, la foto ya la tenemos
+        # bajada en el chat. Antes esto lo hacía SOLO el bot, así que la reserva cargada a
+        # mano quedaba sin comprobante y la seña no aparecía en el informe de comprobantes.
+        comprobante_detalle = ''
+        if ya_abono and medio_pago == Reserva.MedioPago.TRANSFERENCIA:
+            try:
+                comprobante_detalle = services.adjuntar_comprobante(reserva, autor=request.user)
+            except services.ReservaError:
+                comprobante_detalle = ''
+
         if not ya_abono:
             return redirect('reservas:kanban')
 
@@ -171,11 +181,17 @@ def nueva_reserva(request):
             services.confirmar_sena(
                 reserva, monto_sena if monto_sena is not None else reserva.monto_sena, medio_pago,
             )
-            messages.success(
-                request,
-                'Reserva creada y confirmada. Se registró la seña y se le mandó la '
-                'confirmación al cliente.',
-            )
+            aviso = ('Reserva creada y confirmada. Se registró la seña y se le mandó la '
+                     'confirmación al cliente.')
+            if comprobante_detalle:
+                aviso += f' Se adjuntó como comprobante la {comprobante_detalle}.'
+            messages.success(request, aviso)
+            if medio_pago == Reserva.MedioPago.TRANSFERENCIA and not comprobante_detalle:
+                messages.error(
+                    request,
+                    'No encontré ninguna imagen del cliente en las últimas 72 h para usar de '
+                    'comprobante. Adjuntalo acá abajo, en "Pago / Aprobación".',
+                )
         except services.ReservaError as e:
             # La reserva ya existe: no se pierde. Queda en "pendiente de seña" para resolverla
             # a mano, y por eso vamos a la ficha en vez de volver al kanban.
@@ -231,6 +247,8 @@ def detalle(request, pk):
     from apps.configuracion.models import ConfiguracionNegocio
     return render(request, 'reservas/detalle.html', {
         'reserva': reserva,
+        # Para elegir el comprobante sin salir de la ficha cuando la seña se siguió a mano.
+        'imagenes_chat': services.imagenes_del_chat(reserva.contacto.telefono, horas=None),
         'turnos': Turno.objects.filter(activo=True),
         'extras_disponibles': extras_disponibles,
         'extras_otros': extras_otros,
@@ -252,6 +270,31 @@ def agregar_nota(request, pk):
             reserva=reserva, autor=request.user, origen=NotaReserva.Origen.STAFF, texto=texto,
         )
         messages.success(request, 'Nota agregada.')
+    return redirect('reservas:detalle', pk=pk)
+
+
+@login_required
+@require_POST
+def adjuntar_comprobante(request, pk):
+    """Pega el comprobante de la seña a una reserva: un archivo, o una imagen del chat."""
+    from django.contrib import messages
+
+    reserva = get_object_or_404(Reserva.objects.select_related('contacto'), pk=pk)
+    try:
+        detalle = services.adjuntar_comprobante(
+            reserva,
+            archivo=request.FILES.get('archivo'),
+            mensaje_id=(request.POST.get('mensaje_id') or '').strip(),
+            autor=request.user,
+        )
+    except services.ReservaError as e:
+        messages.error(request, str(e))
+        return redirect('reservas:detalle', pk=pk)
+
+    if detalle:
+        messages.success(request, f'Comprobante adjuntado: {detalle}.')
+    else:
+        messages.error(request, 'No pude tomar esa imagen del chat. Subila como archivo.')
     return redirect('reservas:detalle', pk=pk)
 
 
