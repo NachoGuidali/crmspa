@@ -85,6 +85,8 @@ def _parse_message_upsert(payload: dict) -> list:
             'media_url': media_url,
             'media_mime': media_mime,
             'media_filename': media_filename,
+            # Para no transcribir audios larguísimos (el tope sale de Configuración).
+            'media_duracion': _extract_duracion(message, msg_type_raw),
             'timestamp': ts,
             'contact_name': contact_name,
         })
@@ -170,6 +172,17 @@ def _extract_media_fields(message: dict, msg_type_raw: str) -> tuple:
     mime = obj.get('mimetype', default_mime) or default_mime
     fname = obj.get('title', '') or obj.get('fileName', '') or obj.get('caption', '')
     return url, mime, fname
+
+
+def _extract_duracion(message: dict, msg_type_raw: str) -> int:
+    """Duración en segundos de un audio/video, si el payload la trae. 0 = no se sabe."""
+    obj = message.get(msg_type_raw, {})
+    if not isinstance(obj, dict):
+        return 0
+    try:
+        return int(obj.get('seconds') or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _process_status_updates(update_list: list):

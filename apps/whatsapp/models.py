@@ -50,6 +50,19 @@ class ConfiguracionWhatsApp(models.Model):
         max_length=100, blank=True, verbose_name='Verify Token',
         help_text='Token que vos elegís y cargás en Meta al configurar el webhook (verificación GET).',
     )
+    # ── Transcripción de audios entrantes ───────────────────────────────────
+    transcribir_audios = models.BooleanField(
+        default=False, verbose_name='Transcribir los audios que manda el cliente',
+        help_text='Pasa las notas de voz a texto: el equipo las lee en el inbox sin '
+                  'escucharlas y el bot las entiende (hoy contesta "¿me lo escribís?"). '
+                  'Necesita TRANSCRIPCION_API_KEY en el .env del servidor.',
+    )
+    transcripcion_max_segundos = models.PositiveIntegerField(
+        default=300, verbose_name='Duración máxima a transcribir (segundos)',
+        help_text='Los audios más largos no se transcriben (quedan como "[Audio]" y el bot '
+                  'pide que lo escriban). 0 = sin tope.',
+    )
+
     meta_api_version = models.CharField(
         max_length=10, blank=True, default='v21.0', verbose_name='Versión de la Graph API',
     )
@@ -317,6 +330,12 @@ class Mensaje(models.Model):
     media_id = models.CharField(max_length=200, blank=True)
     media_mime = models.CharField(max_length=100, blank=True)
     media_filename = models.CharField(max_length=255, blank=True)
+    transcripcion = models.TextField(
+        blank=True, verbose_name='Transcripción del audio',
+        help_text='Texto automático de una nota de voz. Va aparte de `contenido` a propósito: '
+                  'no es lo que la persona escribió, es lo que una máquina entendió, y puede '
+                  'equivocarse justo en una fecha o un monto.',
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDIENTE)
     enviado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL

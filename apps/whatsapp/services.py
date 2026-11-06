@@ -72,14 +72,33 @@ def _guardar_mensaje_entrante(m: dict):
     # y Meta solo manda un media_id).
     tipo = m.get('type', Mensaje.Tipo.TEXTO)
     media_url = m.get('media_url', '')
+    media_local = ''
     if tipo in ('image', 'audio', 'video', 'document') and (message_id or m.get('media_id')):
         try:
             from . import sender
             local = sender.download_and_save_media(m, conversacion.pk)
             if local:
-                media_url = local
+                media_url = media_local = local
         except Exception:
             logger.exception('No se pudo descargar media entrante (message_id=%s)', message_id)
+
+    # Nota de voz: la pasamos a texto ANTES de crear el mensaje. Sincrónico a propósito: si
+    # fuera a Celery, el Mensaje existiría unos segundos con "[Audio]" adentro, y si la
+    # persona manda un audio y enseguida un texto, la corrida del texto lee el historial y
+    # encuentra "[Audio]" en vez de lo que dijo. Nunca levanta excepción: si falla, queda
+    # "[Audio]" y el bot pide que lo escriban, igual que antes de todo esto.
+    transcripcion = ''
+    # Solo si la descarga funcionó: si no, `media_url` sigue siendo la URL encriptada de
+    # Evolution, que no es un archivo en disco.
+    if tipo == Mensaje.Tipo.AUDIO and media_local:
+        try:
+            from . import transcripcion as stt
+            transcripcion = stt.transcribir_archivo_local(
+                media_local, mime=m.get('media_mime', 'audio/ogg'),
+                filename=m.get('media_filename', ''), segundos=m.get('media_duracion', 0),
+            )
+        except Exception:
+            logger.exception('No se pudo transcribir el audio (message_id=%s)', message_id)
 
     try:
         with transaction.atomic():
@@ -94,6 +113,7 @@ def _guardar_mensaje_entrante(m: dict):
                 media_id=m.get('media_id', ''),
                 media_mime=m.get('media_mime', ''),
                 media_filename=m.get('media_filename', ''),
+                transcripcion=transcripcion,
                 status=Mensaje.Status.LEIDO,
                 timestamp=m['timestamp'],
             )
@@ -120,7 +140,11 @@ def _guardar_mensaje_entrante(m: dict):
 
     return {
         'phone': telefono,
-        'message': m['content'],
+        # El texto del audio va donde el bot ya mira. Si no se pudo transcribir viaja
+        # "[Audio]" y el prompt de María pide que lo escriban, como siempre.
+        'message': transcripcion or m['content'],
+        'es_audio': tipo == Mensaje.Tipo.AUDIO,
+        'transcripto': bool(transcripcion),
         # Id del mensaje: el bot junta en una sola respuesta lo que el cliente escribió en
         # varias tandas, y lo usa para saber cuál de las ejecuciones en curso es la última.
         'mensaje_id': mensaje.id,

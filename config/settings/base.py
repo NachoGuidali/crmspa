@@ -173,6 +173,16 @@ LOGIN_REDIRECT_URL = '/'
 
 # --- Email (notificaciones al dueño: reserva del bot, confirmación, cancelación, handoff) ---
 # Los destinatarios se configuran en Configuración → Configuración del negocio (no acá).
+# ── Transcripción de audios entrantes de WhatsApp ────────────────────────────
+# La clave va acá y no en la base: no se commitea, no se ve en el admin y no viaja en un
+# backup de la base. El interruptor y el tope de duración sí están en Configuración →
+# WhatsApp, que son decisiones del día a día.
+# Los dos proveedores comparten el formato del endpoint, así que cambiar de uno al otro es
+# cambiar estas variables. Sin clave, la transcripción queda apagada sola.
+TRANSCRIPCION_PROVEEDOR = config('TRANSCRIPCION_PROVEEDOR', default='openai')
+TRANSCRIPCION_MODELO = config('TRANSCRIPCION_MODELO', default='')
+TRANSCRIPCION_API_KEY = config('TRANSCRIPCION_API_KEY', default='')
+
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)

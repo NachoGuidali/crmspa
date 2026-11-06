@@ -132,7 +132,8 @@
             {% else %}<a href="{{ m.media_url }}" target="_blank" class="wa-media-doc">📎 {{ m.media_filename|default:"Archivo" }}</a>
             {% endif %}
           {% endif %}
-          {% if m.contenido %}<div class="wa-bubble-text">{{ m.contenido }}</div>{% endif %}
+          {% if m.transcripcion %}<div class="wa-bubble-text wa-transcripcion">{{ m.transcripcion }}</div>
+          {% elif m.contenido %}<div class="wa-bubble-text">{{ m.contenido }}</div>{% endif %}
         {% endif %}
         <div class="ts">
           {{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}
@@ -205,6 +206,10 @@
   .wa-media-video { max-width: 260px; max-height: 300px; border-radius: 8px; display: block; }
   .wa-media-doc { display: inline-block; padding: 8px 10px; background: rgba(0,0,0,.05); border-radius: 8px; text-decoration: none; }
   .wa-bubble-text { margin-top: 4px; }
+  /* La transcripción se marca como automática: NO es lo que la persona escribió, es lo que
+     una máquina entendió, y puede errarle a una fecha o a un monto. */
+  .wa-transcripcion { font-style: italic; opacity: .92; }
+  .wa-transcripcion::before { content: '🎤 '; font-style: normal; }
 </style>
 <script>
 const CSRF = '{{ csrf_token }}';
@@ -230,6 +235,12 @@ function mediaHtml(m) {
   return `<a href="${u}" target="_blank" class="wa-media-doc">📎 ${esc(m.media_filename) || 'Archivo'}</a>`;
 }
 
+function textoBubble(m) {
+  // Igual que el render del servidor: la transcripción del audio reemplaza al "[Audio]".
+  if (m.transcripcion) return `<div class="wa-bubble-text wa-transcripcion">${esc(m.transcripcion)}</div>`;
+  return m.contenido ? `<div class="wa-bubble-text">${esc(m.contenido)}</div>` : '';
+}
+
 function borrarForm(chat, m) {
   if (!m.puede_borrarse) return '';
   return `<form method="post" action="${ACCION_URL}" class="wa-borrar"
@@ -247,7 +258,7 @@ function appendBubble(chat, m) {
   div.className = 'wa-bubble ' + m.direccion + (m.eliminado ? ' eliminado' : '');
   const cuerpo = m.eliminado
     ? '<div class="wa-bubble-text wa-eliminado-txt">🚫 Mensaje eliminado</div>'
-    : mediaHtml(m) + (m.contenido ? `<div class="wa-bubble-text">${esc(m.contenido)}</div>` : '');
+    : mediaHtml(m) + textoBubble(m);
   div.innerHTML = cuerpo +
     `<div class="ts">${m.timestamp} · ${m.status}${borrarForm(chat, m)}</div>`;
   chat.appendChild(div);

@@ -62,6 +62,10 @@ class EvolutionWebhookView(APIView):
                 # comparar el texto: dos stickers seguidos tienen el MISMO texto, las dos
                 # corridas se creian la ultima y la clienta recibia todo duplicado.
                 'mensaje_id': extra['mensaje_id'],
+                # Que vino por audio lo tiene que saber el prompt: una transcripción puede
+                # errarle justo a una fecha o un monto, así que María lo repregunta.
+                'es_audio': extra['es_audio'],
+                'transcripto': extra['transcripto'],
                 'contact_name': extra['contact_name'],
                 'bot_n8n_activo': extra['bot_n8n_activo'],
                 'conversacion_id': extra['conversacion_id'],
@@ -347,8 +351,11 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
             {
                 'id': m.id,
                 'de': 'cliente' if m.direccion == Mensaje.Direccion.ENTRANTE else 'nosotros',
-                'texto': m.contenido,
+                # El texto del audio ocupa el lugar del "[Audio]": así el bot entiende
+                # también los audios viejos de la charla, no solo el último.
+                'texto': m.transcripcion or m.contenido,
                 'tipo': m.tipo,
+                'transcripcion': m.transcripcion,
                 'media_url': m.media_url,
                 'timestamp': m.timestamp,
             }

@@ -271,6 +271,7 @@ def inbox_mensajes(request, pk):
         'id': m.id,
         'direccion': m.direccion,
         'contenido': m.contenido,
+        'transcripcion': m.transcripcion,
         'tipo': m.tipo,
         'media_url': m.media_url,
         'media_mime': m.media_mime,
@@ -350,6 +351,13 @@ def config_whatsapp(request):
         config.meta_app_secret = request.POST.get('meta_app_secret', '').strip()
         config.meta_verify_token = request.POST.get('meta_verify_token', '').strip()
         config.meta_api_version = request.POST.get('meta_api_version', '').strip() or 'v21.0'
+        # Transcripción de audios (aplica a los dos proveedores).
+        config.transcribir_audios = request.POST.get('transcribir_audios') == '1'
+        try:
+            config.transcripcion_max_segundos = max(
+                int(request.POST.get('transcripcion_max_segundos') or 300), 0)
+        except ValueError:
+            config.transcripcion_max_segundos = 300
         config.save()
 
         # Si es Evolution, damos de alta la instancia y registramos el webhook.
@@ -384,6 +392,8 @@ def config_whatsapp(request):
         from . import sender_meta
         meta_info = sender_meta.get_phone_number_info()
 
+    from django.conf import settings as dj_settings_mod
+
     webhook_evolution = request.build_absolute_uri(reverse('whatsapp_api:webhook_evolution'))
     webhook_meta = request.build_absolute_uri(reverse('whatsapp_api:webhook_meta'))
     return render(request, 'whatsapp/config.html', {
@@ -393,6 +403,11 @@ def config_whatsapp(request):
         'webhook_meta_url': webhook_meta,
         'meta_info': meta_info,
         'PROVEEDORES': ConfiguracionWhatsApp.Proveedor.choices,
+        # Sin clave en el .env el interruptor no sirve para nada: se lo dice en pantalla en
+        # vez de dejarlo prenderlo y que no pase nada.
+        'hay_clave_transcripcion': bool(
+            (getattr(dj_settings_mod, 'TRANSCRIPCION_API_KEY', '') or '').strip()),
+        'proveedor_transcripcion': getattr(dj_settings_mod, 'TRANSCRIPCION_PROVEEDOR', 'openai'),
     })
 
 

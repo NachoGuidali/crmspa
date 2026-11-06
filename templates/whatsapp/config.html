@@ -46,6 +46,40 @@
       <input type="text" readonly value="{{ webhook_evolution_url }}" onclick="this.select()" style="cursor:pointer;">
     </div>
 
+    <!-- ── Audios ── -->
+    <div class="card">
+      <h3 style="margin-top:0;">Audios del cliente</h3>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+        <input type="checkbox" name="transcribir_audios" value="1"
+               {% if config.transcribir_audios %}checked{% endif %}>
+        <span>Pasar las notas de voz a texto</span>
+      </label>
+      <small style="color:var(--text-muted); display:block; margin-top:6px;">
+        El equipo las lee en el inbox sin escucharlas, y el bot las entiende: hoy, cuando
+        alguien manda un audio, María contesta "¿me lo escribís?".
+      </small>
+
+      {% if hay_clave_transcripcion %}
+      <p style="font-size:.78rem; color:#3c7a3c; margin:10px 0 0;">
+        ✓ Clave cargada en el servidor (proveedor: {{ proveedor_transcripcion }}).
+      </p>
+      {% else %}
+      <p style="font-size:.78rem; color:#a33; margin:10px 0 0;">
+        Falta <code>TRANSCRIPCION_API_KEY</code> en el <code>.env</code> del servidor.
+        Hasta que esté, esto queda apagado aunque lo tildes.
+      </p>
+      {% endif %}
+
+      <div class="form-row" style="margin-top:12px;">
+        <label>Duración máxima a transcribir (segundos)</label>
+        <input type="number" name="transcripcion_max_segundos" min="0" step="10"
+               value="{{ config.transcripcion_max_segundos|default:300 }}" style="width:120px;">
+        <small style="color:var(--text-muted);">
+          Los más largos quedan como "[Audio]" y el bot pide que lo escriban. 0 = sin tope.
+        </small>
+      </div>
+    </div>
+
     <!-- ── Meta ── -->
     <div class="card" id="card-meta">
       <h3 style="margin-top:0;">Meta Cloud API (oficial)</h3>

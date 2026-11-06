@@ -662,17 +662,23 @@ ya masticados:
   "...": "campos crudos de Evolution",
   "phone": "+5493815551234",
   "message": "hola, quiero reservar",
+  "mensaje_id": 1204,
   "contact_name": "Ana",
   "bot_n8n_activo": true,
   "conversacion_id": 87,
-  "fuera_de_horario": false
+  "fuera_de_horario": false,
+  "es_audio": false,
+  "transcripto": false
 }
 ```
 
 | Campo | Qué hacer en n8n |
 |---|---|
 | `phone` | Teléfono normalizado del cliente (usalo en todas las llamadas a la API) |
-| `message` | Texto del mensaje ya extraído |
+| `message` | Texto del mensaje ya extraído. **Si vino como audio, acá está la transcripción** (si no se pudo transcribir, dice `"[Audio]"`). |
+| `mensaje_id` | Id del mensaje en el CRM. Sirve para desempatar cuál de las ejecuciones en paralelo es la última (dos stickers seguidos tienen el mismo texto). |
+| `es_audio` | El cliente mandó una nota de voz. |
+| `transcripto` | `true` = `message` es una transcripción automática. **Avisale al modelo:** puede errarle a una fecha, un horario, un monto o una cantidad de personas, así que eso se repregunta antes de darlo por hecho en vez de confirmarlo de una. |
 | `bot_n8n_activo` | **Si es `false`, NO respondas.** La conversación está en manos de un humano (handoff). |
 | `fuera_de_horario` | Si es `true`, mandá el auto-reply "estamos cerrados, te contestamos a las…" |
 | `conversacion_id` | Referencia interna de la conversación |
@@ -829,10 +835,18 @@ Para que el bot pueda releer el contexto de la charla. `limit` es opcional (defa
 200). Devuelve los mensajes ordenados del más viejo al más nuevo.
 ```json
 [
-  {"id": 120, "de": "cliente", "texto": "hola, quiero reservar", "tipo": "text", "media_url": "", "timestamp": "2026-07-20T14:30:00Z"},
-  {"id": 121, "de": "nosotros", "texto": "¡Hola! ¿Para cuántas personas?", "tipo": "text", "media_url": "", "timestamp": "2026-07-20T14:30:05Z"}
+  {"id": 120, "de": "cliente", "texto": "hola, quiero reservar", "tipo": "text", "transcripcion": "", "media_url": "", "timestamp": "2026-07-20T14:30:00Z"},
+  {"id": 121, "de": "nosotros", "texto": "¡Hola! ¿Para cuántas personas?", "tipo": "text", "transcripcion": "", "media_url": "", "timestamp": "2026-07-20T14:30:05Z"},
+  {"id": 122, "de": "cliente", "texto": "somos cuatro amigas para el sábado", "tipo": "audio", "transcripcion": "somos cuatro amigas para el sábado", "media_url": "/media/uploads/conv_7/3A1F.ogg", "timestamp": "2026-07-20T14:31:00Z"}
 ]
 ```
+
+**Audios: `texto` ya viene transcripto.** Cuando el cliente manda una nota de voz, el CRM la
+pasa a texto y ese texto ocupa el lugar de `texto` (antes decía `"[Audio]"`). El campo
+`transcripcion` viene aparte para que se sepa que **no es lo que la persona escribió, sino lo
+que una máquina entendió**: puede errarle a una fecha o a un monto. Si la transcripción no se
+pudo hacer (apagada, audio muy largo, la API falló), `texto` vuelve a ser `"[Audio]"` y
+`transcripcion` queda vacío.
 **404** `{"error": "conversacion_no_encontrada"}` si el número no existe todavía.
 
 **Conversaciones para seguimiento** — `GET /api/v1/conversaciones/?inactiva_desde_horas=72&reserva_creada=false&estado_flujo_distinto_de=derivado`
