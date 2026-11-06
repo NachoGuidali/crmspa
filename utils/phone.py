@@ -15,8 +15,10 @@ def normalize_ar_phone(phone: str) -> str:
       03815551234     → +5493815551234   (con 0 de larga distancia)
       11 5551 2345    → +5491155512345   (con espacios/guiones)
 
-    Números claramente de otro país (+1..., +55..., 0055...) reciben solo normalización
-    básica del +. Valores vacíos se devuelven sin cambios.
+    La suposición "es argentino" solo se aplica a los locales de 10 dígitos (y a los de 11
+    que empiezan con 9). Un número de otro país recibe solo la normalización del '+', venga
+    con + (+34...), con 00 (0034...) o pelado (34644462625): si no, el código de país se
+    confundía con una característica argentina. Valores vacíos se devuelven sin cambios.
     """
     if not phone:
         return phone
@@ -42,12 +44,23 @@ def normalize_ar_phone(phone: str) -> str:
             rest = '9' + rest
         return '+54' + rest
 
-    # Sin '+' ni código de país: número local. Asumimos Argentina (el negocio es argentino).
+    # Sin '+' ni código de país: número local. Asumimos Argentina (el negocio es argentino),
+    # pero SOLO si tiene la forma de un local argentino: 10 dígitos (característica + número).
+    # Un número de 11 dígitos sin '+' no es un local argentino, es un extranjero al que le
+    # falta el '+': España, EEUU, Chile y Uruguay dan justo 11. Asumirlos argentinos convertía
+    # +34644462625 en +54934644462625, un número que no existe — y como el bot le pide al CRM
+    # el teléfono en dígitos (lo necesita para armar las URLs), el circuito completo se rompía:
+    # la conversación real no se encontraba, se creaba otra con el número inventado y la
+    # respuesta se mandaba ahí, así que a la persona no le llegaba nada.
     local = cleaned.lstrip('0')  # quita el 0 de larga distancia nacional
-    if local.isdigit() and 10 <= len(local) <= 11:
-        return '+549' + local
+    if local.isdigit():
+        if len(local) == 10:
+            return '+549' + local
+        # Celular argentino con el 9 pero sin el 54 (ej. 91155512345).
+        if len(local) == 11 and local.startswith('9'):
+            return '+54' + local
 
-    # No parece un número argentino reconocible: normalización básica.
+    # No parece argentino: se respeta el código de país que trae.
     return '+' + cleaned
 
 
