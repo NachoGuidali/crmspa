@@ -216,3 +216,47 @@ class TranscripcionTest(TestCase):
         super().tearDownClass()
         shutil.rmtree(TMP, ignore_errors=True)
 
+
+
+class EventosQueNoSonMensajesTest(TestCase):
+    """Una reacción con un emoji no es un mensaje.
+
+    Caía en el default del mapa de tipos, se guardaba como `[reactionMessage]` y el bot la
+    leía como un archivo: le contestaba "no puedo ver archivos por acá" a alguien que solo
+    había puesto un pulgar arriba.
+    """
+
+    def payload(self, tipo, cuerpo=None):
+        return {
+            'event': 'messages.upsert',
+            'data': {
+                'key': {'id': f'ID-{tipo}', 'remoteJid': '5493815551234@s.whatsapp.net',
+                        'fromMe': False},
+                'messageType': tipo,
+                'message': cuerpo or {tipo: {'text': '👍'}},
+                'messageTimestamp': int(timezone.now().timestamp()),
+                'pushName': 'Ana',
+            },
+        }
+
+    def test_la_reaccion_no_genera_mensaje(self):
+        self.assertEqual(webhook.parse_incoming_webhook(self.payload('reactionMessage')), [])
+
+    def test_otros_eventos_de_protocolo_tampoco(self):
+        for tipo in ('pollUpdateMessage', 'protocolMessage', 'senderKeyDistributionMessage'):
+            with self.subTest(tipo=tipo):
+                self.assertEqual(webhook.parse_incoming_webhook(self.payload(tipo)), [])
+
+    def test_un_texto_normal_sigue_pasando(self):
+        payload = self.payload('conversation', {'conversation': 'Hola, quiero reservar'})
+        mensajes = webhook.parse_incoming_webhook(payload)
+        self.assertEqual(len(mensajes), 1)
+        self.assertEqual(mensajes[0]['content'], 'Hola, quiero reservar')
+        self.assertEqual(mensajes[0]['type'], 'text')
+
+    def test_un_tipo_desconocido_sigue_llegando_como_marcador(self):
+        """No se silencia todo lo que no se entiende: si es un mensaje de verdad y no lo
+        sabemos leer, tiene que llegar al inbox para que el equipo lo vea."""
+        mensajes = webhook.parse_incoming_webhook(self.payload('loQueVengaMessage'))
+        self.assertEqual(len(mensajes), 1)
+        self.assertEqual(mensajes[0]['content'], '[loQueVengaMessage]')

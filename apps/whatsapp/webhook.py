@@ -48,6 +48,16 @@ def parse_incoming_webhook(payload: dict) -> list:
     return []
 
 
+TIPOS_IGNORADOS = frozenset({
+    'reactionMessage',
+    'pollUpdateMessage',
+    'pollCreationMessage',
+    'protocolMessage',
+    'senderKeyDistributionMessage',
+    'editedMessage',
+})
+
+
 def _parse_message_upsert(payload: dict) -> list:
     messages_data = []
     try:
@@ -66,6 +76,14 @@ def _parse_message_upsert(payload: dict) -> list:
         msg_type_raw = data.get('messageType', 'conversation')
         message = data.get('message', {})
         timestamp_val = data.get('messageTimestamp', 0)
+
+        # Eventos que WhatsApp manda como si fueran mensajes pero no lo son: una reacción con
+        # un emoji, una respuesta a una encuesta, mensajes de protocolo (borrados, claves).
+        # Antes caían en el default del mapa de tipos, se guardaban como texto `[reactionMessage]`
+        # y el bot los leía como un archivo: contestaba "no puedo ver archivos por acá".
+        if msg_type_raw in TIPOS_IGNORADOS:
+            logger.debug('Evento ignorado (no es un mensaje): %s', msg_type_raw)
+            return []
 
         msg_type = _normalize_type(msg_type_raw)
         content = _extract_content_evo(message, msg_type_raw)
