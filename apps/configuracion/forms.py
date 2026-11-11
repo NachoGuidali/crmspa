@@ -183,6 +183,7 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'reserva_exclusiva_por_turno',
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_reembolso_desde_pago',
             'recargo_feriado_porcentaje',
+            'voucher_validez_dias',
             'direccion', 'mapa_url', 'como_llegar', 'url_politicas', 'telefono_whatsapp',
             'smtp_host', 'smtp_puerto', 'smtp_usuario', 'smtp_password', 'smtp_tls',
             'smtp_remitente', 'email_notificaciones',

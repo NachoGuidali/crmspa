@@ -181,6 +181,10 @@ class Conversacion(models.Model):
         # descripción completa cada vez que se mencionaba un circuito, aunque la acabara de
         # mandar: 25 líneas de información que la persona ya tenía.
         'catalogos_enviados',
+        # El voucher de regalo que el bot está armando en esta charla. Se guarda para que el
+        # código sobreviva entre mensajes: cuando la persona manda el comprobante, el bot
+        # tiene que saber a qué voucher pegárselo.
+        'voucher_codigo',
     ]
 
     class Meta:

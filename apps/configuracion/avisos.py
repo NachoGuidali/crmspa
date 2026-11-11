@@ -30,6 +30,7 @@ def detalle_por_defecto(contexto):
     """El texto que se manda cuando el motivo no tiene uno escrito: todos los datos que haya."""
     ETIQUETAS = [
         ('cliente', 'Cliente'), ('telefono', 'Teléfono'), ('email', 'Email'),
+        ('codigo', 'Código'), ('destinatario', 'Para'),
         ('circuito', 'Circuito'), ('fecha', 'Fecha'), ('turno', 'Turno'),
         ('personas', 'Personas'), ('total', 'Total'), ('sena', 'Seña'),
         ('medio_pago', 'Medio de pago'), ('estado', 'Estado'), ('extras', 'Extras'),

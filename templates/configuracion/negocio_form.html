@@ -13,6 +13,9 @@
     {% csrf_token %}
     {% if form.non_field_errors %}<div style="color:#a33; margin-bottom:12px;">{{ form.non_field_errors }}</div>{% endif %}
     {% for field in form %}
+    {% if field.name == 'voucher_validez_dias' %}
+    <h3 style="margin:24px 0 4px;">Vouchers de regalo</h3>
+    {% endif %}
     {% if field.name == 'smtp_host' %}
     <h3 style="margin:24px 0 4px;">Envío de mails</h3>
     <p style="color:var(--text-muted); font-size:.8rem; margin:0 0 12px;">

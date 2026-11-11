@@ -5,14 +5,32 @@
   <h1>Gift Vouchers</h1>
   <a href="{% url 'vouchers:crear' %}" class="btn">+ Vender voucher</a>
 </div>
+
+{% if por_revisar %}
+<div class="card" style="margin-bottom:12px; border-left:4px solid var(--color-naranja);">
+  Hay <strong>{{ por_revisar }}</strong> voucher{{ por_revisar|pluralize:"s" }} con la transferencia
+  mandada esperando que alguien la mire.
+  <a href="?estado=pendiente_aprobacion">Ver cuáles</a>
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+  <span style="font-size:.8rem; color:var(--text-muted);">Estado:</span>
+  <a href="?" class="btn btn-secondary" style="padding:4px 12px; font-size:.78rem;{% if not estado_actual %} background:var(--color-verde-oliva); color:#fff;{% endif %}">Todos</a>
+  {% for valor, etiqueta in estados %}
+  <a href="?estado={{ valor }}" class="btn btn-secondary" style="padding:4px 12px; font-size:.78rem;{% if estado_actual == valor %} background:var(--color-verde-oliva); color:#fff;{% endif %}">{{ etiqueta }}</a>
+  {% endfor %}
+</div>
+
 <div class="card">
   <table class="simple">
-    <thead><tr><th>Código</th><th>Circuito</th><th>Monto</th><th>Comprador</th><th>Para</th><th>Estado</th><th>Vence</th><th></th></tr></thead>
+    <thead><tr><th>Código</th><th>Circuito</th><th>Pers.</th><th>Monto</th><th>Comprador</th><th>Para</th><th>Estado</th><th>Vence</th><th></th></tr></thead>
     <tbody>
       {% for v in vouchers %}
       <tr>
         <td style="font-family:monospace;">{{ v.codigo }}</td>
         <td>{{ v.circuito.nombre }}</td>
+        <td>{{ v.personas }}</td>
         <td>${{ v.monto|floatformat:0 }}</td>
         <td>{{ v.comprador_nombre }}</td>
         <td>{{ v.destinatario_nombre|default:"—" }}</td>
@@ -21,7 +39,7 @@
         <td><a href="{% url 'vouchers:detalle' v.pk %}">Ver</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="8">No hay vouchers todavía.</td></tr>
+      <tr><td colspan="9">No hay vouchers todavía.</td></tr>
       {% endfor %}
     </tbody>
   </table>

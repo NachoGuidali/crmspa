@@ -44,6 +44,9 @@ class CircuitoListView(ApiKeyLoggedView, APIView):
             **info_tarifa(fecha),
             'recargo_feriado_general': float(config.recargo_feriado_porcentaje or 0),
             'dias_tarifa_finde': config.dias_tarifa_finde or [5, 6],
+            # Cuánto vale un voucher de regalo. Viaja acá, con el resto de las políticas del
+            # negocio, para que el bot no lo tenga escrito a mano en el prompt.
+            'voucher_validez_dias': config.voucher_validez_dias or 60,
             'circuitos': data,
         })
 

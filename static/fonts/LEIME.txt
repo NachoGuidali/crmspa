@@ -1,0 +1,10 @@
+Tipografias del voucher de regalo (apps/vouchers/diseno.py).
+
+Son las mismas tres que usa el sitio publico (web/index.html las carga desde Google Fonts):
+Bodoni Moda para los titulos, Montserrat para el cuerpo y Playfair Display italica para el
+mensaje de regalo. Aca estan en formato "variable" (una sola TTF con todos los pesos), que es
+como las publica Google Fonts, y el generador elige el peso con set_variation_by_name.
+
+Licencia: SIL Open Font License 1.1 (OFL.txt). Se pueden distribuir con el proyecto.
+
+Si se cambian por otras, alcanza con dejar los mismos nombres de archivo.

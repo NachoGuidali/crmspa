@@ -56,6 +56,14 @@ class ConfiguracionNegocio(models.Model):
                   'Pasado ese plazo, la seña queda retenida. Default: 24.',
     )
 
+    # --- Vouchers de regalo ---
+    voucher_validez_dias = models.PositiveIntegerField(
+        default=60, verbose_name='Validez del voucher (días)',
+        help_text='Cuántos días vale un voucher de regalo desde que se compra. Es lo que sale '
+                  'impreso en el voucher y lo que le dice el bot. Al cargarlo a mano, la fecha '
+                  'viene calculada con esto y se puede cambiar.',
+    )
+
     # --- Datos que se le mandan al cliente en los mensajes automáticos ---
     # Viven acá y no dentro del texto de cada plantilla: así se escriben una vez y los reusan
     # la confirmación de reserva y los recordatorios de 24h y 2h.
@@ -205,6 +213,7 @@ class AvisoInterno(models.Model):
         ATENCION_HUMANA = 'atencion_humana', 'Conversación que necesita a una persona'
         BOT_CAIDO = 'bot_caido', 'El bot no pudo responder (falla técnica)'
         NOTA_EN_RESERVA = 'nota_en_reserva', 'El bot anotó algo en una reserva'
+        VOUCHER_POR_VERIFICAR = 'voucher_por_verificar', 'Voucher de regalo pago, para revisar y enviar'
 
     # Variables que puede usar el texto de cada motivo. Se muestran en el formulario.
     VARIABLES = {
@@ -219,6 +228,8 @@ class AvisoInterno(models.Model):
         'atencion_humana': ['cliente', 'telefono', 'motivo', 'link'],
         'bot_caido': ['cliente', 'telefono', 'motivo', 'link'],
         'nota_en_reserva': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'nota', 'link'],
+        'voucher_por_verificar': ['cliente', 'telefono', 'email', 'circuito', 'personas', 'total',
+                                  'codigo', 'destinatario', 'link'],
     }
 
     evento = models.CharField(max_length=40, choices=Evento.choices, unique=True)

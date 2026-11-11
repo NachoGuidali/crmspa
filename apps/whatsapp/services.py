@@ -214,6 +214,73 @@ def enviar_mensaje(*, telefono, mensaje='', media_url='', media_type='', usuario
     }
 
 
+def enviar_archivo(*, telefono, contenido, mime, filename='', caption='', usuario=None):
+    """Manda un archivo (bytes) por WhatsApp y lo deja registrado en el inbox.
+
+    Es el equivalente de `enviar_mensaje` para algo que el CRM generó y todavía no está
+    publicado en ninguna URL —hoy, el voucher de regalo—, así que se mandan los bytes al
+    proveedor en vez de un link. El archivo se guarda en `media/uploads/conv_<id>/` para que
+    después se pueda ver en el historial del inbox como cualquier otro adjunto.
+    """
+    import os
+    import re
+
+    from django.conf import settings as dj_settings
+
+    from utils.phone import normalize_ar_phone
+
+    from .media_utils import get_mediatype
+    from .models import ConfiguracionWhatsApp
+
+    telefono = normalize_ar_phone(telefono)
+    conversacion, _ = Conversacion.objects.get_or_create(telefono=telefono)
+    contacto = conversacion.contacto or Contacto.objects.filter(telefono=telefono).first()
+
+    if ConfiguracionWhatsApp.get_proveedor() == ConfiguracionWhatsApp.Proveedor.META and not conversacion.ventana_abierta:
+        raise FueraDeVentanaError(
+            'Pasaron más de 24hs desde el último mensaje del cliente. Por Meta solo se puede '
+            'iniciar la conversación con una plantilla aprobada.'
+        )
+
+    nombre = re.sub(r'[^\w.\-]', '_', filename or 'archivo')
+    carpeta = os.path.join(dj_settings.MEDIA_ROOT, 'uploads', f'conv_{conversacion.pk}')
+    os.makedirs(carpeta, exist_ok=True)
+    with open(os.path.join(carpeta, nombre), 'wb') as f:
+        f.write(contenido)
+    url_local = f'{dj_settings.MEDIA_URL}uploads/conv_{conversacion.pk}/{nombre}'
+
+    tipos = {'image': Mensaje.Tipo.IMAGEN, 'video': Mensaje.Tipo.VIDEO,
+             'audio': Mensaje.Tipo.AUDIO, 'document': Mensaje.Tipo.DOCUMENTO}
+    tipo = tipos.get(get_mediatype(mime), Mensaje.Tipo.DOCUMENTO)
+
+    try:
+        resultado = sender.send_uploaded_media(telefono, contenido, mime, filename=nombre, caption=caption)
+    except Exception as exc:
+        Mensaje.objects.create(
+            conversacion=conversacion, contacto=contacto, direccion=Mensaje.Direccion.SALIENTE,
+            tipo=tipo, contenido=caption, media_url=url_local, media_mime=mime,
+            media_filename=nombre, status=Mensaje.Status.FALLIDO, enviado_por=usuario,
+            timestamp=timezone.now(), error_detalle=str(exc),
+        )
+        raise EnvioError(str(exc)) from exc
+
+    msg = Mensaje.objects.create(
+        conversacion=conversacion, contacto=contacto,
+        whatsapp_message_id=resultado.get('id', ''),
+        direccion=Mensaje.Direccion.SALIENTE, tipo=tipo, contenido=caption,
+        media_url=url_local, media_mime=mime, media_filename=nombre,
+        status=Mensaje.Status.ENVIADO if resultado.get('id') else Mensaje.Status.FALLIDO,
+        enviado_por=usuario, timestamp=timezone.now(),
+    )
+    if contacto:
+        contacto.registrar_archivo(url=url_local, tipo=tipo, mime=mime, filename=nombre, direccion='out')
+    conversacion.ultimo_mensaje_at = msg.timestamp
+    conversacion.save(update_fields=['ultimo_mensaje_at'])
+
+    return {'ok': True, 'message_id': resultado.get('id', ''), 'mensaje_id': msg.id,
+            'conversacion_id': conversacion.id, 'media_url': url_local}
+
+
 def borrar_mensaje(*, mensaje, usuario=None):
     """Le pide a WhatsApp borrar "para todos" un mensaje que mandamos nosotros.
 
