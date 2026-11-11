@@ -260,3 +260,28 @@ class EventosQueNoSonMensajesTest(TestCase):
         mensajes = webhook.parse_incoming_webhook(self.payload('loQueVengaMessage'))
         self.assertEqual(len(mensajes), 1)
         self.assertEqual(mensajes[0]['content'], '[loQueVengaMessage]')
+
+
+class LinkDelAvisoInternoTest(TestCase):
+    """El link que llega en los avisos internos tiene que abrir el inbox de verdad.
+
+    Estaba escrito a mano como `/whatsapp/inbox/?conv=N`, que no existe: `/whatsapp/` es el
+    prefijo de los webhooks y de la API del proveedor, y el inbox vive en `/inbox/`. El equipo
+    recibía el aviso y al tocar el link le daba 404.
+    """
+
+    def test_apunta_al_inbox_con_la_conversacion_abierta(self):
+        from apps.configuracion import avisos
+
+        self.assertEqual(reverse('whatsapp:inbox'), '/inbox/')
+        link = avisos.url_inbox(359)
+        self.assertTrue(link.endswith('/inbox/?conv=359'), link)
+        self.assertNotIn('/whatsapp/inbox', link)
+
+    def test_el_handoff_manda_ese_link(self):
+        conv = Conversacion.objects.create(telefono='+5491166390000', nombre_contacto='Juli')
+        with patch('apps.configuracion.avisos.disparar') as disparar:
+            services.handoff(telefono=conv.telefono, motivo='Pidió hablar con una persona')
+        self.assertTrue(disparar.called)
+        link = disparar.call_args[0][1]['link']
+        self.assertTrue(link.endswith(f'/inbox/?conv={conv.pk}'), link)

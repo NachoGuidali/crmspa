@@ -56,7 +56,7 @@ def _derivar_a_humano_por_falla_n8n(payload: dict):
         'cliente': conv.get_display_name(),
         'telefono': conv.telefono,
         'motivo': 'n8n no contestó tras varios reintentos: el cliente quedó sin respuesta.',
-        'link': avisos.url_crm(f'/whatsapp/inbox/?conv={conv.pk}'),
+        'link': avisos.url_inbox(conv.pk),
     })
 
 

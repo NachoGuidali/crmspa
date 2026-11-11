@@ -350,7 +350,7 @@ def handoff(*, telefono, agente_id=None, motivo=''):
         'cliente': conversacion.get_display_name(),
         'telefono': conversacion.telefono,
         'motivo': motivo or 'Pidió hablar con una persona',
-        'link': avisos.url_crm(f'/whatsapp/inbox/?conv={conversacion.pk}'),
+        'link': avisos.url_inbox(conversacion.pk),
     })
 
     return {

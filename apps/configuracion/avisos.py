@@ -64,6 +64,18 @@ def url_crm(path):
     return f'{base}{path}'
 
 
+def url_inbox(conversacion_pk):
+    """Link al inbox con esa conversación abierta.
+
+    El path sale de `reverse` y no escrito a mano: el inbox vive en `/inbox/`, mientras que
+    `/whatsapp/` es el prefijo de los webhooks y la API del proveedor. Los avisos internos
+    armaban `/whatsapp/inbox/?conv=N`, que no existe, así que el link daba 404.
+    """
+    from django.urls import reverse
+
+    return url_crm(f'{reverse("whatsapp:inbox")}?conv={conversacion_pk}')
+
+
 def contexto_reserva(reserva, **extra):
     """Todos los datos de una reserva, listos para usar como variables del aviso."""
     from django.urls import reverse
