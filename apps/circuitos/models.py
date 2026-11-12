@@ -163,7 +163,15 @@ class Extra(models.Model):
     tabla de picada, minutos extra de masaje, etc."""
 
     nombre = models.CharField(max_length=120)
-    descripcion = models.CharField(max_length=250, blank=True)
+    # Qué incluye el extra, con el detalle que haga falta. Es TextField y no CharField(250)
+    # porque el menú vegetariano solo ya son 320 caracteres. El bot lo usa para contestar
+    # "¿qué trae el menú vegetariano?" sin derivar a una persona: lo que esté acá es lo que
+    # dice, y si está vacío consulta con el equipo.
+    descripcion = models.TextField(
+        blank=True,
+        help_text='Qué incluye. El bot lo usa tal cual para contestar "¿qué trae?"; si lo '
+                  'dejás vacío, esa pregunta se deriva a una persona.',
+    )
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     por_persona = models.BooleanField(
         default=False, help_text='Si está activo, el precio se multiplica por la cantidad indicada.'

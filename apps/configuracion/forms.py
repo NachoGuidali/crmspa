@@ -110,6 +110,7 @@ class ExtraForm(forms.ModelForm):
     class Meta:
         model = Extra
         fields = ['nombre', 'descripcion', 'precio', 'por_persona', 'circuito', 'orden', 'activo']
+        widgets = {'descripcion': forms.Textarea(attrs={'rows': 6})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
