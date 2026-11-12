@@ -128,9 +128,11 @@ def crear_reserva(
     contacto, _ = Contacto.objects.get_or_create(
         telefono=telefono, defaults={'nombre': nombre_contacto or telefono},
     )
-    if nombre_contacto and not contacto.nombre:
-        contacto.nombre = nombre_contacto
-        contacto.save()
+    # El nombre que la persona dio en la charla le gana al `pushName` de WhatsApp (que es con
+    # el que se creó el contacto cuando escribió por primera vez). Antes solo se completaba si
+    # el contacto no tenía nombre, así que la reserva quedaba a nombre de "username.gabriela".
+    if nombre_contacto:
+        contacto.actualizar_nombre(nombre_contacto)
 
     config = ConfiguracionNegocio.get_solo()
     precio_total = circuito.precio_para(fecha, cantidad_personas)

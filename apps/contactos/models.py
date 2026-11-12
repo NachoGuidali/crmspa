@@ -120,6 +120,39 @@ class Contacto(models.Model):
             self.telefono = normalize_ar_phone(self.telefono)
         super().save(*args, **kwargs)
 
+    def nombre_es_de_whatsapp(self, nombre_whatsapp=''):
+        """True si el nombre que tenemos no lo escribió nadie: vino de WhatsApp o es el
+        teléfono. Ese se puede pisar; uno cargado a mano en el CRM, no."""
+        actual = (self.nombre or '').strip()
+        return (not actual
+                or actual == self.telefono
+                or actual == (nombre_whatsapp or '').strip())
+
+    def actualizar_nombre(self, nombre, *, nombre_whatsapp=None):
+        """Guarda el nombre que la persona dio por WhatsApp, si corresponde.
+
+        El contacto se crea con el `pushName` de WhatsApp, que suele ser un apodo o un
+        usuario ("username.gabriela"), y después ese nombre se usa en los avisos al equipo y
+        en el mensaje de confirmación al cliente. Cuando el bot le pregunta a nombre de quién
+        va la reserva, esa respuesta es mejor dato: pisa al de WhatsApp.
+
+        Lo que NO pisa es un nombre escrito a mano en el CRM: si alguien del equipo lo
+        corrigió, gana el del equipo.
+        """
+        nombre = ' '.join((nombre or '').split())
+        if not nombre or nombre == (self.nombre or '').strip():
+            return False
+        if nombre_whatsapp is None:
+            from apps.whatsapp.models import Conversacion
+
+            nombre_whatsapp = Conversacion.objects.filter(
+                telefono=self.telefono).values_list('nombre_contacto', flat=True).first() or ''
+        if not self.nombre_es_de_whatsapp(nombre_whatsapp):
+            return False
+        self.nombre = nombre[:150]
+        self.save(update_fields=['nombre'])
+        return True
+
     def registrar_archivo(self, *, url, tipo, mime='', filename='', direccion='in'):
         """Guarda una referencia de un archivo (foto/audio/documento) intercambiado por
         WhatsApp en el campo `archivos` del contacto. Evita duplicar por URL."""

@@ -291,6 +291,17 @@ class ConversacionDetalleView(ApiKeyLoggedView, APIView):
                 estado[campo] = data[campo]
         conv.estado_bot = estado
 
+        # Si el bot le preguntó el nombre y la persona lo dijo, ese es el nombre bueno: el
+        # contacto se creó con el `pushName` de WhatsApp (un apodo, o "username.gabriela") y
+        # con ese salían los avisos al equipo y la confirmación al cliente. No pisa un nombre
+        # que alguien del equipo haya cargado a mano en el CRM.
+        if data.get('nombre_cliente') and conv.contacto_id:
+            try:
+                conv.contacto.actualizar_nombre(data['nombre_cliente'],
+                                                nombre_whatsapp=conv.nombre_contacto)
+            except Exception:
+                logger.exception('No se pudo actualizar el nombre del contacto %s', conv.telefono)
+
         # Cada cambio de paso deja una fila: es la única forma de saber después dónde se
         # cayeron las charlas (`estado_bot` guarda solo el paso actual). Si falla, no puede
         # tumbar la respuesta al bot: es una métrica, no parte de la conversación.

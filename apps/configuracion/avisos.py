@@ -31,8 +31,9 @@ def detalle_por_defecto(contexto):
     ETIQUETAS = [
         ('cliente', 'Cliente'), ('telefono', 'Teléfono'), ('email', 'Email'),
         ('codigo', 'Código'), ('destinatario', 'Para'),
-        ('circuito', 'Circuito'), ('fecha', 'Fecha'), ('turno', 'Turno'),
+        ('circuito', 'Circuito'), ('fecha', 'Fecha'), ('horario', 'Horario'), ('turno', 'Turno'),
         ('personas', 'Personas'), ('total', 'Total'), ('sena', 'Seña'),
+        ('saldo', 'Saldo el día del spa'),
         ('medio_pago', 'Medio de pago'), ('estado', 'Estado'), ('extras', 'Extras'),
         ('menu', 'Menú especial'), ('motivo', 'Motivo'), ('destino_sena', 'Seña'),
         ('link', 'Ver en el CRM'),
@@ -81,24 +82,42 @@ def contexto_reserva(reserva, **extra):
     """Todos los datos de una reserva, listos para usar como variables del aviso."""
     from django.urls import reverse
 
-    extras = ', '.join(
+    lista_extras = [
         f'{e.cantidad}× {e.nombre}' if e.cantidad > 1 else e.nombre
         for e in reserva.extras.all()
-    )
+    ]
+    extras = ', '.join(lista_extras)
     contacto = reserva.contacto
+    plata = lambda v: f'${v:,.0f}'.replace(',', '.')
+    DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+    MESES = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+             'septiembre', 'octubre', 'noviembre', 'diciembre']
+    f = reserva.fecha
+    turno = reserva.turno
     datos = {
         'cliente': contacto.nombre,
         'telefono': contacto.telefono,
         'email': contacto.email or '',
         'circuito': reserva.circuito.nombre,
-        'fecha': reserva.fecha.strftime('%d/%m/%Y'),
-        'turno': reserva.turno.nombre if reserva.turno else '',
+        'fecha': f.strftime('%d/%m/%Y'),
+        # En palabras, que es como se lee de un vistazo en el WhatsApp del equipo.
+        'fecha_larga': f'{DIAS[f.weekday()]} {f.day} de {MESES[f.month]}',
+        'turno': turno.nombre if turno else '',
+        'horario': f'{turno.hora_inicio:%H:%M} a {turno.hora_fin:%H:%M}' if turno else '',
         'personas': reserva.cantidad_personas,
-        'total': f'${reserva.total:,.0f}'.replace(',', '.'),
-        'sena': f'${reserva.monto_sena:,.0f}'.replace(',', '.') if reserva.monto_sena else '',
+        'total': plata(reserva.total),
+        'sena': plata(reserva.monto_sena) if reserva.monto_sena else '',
+        # Lo que queda por cobrar el día del spa: la cuenta que antes había que hacer a mano.
+        # Si todavía no hay nada registrado como pagado se descuenta la seña igual, porque el
+        # aviso sale justo cuando la persona la está transfiriendo: poner el total ahí haría
+        # que el equipo le cobre dos veces la seña el día del spa.
+        'saldo': plata(reserva.total - (reserva.monto_pagado or reserva.monto_sena or 0)),
         'medio_pago': reserva.get_medio_pago_display() or 'sin especificar',
         'estado': reserva.get_estado_display(),
         'extras': extras,
+        # Lo mismo, pero como lista y listo para pegar en una línea aparte del aviso: arranca
+        # con un salto y queda vacío si no hay extras, así no deja un renglón en blanco.
+        'bloque_extras': ('\n' + '\n'.join(f'- {x}' for x in lista_extras)) if lista_extras else '',
         'menu': '',
         'link': url_crm(reverse('reservas:detalle', args=[reserva.pk])),
     }

@@ -310,3 +310,64 @@ class AsistioCobraElSaldoTest(TestCase):
         self.client.post(reverse('reservas:asistio', args=[r.pk]),
                          {'monto': '20000', 'medio_pago': 'efectivo'})
         self.assertEqual(saldos_por_cobrar()['total'], 0)
+
+
+class AvisoDeReservaTest(TestCase):
+    """Lo que ve el equipo cuando entra una reserva: tiene que alcanzar para trabajar sin
+    abrir el CRM (extras, nombre, teléfono, total, seña y el saldo a cobrar el día)."""
+
+    def setUp(self):
+        from apps.circuitos.models import Extra
+
+        self.circuito = Circuito.objects.create(
+            nombre='Spa Grupal Premium', capacidad_minima=3, capacidad_maxima=8, sena_valor=50,
+            precio_semana=492000, precio_finde=528000, duracion_minutos=300)
+        self.turno = Turno.objects.create(
+            nombre='Mañana', hora_inicio=time(11), hora_fin=time(16),
+            dias_aplicables=[0, 1, 2, 3, 4, 5, 6])
+        self.extra = Extra.objects.create(nombre='Menu vegetariano', precio=0, por_persona=True)
+
+    def _lunes(self):
+        dia = date.today() + timedelta(days=1)
+        while dia.weekday() != 0:
+            dia += timedelta(days=1)
+        return dia
+
+    def test_el_contexto_trae_saldo_horario_y_fecha_en_palabras(self):
+        from apps.configuracion import avisos
+
+        reserva = services.crear_reserva(
+            telefono='1166390002', nombre_contacto='Gabriela Ponce',
+            circuito_id=self.circuito.pk, turno_id=self.turno.pk, fecha=self._lunes(),
+            cantidad_personas=3, extras=[{'extra_id': self.extra.pk, 'cantidad': 1}])
+        datos = avisos.contexto_reserva(reserva)
+
+        self.assertEqual(datos['horario'], '11:00 a 16:00')
+        self.assertTrue(datos['fecha_larga'].startswith('lunes '), datos['fecha_larga'])
+        self.assertEqual(datos['total'], '$492.000')
+        self.assertEqual(datos['sena'], '$246.000')
+        # Todavía no hay pago registrado, pero la seña se descuenta igual: el aviso sale
+        # cuando la está transfiriendo.
+        self.assertEqual(datos['saldo'], '$246.000')
+        self.assertEqual(datos['bloque_extras'], '\n- Menu vegetariano')
+        self.assertEqual(datos['cliente'], 'Gabriela Ponce')
+
+    def test_sin_extras_no_queda_un_renglon_vacio(self):
+        from apps.configuracion import avisos
+
+        reserva = services.crear_reserva(
+            telefono='1166390003', nombre_contacto='Ana',
+            circuito_id=self.circuito.pk, turno_id=self.turno.pk, fecha=self._lunes(),
+            cantidad_personas=3)
+        self.assertEqual(avisos.contexto_reserva(reserva)['bloque_extras'], '')
+
+    def test_la_reserva_queda_a_nombre_de_quien_lo_dijo_y_no_del_pushname(self):
+        from apps.contactos.models import Contacto
+
+        Contacto.objects.create(nombre='username.gabriela', telefono='+5491166390004')
+        Conversacion.objects.create(telefono='+5491166390004', nombre_contacto='username.gabriela')
+        reserva = services.crear_reserva(
+            telefono='1166390004', nombre_contacto='Gabriela Ponce',
+            circuito_id=self.circuito.pk, turno_id=self.turno.pk, fecha=self._lunes(),
+            cantidad_personas=3)
+        self.assertEqual(reserva.contacto.nombre, 'Gabriela Ponce')

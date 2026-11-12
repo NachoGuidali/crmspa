@@ -285,3 +285,60 @@ class LinkDelAvisoInternoTest(TestCase):
         self.assertTrue(disparar.called)
         link = disparar.call_args[0][1]['link']
         self.assertTrue(link.endswith(f'/inbox/?conv={conv.pk}'), link)
+
+
+class NombreDelContactoTest(TestCase):
+    """El nombre que la persona dice le gana al `pushName` de WhatsApp.
+
+    El contacto se crea con lo que manda WhatsApp, que suele ser un apodo o un usuario
+    ("username.gabriela"), y con eso salían los avisos al equipo y la confirmación al cliente.
+    Lo que NO se pisa es un nombre cargado a mano en el CRM.
+    """
+
+    def setUp(self):
+        from apps.contactos.models import Contacto
+
+        self.contacto = Contacto.objects.create(nombre='username.gabriela', telefono='+5491166390001')
+        self.conv = Conversacion.objects.create(
+            telefono=self.contacto.telefono, nombre_contacto='username.gabriela',
+            contacto=self.contacto)
+
+    def test_el_nombre_de_whatsapp_se_pisa(self):
+        self.assertTrue(self.contacto.actualizar_nombre('Gabriela Ponce'))
+        self.contacto.refresh_from_db()
+        self.assertEqual(self.contacto.nombre, 'Gabriela Ponce')
+
+    def test_un_nombre_cargado_a_mano_no_se_pisa(self):
+        self.contacto.nombre = 'Gabriela (cumple de Sofi)'
+        self.contacto.save()
+        self.assertFalse(self.contacto.actualizar_nombre('Gabriela'))
+        self.contacto.refresh_from_db()
+        self.assertEqual(self.contacto.nombre, 'Gabriela (cumple de Sofi)')
+
+    def test_el_telefono_como_nombre_tambien_se_pisa(self):
+        self.contacto.nombre = self.contacto.telefono
+        self.contacto.save()
+        self.assertTrue(self.contacto.actualizar_nombre('Gabriela Ponce'))
+
+    def test_el_patch_del_bot_lo_actualiza(self):
+        from apps.integraciones.models import ApiKey
+
+        key = ApiKey.objects.create(nombre='n8n')
+        r = self.client.patch(
+            f'/api/v1/conversaciones/{self.contacto.telefono}/',
+            {'nombre_cliente': 'Gabriela Ponce'},
+            content_type='application/json', HTTP_X_API_KEY=str(key.key))
+        self.assertEqual(r.status_code, 200, r.content)
+        self.contacto.refresh_from_db()
+        self.assertEqual(self.contacto.nombre, 'Gabriela Ponce')
+
+    def test_el_inbox_muestra_el_nombre_bueno(self):
+        self.contacto.actualizar_nombre('Gabriela Ponce')
+        self.conv.refresh_from_db()
+        self.assertEqual(self.conv.get_display_name(), 'Gabriela Ponce')
+
+    def test_sin_nombre_propio_sigue_mostrando_el_de_whatsapp(self):
+        self.contacto.nombre = self.contacto.telefono
+        self.contacto.save()
+        self.conv.refresh_from_db()
+        self.assertEqual(self.conv.get_display_name(), 'username.gabriela')

@@ -217,12 +217,14 @@ class AvisoInterno(models.Model):
 
     # Variables que puede usar el texto de cada motivo. Se muestran en el formulario.
     VARIABLES = {
-        'reserva_nueva': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'turno', 'personas',
-                          'total', 'sena', 'medio_pago', 'estado', 'extras', 'menu', 'link'],
-        'comprobante_por_verificar': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'personas',
-                                      'total', 'sena', 'link'],
-        'reserva_confirmada': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'turno', 'personas',
-                               'total', 'sena', 'medio_pago', 'extras', 'menu', 'link'],
+        'reserva_nueva': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'fecha_larga',
+                          'turno', 'horario', 'personas', 'total', 'sena', 'saldo', 'medio_pago',
+                          'estado', 'extras', 'bloque_extras', 'menu', 'link'],
+        'comprobante_por_verificar': ['cliente', 'telefono', 'circuito', 'fecha', 'fecha_larga',
+                                      'turno', 'horario', 'personas', 'total', 'sena', 'saldo', 'link'],
+        'reserva_confirmada': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'fecha_larga',
+                               'turno', 'horario', 'personas', 'total', 'sena', 'saldo',
+                               'medio_pago', 'extras', 'bloque_extras', 'menu', 'link'],
         'reserva_cancelada': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'personas',
                               'motivo', 'destino_sena', 'link'],
         'atencion_humana': ['cliente', 'telefono', 'motivo', 'link'],

@@ -196,6 +196,12 @@ class Conversacion(models.Model):
         return self.nombre_contacto or self.telefono
 
     def get_display_name(self):
+        # El del contacto primero: si la persona dijo su nombre, ese le gana al `pushName` de
+        # WhatsApp, que es el que quedó en `nombre_contacto`. Si el contacto se creó sin
+        # nombre, ahí guarda el teléfono, y eso no sirve de nombre.
+        propio = (self.contacto.nombre or '').strip() if self.contacto_id else ''
+        if propio and propio != self.telefono:
+            return propio
         return self.nombre_contacto or self.telefono
 
     @property
