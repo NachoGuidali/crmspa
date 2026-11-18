@@ -220,8 +220,12 @@ class AvisoInterno(models.Model):
         'reserva_nueva': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'fecha_larga',
                           'turno', 'horario', 'personas', 'total', 'sena', 'saldo', 'medio_pago',
                           'estado', 'extras', 'bloque_extras', 'menu', 'link'],
-        'comprobante_por_verificar': ['cliente', 'telefono', 'circuito', 'fecha', 'fecha_larga',
-                                      'turno', 'horario', 'personas', 'total', 'sena', 'saldo', 'link'],
+        # Comparte el contexto con `reserva_nueva` (las dos salen del mismo momento), así que
+        # tiene las mismas variables disponibles: la lista es lo que se muestra en la pantalla.
+        'comprobante_por_verificar': ['cliente', 'telefono', 'email', 'circuito', 'fecha',
+                                      'fecha_larga', 'turno', 'horario', 'personas', 'total',
+                                      'sena', 'saldo', 'extras', 'bloque_extras', 'medio_pago',
+                                      'link'],
         'reserva_confirmada': ['cliente', 'telefono', 'email', 'circuito', 'fecha', 'fecha_larga',
                                'turno', 'horario', 'personas', 'total', 'sena', 'saldo',
                                'medio_pago', 'extras', 'bloque_extras', 'menu', 'link'],
