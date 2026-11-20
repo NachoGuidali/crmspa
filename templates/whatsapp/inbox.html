@@ -136,7 +136,7 @@
           {% elif m.contenido %}<div class="wa-bubble-text">{{ m.contenido }}</div>{% endif %}
         {% endif %}
         <div class="ts">
-          {{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}
+          {{ m.timestamp|date:"d/m H:i" }} · {{ m.get_status_display }}{% if m.error_detalle %} <span title="{{ m.error_detalle }}" style="color:#a33; cursor:help;">⚠ por qué</span>{% endif %}
           {% if m.puede_borrarse %}
           <form method="post" action="{% url 'whatsapp:accion' %}" class="wa-borrar"
                 onsubmit="return confirm('¿Borrar este mensaje para todos?\n\nEn el chat de la otra persona va a quedar «se eliminó este mensaje». Si pasó demasiado tiempo desde que se envió, WhatsApp no lo va a permitir.');">

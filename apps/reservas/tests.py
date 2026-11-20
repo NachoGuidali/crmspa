@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 from datetime import date, time, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -371,3 +372,72 @@ class AvisoDeReservaTest(TestCase):
             circuito_id=self.circuito.pk, turno_id=self.turno.pk, fecha=self._lunes(),
             cantidad_personas=3)
         self.assertEqual(reserva.contacto.nombre, 'Gabriela Ponce')
+
+
+class SeguimientoCharlaTest(TestCase):
+    """A quién se le escribe cuando una charla queda sin respuesta, y cuántas veces."""
+
+    def setUp(self):
+        from apps.automations.models import Automatizacion
+        from apps.configuracion.models import ConfiguracionNegocio
+        from apps.whatsapp.models import ConfiguracionWhatsApp, PlantillaMensaje
+
+        ConfiguracionWhatsApp.objects.create(pk=1)
+        config = ConfiguracionNegocio.get_solo()
+        config.horario_atencion_desde = time(0, 1)
+        config.horario_atencion_hasta = time(23, 59)
+        config.dias_laborables = [0, 1, 2, 3, 4, 5, 6]
+        config.save()
+
+        self.contacto = Contacto.objects.create(nombre='Marcela', telefono='+5491163585824')
+        self.conv = Conversacion.objects.create(
+            telefono=self.contacto.telefono, contacto=self.contacto,
+            nombre_contacto='Marce', bot_activo=True,
+            estado_bot={'estado_flujo': 'menu'},
+            ultimo_mensaje_at=timezone.now() - timedelta(hours=20))
+        Mensaje.objects.create(
+            conversacion=self.conv, direccion=Mensaje.Direccion.SALIENTE,
+            tipo=Mensaje.Tipo.TEXTO, contenido='Te paso la info',
+            timestamp=timezone.now() - timedelta(hours=20))
+        plantilla = PlantillaMensaje.objects.create(
+            nombre='seguimiento', cuerpo='Hola {{nombre}}! ¿Te quedó alguna duda?')
+        # La fila ya la crea una migración: se actualiza, no se crea de nuevo.
+        self.auto, _ = Automatizacion.objects.update_or_create(
+            tipo=Automatizacion.Tipo.SEGUIMIENTO_CHARLA,
+            defaults={'activa': True, 'plantilla': plantilla,
+                      'parametros': {'horas_sin_respuesta': 4, 'ventana_horas': 48}})
+
+    def _correr(self, lado_efecto=None):
+        from apps.automations import tasks
+
+        with patch('apps.automations.tasks.enviar_automatico', side_effect=lado_efecto) as envio:
+            tasks.seguimiento_charla(self.auto)
+        return envio
+
+    def test_le_escribe_a_quien_dejo_la_charla(self):
+        self.assertTrue(self._correr().called)
+
+    def test_no_le_escribe_a_quien_ya_tiene_reserva(self):
+        """La reserva cargada a mano no marca `reserva_creada` en la charla: antes a esa
+        persona se la perseguía como si fuera un cliente perdido."""
+        circuito = Circuito.objects.create(
+            nombre='Spa Pareja', capacidad_minima=2, capacidad_maxima=2, sena_valor=50,
+            precio_semana=320000, precio_finde=350000)
+        turno = Turno.objects.create(
+            nombre='Mañana', hora_inicio=time(11), hora_fin=time(16),
+            dias_aplicables=[0, 1, 2, 3, 4, 5, 6])
+        Reserva.objects.create(
+            contacto=self.contacto, circuito=circuito, turno=turno,
+            fecha=date.today() + timedelta(days=2), cantidad_personas=2,
+            estado=Reserva.Estado.CONFIRMADO, precio_total=320000, monto_sena=160000)
+        self.assertFalse(self._correr().called)
+
+    def test_si_el_envio_falla_no_reintenta_para_siempre(self):
+        from apps.automations.models import AutomatizacionLog
+        from apps.whatsapp.services import EnvioError
+
+        for _ in range(4):
+            self._correr(lado_efecto=EnvioError('sin conexión'))
+        errores = AutomatizacionLog.objects.filter(
+            resultado=AutomatizacionLog.Resultado.ERROR).count()
+        self.assertEqual(errores, 2, 'tiene que frenar a los 2 intentos')

@@ -13,6 +13,10 @@ from .models import Automatizacion, AutomatizacionLog
 
 logger = logging.getLogger('apps.automations')
 
+# Cuántas veces se reintenta el seguimiento cuando el envío falla. Sin tope, la automatización
+# vuelve a intentarlo en cada pasada (cada 15 minutos) mientras la charla siga en la ventana.
+MAX_INTENTOS_SEGUIMIENTO = 2
+
 
 # Categoría de cada automatización → qué preferencia del contacto respeta.
 CATEGORIA = {
@@ -362,8 +366,16 @@ def seguimiento_charla(automatizacion):
         .exclude(estado=Conversacion.Estado.REQUIERE_ATENCION_HUMANA)
         .select_related('contacto')
     )
+    hoy = timezone.localdate()
     for conv in candidatas:
         if conv.reserva_creada:
+            continue
+        # `reserva_creada` solo lo marca el bot cuando la reserva la hizo él. Una cargada a
+        # mano por el equipo no lo marca, así que a esa persona se la perseguía como si fuera
+        # un cliente perdido. Pasó el 19/11/2026: le preguntó al bot por su reserva del 20 y
+        # le llegó "¿te quedó alguna duda? te paso info de las experiencias".
+        if conv.contacto_id and Reserva.objects.ocupando_cupo().filter(
+                contacto_id=conv.contacto_id, fecha__gte=hoy).exists():
             continue
         paso = (conv.estado_bot or {}).get('estado_flujo') or 'nuevo'
         if paso not in PENDIENTE_POR_PASO:
@@ -386,6 +398,16 @@ def seguimiento_charla(automatizacion):
             ).exists()
 
         if ya_escribio(automatizacion.tipo):
+            continue
+        # Un envío fallido no cuenta como escrito, así que sin este freno la automatización
+        # lo reintentaba en CADA pasada (cada 15 minutos) hasta que la charla saliera de la
+        # ventana de 48 hs: el 19/11/2026 a Marcela le quedaron cinco intentos seguidos en el
+        # inbox. Se permiten dos intentos por si fue algo pasajero del proveedor, y listo.
+        if contacto and AutomatizacionLog.objects.filter(
+                automatizacion__tipo=automatizacion.tipo,
+                resultado=AutomatizacionLog.Resultado.ERROR,
+                contacto=contacto, ejecutado_at__gte=conv.ultimo_mensaje_at,
+        ).count() >= MAX_INTENTOS_SEGUIMIENTO:
             continue
         primero_hecho = ya_escribio(Automatizacion.Tipo.SEGUIMIENTO_CHARLA)
         if es_segundo and not primero_hecho:

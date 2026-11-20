@@ -342,3 +342,42 @@ class NombreDelContactoTest(TestCase):
         self.contacto.save()
         self.conv.refresh_from_db()
         self.assertEqual(self.conv.get_display_name(), 'username.gabriela')
+
+
+@override_settings(MEDIA_ROOT=TMP, MEDIA_URL='/media/')
+class HistorialSinFallidosTest(TestCase):
+    """Un mensaje que no se entregó no es parte de la charla.
+
+    El 19/11/2026 el seguimiento automático falló cinco veces seguidas contra el mismo
+    número. Los cinco quedaron guardados (hay que poder verlos en el inbox) y el endpoint
+    que lee el bot los devolvía como mensajes nuestros: María creía haberle escrito cinco
+    veces algo que la clienta nunca recibió.
+    """
+
+    def setUp(self):
+        from apps.integraciones.models import ApiKey
+
+        self.key = ApiKey.objects.create(nombre='n8n')
+        self.conv = Conversacion.objects.create(telefono='+5491163585824', nombre_contacto='Marce')
+
+    def _mensaje(self, texto, direccion, status):
+        return Mensaje.objects.create(
+            conversacion=self.conv, direccion=direccion, tipo=Mensaje.Tipo.TEXTO,
+            contenido=texto, status=status, timestamp=timezone.now())
+
+    def _historial(self):
+        r = self.client.get(f'/api/v1/conversaciones/{self.conv.telefono}/mensajes/',
+                            HTTP_X_API_KEY=str(self.key.key))
+        self.assertEqual(r.status_code, 200, r.content)
+        return [m['texto'] for m in r.json()]
+
+    def test_el_fallido_no_llega_al_bot(self):
+        self._mensaje('Hola, tengo una reserva', Mensaje.Direccion.ENTRANTE, Mensaje.Status.ENTREGADO)
+        self._mensaje('Te paso la info', Mensaje.Direccion.SALIENTE, Mensaje.Status.ENVIADO)
+        self._mensaje('¿Te quedó alguna duda?', Mensaje.Direccion.SALIENTE, Mensaje.Status.FALLIDO)
+        self.assertEqual(self._historial(), ['Hola, tengo una reserva', 'Te paso la info'])
+
+    def test_un_entrante_con_status_raro_no_se_pierde(self):
+        """El filtro es solo para lo que mandamos nosotros: nada entrante se descarta."""
+        self._mensaje('Hola!', Mensaje.Direccion.ENTRANTE, Mensaje.Status.FALLIDO)
+        self.assertEqual(self._historial(), ['Hola!'])

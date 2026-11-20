@@ -355,8 +355,15 @@ class ConversacionMensajeView(ApiKeyLoggedView, APIView):
             limit = 100
 
         # Los borrados para todos quedan afuera: la clienta ya no los ve, así que el bot
-        # tampoco los tiene que leer ni dar por dicho lo que decían.
-        mensajes = list(conv.mensajes.filter(eliminado=False).order_by('-timestamp')[:limit])
+        # tampoco los tiene que leer ni dar por dicho lo que decían. Los FALLIDOS tampoco:
+        # nunca llegaron. Pasó el 19/11/2026: cinco intentos fallidos del seguimiento
+        # quedaron en el historial y el bot creía haberle escrito cinco veces algo que ella
+        # jamás recibió.
+        mensajes = list(
+            conv.mensajes.filter(eliminado=False)
+            .exclude(direccion=Mensaje.Direccion.SALIENTE, status=Mensaje.Status.FALLIDO)
+            .order_by('-timestamp')[:limit]
+        )
         mensajes.reverse()
         data = [
             {

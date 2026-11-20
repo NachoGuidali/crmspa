@@ -278,6 +278,8 @@ def inbox_mensajes(request, pk):
         'media_filename': m.media_filename,
         'timestamp': m.timestamp.strftime('%d/%m %H:%M'),
         'status': m.get_status_display(),
+        # Por qué falló, para no tener que entrar a la base a averiguarlo.
+        'error_detalle': m.error_detalle,
         'eliminado': m.eliminado,
         'puede_borrarse': m.puede_borrarse,
     } for m in qs]
