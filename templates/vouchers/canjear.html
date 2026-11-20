@@ -24,7 +24,14 @@
         {% for t in turnos %}<option value="{{ t.id }}">{{ t.nombre }} ({{ t.hora_inicio|time:"H:i" }}-{{ t.hora_fin|time:"H:i" }})</option>{% endfor %}
       </select>
     </div>
-    <div class="form-row"><label>Cantidad de personas</label><input type="number" name="cantidad_personas" value="1" min="1" required></div>
+    <div class="form-row">
+      <label>Cantidad de personas</label>
+      <input type="number" name="cantidad_personas" value="{{ voucher.personas }}"
+             min="{{ voucher.circuito.capacidad_minima }}" max="{{ voucher.circuito.capacidad_maxima }}" required>
+      <div style="font-size:.74rem; color:var(--text-muted); margin-top:3px;">
+        El voucher se pagó para {{ voucher.personas }}. Si vienen más, la diferencia se cobra el día.
+      </div>
+    </div>
     <button type="submit" class="btn">Confirmar canje y crear reserva</button>
   </form>
 </div>
