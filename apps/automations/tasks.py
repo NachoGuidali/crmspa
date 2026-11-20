@@ -450,6 +450,17 @@ HANDLERS = {
 
 @shared_task
 def ejecutar_automatizaciones():
+    # El vigía de la conexión de WhatsApp viaja con esta tarea en vez de tener su propia
+    # entrada en el scheduler: esta ya corre cada 15 minutos, así que no hay nada que
+    # configurar. No depende de que haya automatizaciones activas: si el WhatsApp está
+    # caído hay que avisar igual.
+    try:
+        from apps.whatsapp.tasks import vigilar_conexion
+
+        vigilar_conexion()
+    except Exception:
+        logger.exception('Falló el vigía de la conexión de WhatsApp')
+
     # Primero la limpieza de holds vencidos. Va afuera del loop de automatizaciones a
     # propósito: liberar el cupo es integridad de datos, no una campaña. Antes vivía dentro
     # del handler `reclamo_sena`, así que apagar esa automatización (algo razonable si no

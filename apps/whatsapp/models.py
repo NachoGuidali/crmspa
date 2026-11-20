@@ -20,6 +20,12 @@ class ConfiguracionWhatsApp(models.Model):
     )
 
     # --- Evolution API ---
+    # Último estado conocido de la conexión, lo escribe el vigía cada 15 minutos. Se guarda
+    # para dos cosas: avisar SOLO cuando cambia (y no cada 15 minutos mientras dure la caída)
+    # y poder mostrar el cartel en el CRM sin preguntarle a Evolution en cada página.
+    estado_conexion = models.CharField(max_length=20, blank=True, editable=False)
+    desconectado_desde = models.DateTimeField(null=True, blank=True, editable=False)
+
     evolution_api_url = models.CharField(max_length=200, blank=True, verbose_name='Evolution API URL')
     evolution_api_key = models.CharField(max_length=200, blank=True, verbose_name='API Key')
     evolution_instance_name = models.CharField(

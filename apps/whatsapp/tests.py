@@ -381,3 +381,63 @@ class HistorialSinFallidosTest(TestCase):
         """El filtro es solo para lo que mandamos nosotros: nada entrante se descarta."""
         self._mensaje('Hola!', Mensaje.Direccion.ENTRANTE, Mensaje.Status.FALLIDO)
         self.assertEqual(self._historial(), ['Hola!'])
+
+
+class VigiaDeConexionTest(TestCase):
+    """Avisar cuando el WhatsApp se cae, y cuando vuelve.
+
+    El 19/11/2026 la instancia estuvo desconectada toda una tarde: no entraban ni salían
+    mensajes y nadie se enteró hasta el día siguiente. El aviso va por mail porque el de
+    WhatsApp sale por la misma instancia caída.
+    """
+
+    def setUp(self):
+        from apps.whatsapp.models import ConfiguracionWhatsApp
+
+        self.config = ConfiguracionWhatsApp.objects.create(pk=1)
+
+    def _correr(self, estado):
+        from apps.whatsapp import tasks
+
+        with patch('apps.whatsapp.sender.get_connection_state', return_value=estado), \
+                patch('apps.configuracion.avisos.disparar') as disparar:
+            tasks.vigilar_conexion()
+        self.config.refresh_from_db()
+        return disparar
+
+    def test_la_primera_pasada_solo_toma_nota(self):
+        """Sin estado anterior no hay cambio que avisar: si no, avisaría en cada deploy."""
+        self.assertFalse(self._correr('open').called)
+        self.assertEqual(self.config.estado_conexion, 'open')
+
+    def test_avisa_cuando_se_cae(self):
+        self._correr('open')
+        disparar = self._correr('close')
+        self.assertTrue(disparar.called)
+        evento, contexto = disparar.call_args[0]
+        self.assertEqual(evento, 'whatsapp_caido')
+        self.assertIn('desconectado', contexto['motivo'])
+        self.assertIsNotNone(self.config.desconectado_desde)
+
+    def test_no_repite_el_aviso_en_cada_pasada(self):
+        self._correr('open')
+        self._correr('close')
+        self.assertFalse(self._correr('close').called)
+
+    def test_avisa_cuando_vuelve(self):
+        self._correr('open')
+        self._correr('close')
+        disparar = self._correr('open')
+        self.assertTrue(disparar.called)
+        self.assertIn('volvió a conectarse', disparar.call_args[0][1]['motivo'])
+        self.assertIsNone(self.config.desconectado_desde)
+
+    def test_el_cartel_aparece_en_el_crm(self):
+        from django.contrib.auth import get_user_model
+
+        user = get_user_model().objects.create_user(username='fiore', password='x', rol='dueno')
+        self.client.force_login(user)
+        self._correr('open')
+        self._correr('close')
+        html = self.client.get(reverse('whatsapp:inbox')).content.decode()
+        self.assertIn('El WhatsApp del spa está desconectado', html)

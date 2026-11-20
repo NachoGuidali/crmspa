@@ -38,6 +38,14 @@
       </div>
     </aside>
     <main class="main">
+      {% if whatsapp_desconectado %}
+      <div style="background:#a33; color:#fff; padding:12px 16px; border-radius:10px; margin-bottom:16px;">
+        <strong>⚠️ El WhatsApp del spa está desconectado.</strong>
+        No entran los mensajes de los clientes y el bot no puede contestar
+        {% if whatsapp_desconectado.desde %}(desde el {{ whatsapp_desconectado.desde|date:"d/m H:i" }}){% endif %}.
+        <a href="{% url 'whatsapp:config' %}" style="color:#fff; text-decoration:underline;">Reconectar ahora</a>
+      </div>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
   </div>

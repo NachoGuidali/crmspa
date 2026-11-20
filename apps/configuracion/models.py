@@ -214,6 +214,7 @@ class AvisoInterno(models.Model):
         BOT_CAIDO = 'bot_caido', 'El bot no pudo responder (falla técnica)'
         NOTA_EN_RESERVA = 'nota_en_reserva', 'El bot anotó algo en una reserva'
         VOUCHER_POR_VERIFICAR = 'voucher_por_verificar', 'Voucher de regalo pago, para revisar y enviar'
+        WHATSAPP_CAIDO = 'whatsapp_caido', 'El WhatsApp del spa se desconectó (mandar por MAIL)'
 
     # Variables que puede usar el texto de cada motivo. Se muestran en el formulario.
     VARIABLES = {
@@ -236,6 +237,8 @@ class AvisoInterno(models.Model):
         'nota_en_reserva': ['cliente', 'telefono', 'circuito', 'fecha', 'turno', 'nota', 'link'],
         'voucher_por_verificar': ['cliente', 'telefono', 'email', 'circuito', 'personas', 'total',
                                   'codigo', 'destinatario', 'link'],
+        # Este aviso NO puede ir por WhatsApp: sale por la misma instancia que está caída.
+        'whatsapp_caido': ['estado', 'motivo', 'desde', 'link'],
     }
 
     evento = models.CharField(max_length=40, choices=Evento.choices, unique=True)

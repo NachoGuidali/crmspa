@@ -4,6 +4,7 @@ import requests
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
+from django.utils import timezone
 
 logger = logging.getLogger('apps.whatsapp')
 
@@ -191,3 +192,71 @@ def enviar_confirmacion_reserva(self, reserva_id):
             # El cliente pagó y no se entera: que quede fuerte en el log y en el panel de salud.
             logger.error('No se pudo avisarle al cliente que la reserva %s quedó confirmada, '
                          'tras %s reintentos.', reserva_id, self.max_retries)
+
+
+@shared_task
+def vigilar_conexion():
+    """Avisa por MAIL cuando el WhatsApp del spa se desconecta, y cuando vuelve.
+
+    Con la instancia caída no entran ni salen mensajes: la gente escribe y no pasa nada, que
+    es la falla más difícil de notar. El 19/11/2026 estuvo así una tarde entera y lo
+    descubrimos de casualidad, mirando por qué se repetía un seguimiento.
+
+    El aviso va por mail a propósito: el WhatsApp interno sale por la MISMA instancia que
+    está caída, así que no llegaría. Igual se intenta, por si la falla es parcial.
+
+    Avisa solo cuando el estado CAMBIA, no en cada pasada: si no, serían cuatro mensajes por
+    hora mientras dure.
+    """
+    from apps.configuracion import avisos
+    from apps.configuracion.models import AvisoInterno
+
+    from . import sender
+    from .models import ConfiguracionWhatsApp
+
+    config = ConfiguracionWhatsApp.objects.filter(pk=1).first()
+    if config is None:
+        return
+
+    try:
+        estado = sender.get_connection_state()
+    except Exception as exc:
+        logger.warning('No se pudo consultar el estado de WhatsApp: %s', exc)
+        estado = 'error'
+
+    conectado = estado == 'open'
+    antes = config.estado_conexion or ''
+    # La primera pasada solo toma nota: sin estado anterior no hay cambio que avisar.
+    primera_vez = not antes
+    cambio = antes != estado and (conectado != (antes == 'open'))
+
+    campos = ['estado_conexion']
+    config.estado_conexion = estado
+    if not conectado and config.desconectado_desde is None:
+        config.desconectado_desde = timezone.now()
+        campos.append('desconectado_desde')
+    caido_desde = config.desconectado_desde
+    if conectado and caido_desde is not None:
+        config.desconectado_desde = None
+        campos.append('desconectado_desde')
+    config.save(update_fields=campos)
+
+    if primera_vez or not cambio:
+        return
+
+    link = avisos.url_crm('/inbox/config/')
+    if not conectado:
+        avisos.disparar(AvisoInterno.Evento.WHATSAPP_CAIDO, {
+            'estado': estado,
+            'motivo': 'El WhatsApp del spa está desconectado: no entran ni salen mensajes.',
+            'desde': timezone.localtime(caido_desde).strftime('%d/%m %H:%M') if caido_desde else '',
+            'link': link,
+        })
+    else:
+        minutos = int((timezone.now() - caido_desde).total_seconds() // 60) if caido_desde else 0
+        avisos.disparar(AvisoInterno.Evento.WHATSAPP_CAIDO, {
+            'estado': estado,
+            'motivo': f'El WhatsApp del spa volvió a conectarse (estuvo caído {minutos} minutos).',
+            'desde': timezone.localtime(caido_desde).strftime('%d/%m %H:%M') if caido_desde else '',
+            'link': link,
+        })
