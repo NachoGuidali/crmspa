@@ -373,9 +373,12 @@ def seguimiento_charla(automatizacion):
         # `reserva_creada` solo lo marca el bot cuando la reserva la hizo él. Una cargada a
         # mano por el equipo no lo marca, así que a esa persona se la perseguía como si fuera
         # un cliente perdido. Pasó el 19/11/2026: le preguntó al bot por su reserva del 20 y
-        # le llegó "¿te quedó alguna duda? te paso info de las experiencias".
-        if conv.contacto_id and Reserva.objects.ocupando_cupo().filter(
-                contacto_id=conv.contacto_id, fecha__gte=hoy).exists():
+        # le llegó "¿te quedó alguna duda? te paso info de las experiencias". Lo mismo con
+        # quien recibe "tu reserva está confirmada" y no contesta nada, que es lo normal.
+        # Se busca por TELÉFONO y no por el contacto vinculado a la charla: hay charlas sin
+        # contacto (creadas por la API, o importadas) y ahí la reserva no se veía.
+        if Reserva.objects.ocupando_cupo().filter(
+                contacto__telefono=conv.telefono, fecha__gte=hoy).exists():
             continue
         paso = (conv.estado_bot or {}).get('estado_flujo') or 'nuevo'
         if paso not in PENDIENTE_POR_PASO:

@@ -432,6 +432,35 @@ class SeguimientoCharlaTest(TestCase):
             estado=Reserva.Estado.CONFIRMADO, precio_total=320000, monto_sena=160000)
         self.assertFalse(self._correr().called)
 
+    def test_tampoco_si_la_charla_no_tiene_contacto_vinculado(self):
+        """La reserva se busca por teléfono: hay charlas sin contacto (API, importadas)."""
+        circuito = Circuito.objects.create(
+            nombre='Spa Pareja', capacidad_minima=2, capacidad_maxima=2, sena_valor=50,
+            precio_semana=320000, precio_finde=350000)
+        turno = Turno.objects.create(
+            nombre='Mañana', hora_inicio=time(11), hora_fin=time(16),
+            dias_aplicables=[0, 1, 2, 3, 4, 5, 6])
+        Reserva.objects.create(
+            contacto=self.contacto, circuito=circuito, turno=turno,
+            fecha=date.today() + timedelta(days=5), cantidad_personas=2,
+            estado=Reserva.Estado.CONFIRMADO, precio_total=320000, monto_sena=160000)
+        Conversacion.objects.filter(pk=self.conv.pk).update(contacto=None)
+        self.assertFalse(self._correr().called)
+
+    def test_si_la_reserva_ya_paso_si_le_escribe(self):
+        """Vino el mes pasado y vuelve a preguntar: eso es una consulta nueva."""
+        circuito = Circuito.objects.create(
+            nombre='Spa Pareja', capacidad_minima=2, capacidad_maxima=2, sena_valor=50,
+            precio_semana=320000, precio_finde=350000)
+        turno = Turno.objects.create(
+            nombre='Mañana', hora_inicio=time(11), hora_fin=time(16),
+            dias_aplicables=[0, 1, 2, 3, 4, 5, 6])
+        Reserva.objects.create(
+            contacto=self.contacto, circuito=circuito, turno=turno,
+            fecha=date.today() - timedelta(days=30), cantidad_personas=2,
+            estado=Reserva.Estado.COMPLETADO, precio_total=320000, monto_sena=160000)
+        self.assertTrue(self._correr().called)
+
     def test_si_el_envio_falla_no_reintenta_para_siempre(self):
         from apps.automations.models import AutomatizacionLog
         from apps.whatsapp.services import EnvioError
