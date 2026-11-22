@@ -13,8 +13,22 @@ class ConfiguracionNegocio(models.Model):
         default=list, blank=True,
         help_text='Días de semana en que el negocio atiende (0=lunes ... 6=domingo). Vacío = todos.',
     )
-    horario_atencion_desde = models.TimeField(null=True, blank=True)
-    horario_atencion_hasta = models.TimeField(null=True, blank=True)
+    # Ojo: estos dos campos deciden cuándo CONTESTA EL BOT. Fuera de ese horario María no
+    # atiende: responde "estamos fuera de horario, te contestamos apenas abramos" y corta.
+    # Vacíos (que es como está hoy, por decisión del dueño) = el bot atiende las 24 horas.
+    # Esto NO afecta a los mensajes que arrancamos nosotros: las automatizaciones nunca
+    # escriben fuera del horario y, si acá no hay nada cargado, usan de 9 a 21
+    # (AUTOMATIZACIONES_AL_CLIENTE y HORARIO_SEGURO en apps/automations/tasks.py).
+    horario_atencion_desde = models.TimeField(
+        null=True, blank=True, verbose_name='El bot atiende desde',
+        help_text='Vacío = el bot atiende las 24 horas. Si cargás un horario, fuera de él '
+                  'el bot NO contesta: manda "estamos fuera de horario" y espera. Los '
+                  'mensajes automáticos (recordatorios, cumpleaños, seguimiento) nunca '
+                  'salen de madrugada: sin horario cargado usan de 9 a 21.',
+    )
+    horario_atencion_hasta = models.TimeField(
+        null=True, blank=True, verbose_name='El bot atiende hasta',
+    )
 
     dias_tarifa_finde = models.JSONField(
         default=list, blank=True,
