@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 from celery import shared_task
 from django.db.models import Sum
@@ -16,6 +16,41 @@ logger = logging.getLogger('apps.automations')
 # Cuántas veces se reintenta el seguimiento cuando el envío falla. Sin tope, la automatización
 # vuelve a intentarlo en cada pasada (cada 15 minutos) mientras la charla siga en la ventana.
 MAX_INTENTOS_SEGUIMIENTO = 2
+
+# Automatizaciones que le escriben AL CLIENTE. Todas respetan el horario de atención: un
+# WhatsApp del spa a las 2 de la mañana molesta y queda mal. `alerta_cupo` queda afuera
+# porque es un aviso interno al equipo, y `reclamo_sena` también: la seña vence sola y el
+# mensaje es la respuesta a algo que la persona acaba de empezar, así que llega cuando tiene
+# que llegar.
+AUTOMATIZACIONES_AL_CLIENTE = {
+    Automatizacion.Tipo.RECORDATORIO_24H,
+    Automatizacion.Tipo.RECORDATORIO_2H,
+    Automatizacion.Tipo.ENCUESTA_SATISFACCION,
+    Automatizacion.Tipo.REACTIVACION_INACTIVOS,
+    Automatizacion.Tipo.LISTA_ESPERA,
+    Automatizacion.Tipo.CUMPLEANOS,
+    Automatizacion.Tipo.SEGUIMIENTO_CHARLA,
+    Automatizacion.Tipo.SEGUIMIENTO_CHARLA_2,
+}
+
+# Si no hay horario cargado en Configuración, `esta_en_horario_atencion()` da 24 horas. Para
+# el bot eso está bien (contesta cuando le escriben), pero para un mensaje que arrancamos
+# nosotros no: sin horario configurado nos quedamos en esta franja segura.
+HORARIO_SEGURO = (time(9, 0), time(21, 0))
+
+
+def _puede_escribirle_al_cliente(cuando=None):
+    """Horario de atención, y si no hay ninguno cargado, una franja razonable."""
+    from apps.configuracion.models import ConfiguracionNegocio
+
+    config = ConfiguracionNegocio.get_solo()
+    cuando = cuando or timezone.localtime()
+    if config.horario_atencion_desde and config.horario_atencion_hasta:
+        return config.esta_en_horario_atencion(cuando)
+    if cuando.weekday() not in (config.dias_laborables or list(range(7))):
+        return False
+    desde, hasta = HORARIO_SEGURO
+    return desde <= cuando.time() <= hasta
 
 
 # Categoría de cada automatización → qué preferencia del contacto respeta.
@@ -354,10 +389,6 @@ def seguimiento_charla(automatizacion):
     ahora = timezone.now()
     desde, hasta = ahora - timedelta(hours=ventana), ahora - timedelta(hours=horas)
 
-    if not ConfiguracionNegocio.get_solo().esta_en_horario_atencion():
-        _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO, 'Fuera del horario de atención')
-        return
-
     candidatas = (
         Conversacion.objects.filter(
             bot_activo=True, archivada=False,
@@ -475,9 +506,17 @@ def ejecutar_automatizaciones():
     except Exception:
         logger.exception('Error liberando reservas vencidas')
 
+    en_horario = _puede_escribirle_al_cliente()
     for automatizacion in Automatizacion.objects.filter(activa=True):
         handler = HANDLERS.get(automatizacion.tipo)
         if not handler:
+            continue
+        # Fuera del horario de atención no se le escribe a ningún cliente. Antes esto lo
+        # miraba SOLO el seguimiento de charlas: el cumpleaños, la encuesta, la reactivación
+        # y los recordatorios salían a cualquier hora, incluidas las 2 de la mañana.
+        if not en_horario and automatizacion.tipo in AUTOMATIZACIONES_AL_CLIENTE:
+            _log(automatizacion, AutomatizacionLog.Resultado.OMITIDO,
+                 'Fuera del horario de atención: se manda cuando abra')
             continue
         try:
             handler(automatizacion)

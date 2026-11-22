@@ -414,6 +414,37 @@ class SeguimientoCharlaTest(TestCase):
             tasks.seguimiento_charla(self.auto)
         return envio
 
+    def test_de_madrugada_no_se_le_escribe_a_nadie(self):
+        """Un WhatsApp del spa a las 2 de la mañana molesta y queda mal.
+
+        El horario lo miraba SOLO el seguimiento de charlas: el cumpleaños, la encuesta, la
+        reactivación y los recordatorios salían a cualquier hora.
+        """
+        from apps.automations import tasks
+        from apps.configuracion.models import ConfiguracionNegocio
+
+        config = ConfiguracionNegocio.get_solo()
+        config.horario_atencion_desde = time(9)
+        config.horario_atencion_hasta = time(21)
+        config.save()
+        madrugada = timezone.localtime().replace(hour=2, minute=30)
+        self.assertFalse(tasks._puede_escribirle_al_cliente(madrugada))
+        self.assertTrue(tasks._puede_escribirle_al_cliente(madrugada.replace(hour=15)))
+
+    def test_sin_horario_cargado_igual_hay_franja(self):
+        """Sin horario en Configuración antes era 24 horas: nadie quiere eso para algo que
+        arrancamos nosotros."""
+        from apps.automations import tasks
+        from apps.configuracion.models import ConfiguracionNegocio
+
+        config = ConfiguracionNegocio.get_solo()
+        config.horario_atencion_desde = None
+        config.horario_atencion_hasta = None
+        config.save()
+        ahora = timezone.localtime()
+        self.assertFalse(tasks._puede_escribirle_al_cliente(ahora.replace(hour=3)))
+        self.assertTrue(tasks._puede_escribirle_al_cliente(ahora.replace(hour=12)))
+
     def test_le_escribe_a_quien_dejo_la_charla(self):
         self.assertTrue(self._correr().called)
 
