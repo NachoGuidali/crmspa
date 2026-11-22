@@ -424,8 +424,8 @@ class SeguimientoCharlaTest(TestCase):
         from apps.configuracion.models import ConfiguracionNegocio
 
         config = ConfiguracionNegocio.get_solo()
-        config.horario_atencion_desde = time(9)
-        config.horario_atencion_hasta = time(21)
+        config.mensajes_automaticos_desde = time(9)
+        config.mensajes_automaticos_hasta = time(21)
         config.save()
         madrugada = timezone.localtime().replace(hour=2, minute=30)
         self.assertFalse(tasks._puede_escribirle_al_cliente(madrugada))
@@ -438,12 +438,28 @@ class SeguimientoCharlaTest(TestCase):
         from apps.configuracion.models import ConfiguracionNegocio
 
         config = ConfiguracionNegocio.get_solo()
-        config.horario_atencion_desde = None
-        config.horario_atencion_hasta = None
+        config.mensajes_automaticos_desde = None
+        config.mensajes_automaticos_hasta = None
         config.save()
         ahora = timezone.localtime()
         self.assertFalse(tasks._puede_escribirle_al_cliente(ahora.replace(hour=3)))
         self.assertTrue(tasks._puede_escribirle_al_cliente(ahora.replace(hour=12)))
+
+    def test_el_horario_del_bot_no_manda_sobre_las_automatizaciones(self):
+        """Son dos cosas distintas: el bot atiende 24 hs y igual no escribimos de madrugada."""
+        from apps.automations import tasks
+        from apps.configuracion.models import ConfiguracionNegocio
+
+        config = ConfiguracionNegocio.get_solo()
+        config.horario_atencion_desde = None      # el bot atiende siempre
+        config.horario_atencion_hasta = None
+        config.mensajes_automaticos_desde = time(10)
+        config.mensajes_automaticos_hasta = time(19)
+        config.save()
+        ahora = timezone.localtime()
+        self.assertTrue(config.esta_en_horario_atencion(ahora.replace(hour=23)))
+        self.assertFalse(tasks._puede_escribirle_al_cliente(ahora.replace(hour=23)))
+        self.assertTrue(tasks._puede_escribirle_al_cliente(ahora.replace(hour=11)))
 
     def test_le_escribe_a_quien_dejo_la_charla(self):
         self.assertTrue(self._correr().called)

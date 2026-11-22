@@ -181,6 +181,7 @@ class ConfiguracionNegocioForm(forms.ModelForm):
         fields = [
             'nombre_negocio', 'dias_laborables', 'dias_tarifa_finde',
             'horario_atencion_desde', 'horario_atencion_hasta',
+            'mensajes_automaticos_desde', 'mensajes_automaticos_hasta',
             'reserva_exclusiva_por_turno',
             'plazo_pago_sena_horas', 'politica_cancelacion', 'horas_reembolso_desde_pago',
             'recargo_feriado_porcentaje',
@@ -195,6 +196,8 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'smtp_password': forms.PasswordInput(render_value=False, attrs={'placeholder': '••••••••'}),
             'horario_atencion_desde': forms.TimeInput(attrs={'type': 'time'}),
             'horario_atencion_hasta': forms.TimeInput(attrs={'type': 'time'}),
+            'mensajes_automaticos_desde': forms.TimeInput(attrs={'type': 'time'}),
+            'mensajes_automaticos_hasta': forms.TimeInput(attrs={'type': 'time'}),
             'politica_cancelacion': forms.Textarea(attrs={'rows': 3}),
         }
 

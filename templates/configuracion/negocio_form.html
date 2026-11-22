@@ -13,6 +13,14 @@
     {% csrf_token %}
     {% if form.non_field_errors %}<div style="color:#a33; margin-bottom:12px;">{{ form.non_field_errors }}</div>{% endif %}
     {% for field in form %}
+    {% if field.name == 'mensajes_automaticos_desde' %}
+    <h3 style="margin:24px 0 4px;">Mensajes automáticos</h3>
+    <p style="color:var(--text-muted); font-size:.8rem; margin:0 0 12px;">
+      Cuándo puede el sistema escribirle a un cliente por su cuenta. Es independiente del
+      horario del bot: el bot contesta cuando le escriben, acá se decide cuándo escribimos
+      nosotros.
+    </p>
+    {% endif %}
     {% if field.name == 'voucher_validez_dias' %}
     <h3 style="margin:24px 0 4px;">Vouchers de regalo</h3>
     {% endif %}

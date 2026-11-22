@@ -33,23 +33,22 @@ AUTOMATIZACIONES_AL_CLIENTE = {
     Automatizacion.Tipo.SEGUIMIENTO_CHARLA_2,
 }
 
-# Si no hay horario cargado en Configuración, `esta_en_horario_atencion()` da 24 horas. Para
-# el bot eso está bien (contesta cuando le escriben), pero para un mensaje que arrancamos
-# nosotros no: sin horario configurado nos quedamos en esta franja segura.
+# Franja por defecto para los mensajes que arrancamos nosotros, cuando en Configuración no
+# hay ninguna cargada. No se usa el horario de atención: ese decide cuándo contesta el bot, y
+# el bot atiende 24 horas a propósito. Son dos cosas distintas.
 HORARIO_SEGURO = (time(9, 0), time(21, 0))
 
 
 def _puede_escribirle_al_cliente(cuando=None):
-    """Horario de atención, y si no hay ninguno cargado, una franja razonable."""
+    """¿Podemos escribirle a un cliente ahora, por iniciativa nuestra?"""
     from apps.configuracion.models import ConfiguracionNegocio
 
     config = ConfiguracionNegocio.get_solo()
     cuando = cuando or timezone.localtime()
-    if config.horario_atencion_desde and config.horario_atencion_hasta:
-        return config.esta_en_horario_atencion(cuando)
     if cuando.weekday() not in (config.dias_laborables or list(range(7))):
         return False
-    desde, hasta = HORARIO_SEGURO
+    desde = config.mensajes_automaticos_desde or HORARIO_SEGURO[0]
+    hasta = config.mensajes_automaticos_hasta or HORARIO_SEGURO[1]
     return desde <= cuando.time() <= hasta
 
 

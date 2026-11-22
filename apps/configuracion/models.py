@@ -13,21 +13,30 @@ class ConfiguracionNegocio(models.Model):
         default=list, blank=True,
         help_text='Días de semana en que el negocio atiende (0=lunes ... 6=domingo). Vacío = todos.',
     )
-    # Ojo: estos dos campos deciden cuándo CONTESTA EL BOT. Fuera de ese horario María no
-    # atiende: responde "estamos fuera de horario, te contestamos apenas abramos" y corta.
-    # Vacíos (que es como está hoy, por decisión del dueño) = el bot atiende las 24 horas.
-    # Esto NO afecta a los mensajes que arrancamos nosotros: las automatizaciones nunca
-    # escriben fuera del horario y, si acá no hay nada cargado, usan de 9 a 21
-    # (AUTOMATIZACIONES_AL_CLIENTE y HORARIO_SEGURO en apps/automations/tasks.py).
+    # Dos horarios distintos a propósito, porque son dos cosas distintas:
+    #   - contestar a alguien que escribió puede ser a cualquier hora (el bot atiende 24/7);
+    #   - escribirle nosotros a alguien, no: a las 2 de la mañana molesta.
+    # Vacíos los dos primeros = el bot atiende siempre, que es como quedó por decisión del
+    # dueño el 21/11/2026.
     horario_atencion_desde = models.TimeField(
         null=True, blank=True, verbose_name='El bot atiende desde',
-        help_text='Vacío = el bot atiende las 24 horas. Si cargás un horario, fuera de él '
-                  'el bot NO contesta: manda "estamos fuera de horario" y espera. Los '
-                  'mensajes automáticos (recordatorios, cumpleaños, seguimiento) nunca '
-                  'salen de madrugada: sin horario cargado usan de 9 a 21.',
+        help_text='Vacío = el bot atiende las 24 horas (así está hoy). Si cargás un horario, '
+                  'fuera de él el bot NO contesta: manda "estamos fuera de horario" y espera '
+                  'a que abran. No tiene nada que ver con los mensajes automáticos, que '
+                  'tienen su propio horario acá abajo.',
     )
     horario_atencion_hasta = models.TimeField(
         null=True, blank=True, verbose_name='El bot atiende hasta',
+    )
+    mensajes_automaticos_desde = models.TimeField(
+        null=True, blank=True, verbose_name='Mensajes automáticos desde',
+        help_text='Franja en la que el sistema puede escribirle a un cliente por su cuenta: '
+                  'recordatorios de turno, cumpleaños, encuesta, reactivación y seguimiento '
+                  'de charlas. Fuera de esta franja no sale ninguno, y se manda en la '
+                  'primera pasada que caiga adentro. Vacío = de 9 a 21.',
+    )
+    mensajes_automaticos_hasta = models.TimeField(
+        null=True, blank=True, verbose_name='Mensajes automáticos hasta',
     )
 
     dias_tarifa_finde = models.JSONField(
