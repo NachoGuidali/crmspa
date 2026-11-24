@@ -76,7 +76,16 @@ class Circuito(models.Model):
 
     @staticmethod
     def es_finde(fecha):
-        return fecha.weekday() >= 5  # sábado=5, domingo=6
+        """True si a esa fecha le toca la tarifa de fin de semana.
+
+        Delega en la configuración (`dias_tarifa_finde`). Antes estaba fijo en sábado y
+        domingo, que no es lo que cobra este spa (vie-sáb-dom) ni lo que usa el precio real:
+        `precio_base_para` siempre fue por la config. No lo llamaba nadie, pero era una
+        trampa esperando: el primero que lo usara para decidir un precio iba a cobrar mal.
+        """
+        from apps.turnero.services import es_dia_tarifa_finde
+
+        return es_dia_tarifa_finde(fecha)
 
     def _tramos(self):
         return list(self.tarifas.order_by('min_personas'))

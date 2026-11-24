@@ -560,6 +560,22 @@ class NegocioEditar(BaseFormView, UpdateView):
     def get_object(self, queryset=None):
         return ConfiguracionNegocio.get_solo()
 
+    def form_valid(self, form):
+        """Al guardar, decir en qué quedó el corte de precios.
+
+        Es el dato más caro de esta pantalla y el único que no se nota cuando queda mal: son
+        siete casillas chiquitas y basta destildar una sin querer. El 24/11/2026 quedó solo el
+        domingo como fin de semana, así que el viernes y el sábado se cobraron como día de
+        semana —en el bot, en la web y en cada reserva nueva— hasta que un cliente recibió un
+        presupuesto que decía "Lun-Sáb".
+        """
+        respuesta = super().form_valid(form)
+        semana, finde = form._etiquetas_tarifa()
+        messages.success(
+            self.request,
+            f'Guardado. Precio de semana: {semana} · precio de fin de semana: {finde}.')
+        return respuesta
+
 
 @login_required
 @require_POST

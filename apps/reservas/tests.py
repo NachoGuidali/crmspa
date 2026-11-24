@@ -517,3 +517,48 @@ class SeguimientoCharlaTest(TestCase):
         errores = AutomatizacionLog.objects.filter(
             resultado=AutomatizacionLog.Resultado.ERROR).count()
         self.assertEqual(errores, 2, 'tiene que frenar a los 2 intentos')
+
+
+class TarifaFindeTest(TestCase):
+    """Qué días cobran tarifa de fin de semana.
+
+    El 24/11/2026 quedó cargado solo el domingo: el viernes y el sábado pasaron a cobrarse
+    como día de semana en el bot, en la web y en cada reserva nueva, y nadie lo notó hasta
+    que un presupuesto salió diciendo "Lun-Sáb".
+    """
+
+    def setUp(self):
+        self.circuito = Circuito.objects.create(
+            nombre='Spa Grupal Premium', capacidad_minima=3, capacidad_maxima=8, sena_valor=50,
+            precio_semana=750000, precio_finde=825000)
+
+    def _config(self, dias):
+        from apps.configuracion.models import ConfiguracionNegocio
+
+        config = ConfiguracionNegocio.get_solo()
+        config.dias_tarifa_finde = dias
+        config.save()
+        return config
+
+    def _sabado(self):
+        dia = date.today() + timedelta(days=1)
+        while dia.weekday() != 5:
+            dia += timedelta(days=1)
+        return dia
+
+    def test_con_viernes_sabado_y_domingo_el_sabado_es_finde(self):
+        self._config([4, 5, 6])
+        self.assertTrue(Circuito.es_finde(self._sabado()))
+
+    def test_con_solo_domingo_el_sabado_se_cobra_como_dia_de_semana(self):
+        """El bug: así estaba el 24/11 y por eso el sábado salía más barato."""
+        self._config([6])
+        self.assertFalse(Circuito.es_finde(self._sabado()))
+
+    def test_la_pantalla_avisa_como_quedo_el_corte(self):
+        from apps.configuracion.forms import ConfiguracionNegocioForm
+
+        config = self._config([4, 5, 6])
+        ayuda = ConfiguracionNegocioForm(instance=config).fields['dias_tarifa_finde'].help_text
+        self.assertIn('Lun-Mar-Mié-Jue', ayuda)
+        self.assertIn('Vie-Sáb-Dom', ayuda)

@@ -176,6 +176,14 @@ class ConfiguracionNegocioForm(forms.ModelForm):
     dias_laborables = DiasSemanaField(label='Días laborables')
     dias_tarifa_finde = DiasSemanaField(label='Días con tarifa de fin de semana', required=False)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        semana, finde = self._etiquetas_tarifa()
+        self.fields['dias_tarifa_finde'].help_text = (
+            f'Hoy quedan así: precio de semana {semana} · precio de fin de semana {finde}. '
+            'Es lo que cobra cada reserva y lo que dice el bot. Vacío = sábado y domingo.'
+        )
+
     class Meta:
         model = ConfiguracionNegocio
         fields = [
@@ -201,6 +209,20 @@ class ConfiguracionNegocioForm(forms.ModelForm):
             'politica_cancelacion': forms.Textarea(attrs={'rows': 3}),
         }
 
+
+    def _etiquetas_tarifa(self):
+        """Cómo quedan los dos grupos de días con lo que está cargado.
+
+        Se muestra al lado del campo porque es un dato que NO se nota cuando está mal: el
+        24/11/2026 figuraba solo el domingo como fin de semana, y el bot (y el precio real de
+        cada reserva) cobraban el viernes y el sábado como día de semana. Nadie lo vio hasta
+        que un cliente recibió "Lun-Sáb / Dom" en el presupuesto.
+        """
+        CORTAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+        finde = sorted(int(d) for d in (self.instance.dias_tarifa_finde or [5, 6]))
+        semana = [d for d in range(7) if d not in finde]
+        junta = lambda ds: '-'.join(CORTAS[d] for d in ds) if ds else '(ninguno)'
+        return junta(semana), junta(finde)
 
     def clean_smtp_password(self):
         # Vacío = no la cambiaron. Sin esto, guardar cualquier otro campo del formulario

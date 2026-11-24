@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Configuración{% endblock %}
 {% block content %}
+{% if messages %}{% for m in messages %}
+<div style="background:var(--color-verde-oliva); color:#fff; padding:11px 15px; border-radius:10px; margin-bottom:14px;">{{ m }}</div>
+{% endfor %}{% endif %}
 <div class="topbar"><h1>Configuración</h1></div>
 <p style="color:var(--text-muted); margin-top:-14px; margin-bottom:24px;">Todo lo del negocio se edita desde acá — sin tocar código ni n8n.</p>
 
