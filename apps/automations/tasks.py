@@ -410,6 +410,14 @@ def seguimiento_charla(automatizacion):
         if Reserva.objects.ocupando_cupo().filter(
                 contacto__telefono=conv.telefono, fecha__gte=hoy).exists():
             continue
+        # La charla terminó bien y la persona dijo que vuelve: no se la persigue. Lo marca
+        # el bot cuando ve la despedida, y se desmarca solo si vuelve a escribir. Pasó el
+        # 24/11/2026 dos veces el mismo día: a alguien que dijo "lo comparto con mis amigas y
+        # vuelvo" y a alguien que agradeció porque no había lugar para su fecha, les llegó
+        # igual "¿Te quedó alguna duda? Si querés te paso info de las experiencias".
+        if (conv.estado_bot or {}).get('charla_cerrada'):
+            continue
+
         paso = (conv.estado_bot or {}).get('estado_flujo') or 'nuevo'
         if paso not in PENDIENTE_POR_PASO:
             continue        # pasos que ya tienen su propio recordatorio (ej. el comprobante)

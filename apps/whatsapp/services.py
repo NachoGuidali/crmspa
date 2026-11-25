@@ -65,6 +65,12 @@ def _guardar_mensaje_entrante(m: dict):
     if contact_name and not conversacion.nombre_contacto:
         conversacion.nombre_contacto = contact_name
         campos.append('nombre_contacto')
+    # Si escribió de nuevo, la charla vuelve a estar abierta. El bot la marca como cerrada
+    # cuando alguien se despide; sin esto, esa marca quedaría puesta para siempre y la
+    # conversación no recibiría nunca más un seguimiento, aunque la persona vuelva.
+    if (conversacion.estado_bot or {}).get('charla_cerrada'):
+        conversacion.estado_bot = {**conversacion.estado_bot, 'charla_cerrada': False}
+        campos.append('estado_bot')
     if campos:
         conversacion.save(update_fields=campos)
 

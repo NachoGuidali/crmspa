@@ -562,3 +562,75 @@ class TarifaFindeTest(TestCase):
         ayuda = ConfiguracionNegocioForm(instance=config).fields['dias_tarifa_finde'].help_text
         self.assertIn('Lun-Mar-Mié-Jue', ayuda)
         self.assertIn('Vie-Sáb-Dom', ayuda)
+
+
+class CharlaCerradaTest(TestCase):
+    """La persona ya dijo que no por ahora: no se la persigue.
+
+    El 24/11/2026, dos veces el mismo día: a quien dijo "lo comparto con mis amigas y vuelvo"
+    y a quien agradeció porque no había lugar para su fecha, les llegó igual "¿Te quedó
+    alguna duda? Si querés te paso info de las experiencias".
+    """
+
+    def setUp(self):
+        from apps.automations.models import Automatizacion
+        from apps.whatsapp.models import ConfiguracionWhatsApp, PlantillaMensaje
+
+        ConfiguracionWhatsApp.objects.create(pk=1)
+        self.contacto = Contacto.objects.create(nombre='Agos', telefono='+5491166390007')
+        self.conv = Conversacion.objects.create(
+            telefono=self.contacto.telefono, contacto=self.contacto, bot_activo=True,
+            estado_bot={'estado_flujo': 'menu'},
+            ultimo_mensaje_at=timezone.now() - timedelta(hours=20))
+        Mensaje.objects.create(
+            conversacion=self.conv, direccion=Mensaje.Direccion.SALIENTE,
+            tipo=Mensaje.Tipo.TEXTO, contenido='Cuando quieran avanzamos',
+            timestamp=timezone.now() - timedelta(hours=20))
+        plantilla = PlantillaMensaje.objects.create(
+            nombre='seguimiento', cuerpo='Hola {{nombre}}! ¿Te quedó alguna duda?')
+        self.auto, _ = Automatizacion.objects.update_or_create(
+            tipo=Automatizacion.Tipo.SEGUIMIENTO_CHARLA,
+            defaults={'activa': True, 'plantilla': plantilla,
+                      'parametros': {'horas_sin_respuesta': 4, 'ventana_horas': 48}})
+
+    def _correr(self):
+        from apps.automations import tasks
+
+        with patch('apps.automations.tasks.enviar_automatico') as envio:
+            tasks.seguimiento_charla(self.auto)
+        return envio
+
+    def _cerrar(self):
+        self.conv.estado_bot = {**self.conv.estado_bot, 'charla_cerrada': True}
+        self.conv.save(update_fields=['estado_bot'])
+
+    def test_sin_marcar_se_le_escribe(self):
+        self.assertTrue(self._correr().called)
+
+    def test_con_la_charla_cerrada_no_se_le_escribe(self):
+        self._cerrar()
+        self.assertFalse(self._correr().called)
+
+    def test_si_vuelve_a_escribir_la_charla_se_reabre(self):
+        """Si no, la marca quedaría puesta para siempre."""
+        from apps.whatsapp import services
+
+        self._cerrar()
+        services._guardar_mensaje_entrante({
+            'from_phone': self.contacto.telefono, 'contact_name': 'Agos',
+            'message_id': 'ABC123', 'content': 'Hola! volvimos', 'type': 'text',
+            'timestamp': timezone.now(),
+        })
+        self.conv.refresh_from_db()
+        self.assertFalse(self.conv.estado_bot.get('charla_cerrada'))
+
+    def test_el_bot_puede_marcarla_por_la_api(self):
+        from apps.integraciones.models import ApiKey
+
+        key = ApiKey.objects.create(nombre='n8n')
+        r = self.client.patch(f'/api/v1/conversaciones/{self.conv.telefono}/',
+                              {'charla_cerrada': True}, content_type='application/json',
+                              HTTP_X_API_KEY=str(key.key))
+        self.assertEqual(r.status_code, 200, r.content)
+        self.conv.refresh_from_db()
+        self.assertTrue(self.conv.estado_bot.get('charla_cerrada'))

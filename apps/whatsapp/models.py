@@ -191,6 +191,11 @@ class Conversacion(models.Model):
         # código sobreviva entre mensajes: cuando la persona manda el comprobante, el bot
         # tiene que saber a qué voucher pegárselo.
         'voucher_codigo',
+        # La charla terminó bien: se despidió, dijo que lo iba a pensar o que vuelve. Lo
+        # marca el bot, que es el que entiende lo que pasó, y sirve para no escribirle
+        # después "¿te quedó alguna duda?" a alguien que ya dijo que no por ahora. Se
+        # desmarca solo cuando la persona vuelve a escribir (ver `_guardar_mensaje_entrante`).
+        'charla_cerrada',
     ]
 
     class Meta:
